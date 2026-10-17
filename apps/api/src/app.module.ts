@@ -31,7 +31,14 @@ export class AppModule {
               ServeStaticModule.forRoot({
                 rootPath: opts.webDist,
                 exclude: ['/api{*splat}'],
-                serveStaticOptions: { index: 'index.html', cacheControl: true, maxAge: '1h' },
+                serveStaticOptions: {
+                  index: 'index.html',
+                  // Hashed assets are immutable; everything else (index.html, manifest, icons) must be revalidated
+                  // so a rebuilt dashboard shows up on the next load instead of after a cache expiry.
+                  setHeaders: (res, filePath) => {
+                    res.setHeader('Cache-Control', /[\\/]assets[\\/]/.test(filePath) ? 'public, max-age=31536000, immutable' : 'no-cache');
+                  },
+                },
               }),
             ]
           : []),
