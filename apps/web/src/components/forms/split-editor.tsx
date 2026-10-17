@@ -3,7 +3,6 @@ import { round2, splitAmount, type SplitMode, type Stakeholder } from '@ledgr/sh
 import { useProject } from '@/lib/project';
 import { Segmented } from '@/components/ui/misc';
 import { Avatar } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 
 export interface CustomSplit {
   stakeholderId: string;
@@ -39,9 +38,9 @@ export function SplitEditor({
   const equalize = () => onSplits(active.map((s) => ({ stakeholderId: s.id, sharePercent: round2(100 / active.length) })));
 
   return (
-    <div className="rounded-md border border-line bg-sunken/60">
-      <div className="flex items-center justify-between px-3 h-9 border-b border-line">
-        <span className="eyebrow">Split between partners</span>
+    <div className="rounded-[14px] border border-line overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-sunken/60">
+        <span className="text-[13px] font-medium text-ink-2">Split</span>
         <Segmented
           size="xs"
           value={mode}
@@ -55,34 +54,42 @@ export function SplitEditor({
           ]}
         />
       </div>
-      <ul className="divide-y divide-line/70">
+      <ul className="divide-y divide-line">
         {active.map((s) => {
           const share = shares.find((x) => x.stakeholderId === s.id)?.sharePercent ?? 0;
           const amt = preview.find((p) => p.stakeholderId === s.id)?.amountMinor ?? 0;
           return (
-            <li key={s.id} className="flex items-center gap-2.5 px-3 h-9 text-[12.5px]">
-              <Avatar name={s.name} color={s.color} size={18} />
+            <li key={s.id} className="flex items-center gap-3 px-3.5 h-12 text-[14px]">
+              <Avatar name={s.name} color={s.color} size={26} />
               <span className="flex-1 truncate">{s.name}</span>
               {mode === 'custom' ? (
-                <span className="relative w-20">
-                  <Input mono className="h-6.5 text-right pr-5 text-[12px]" type="number" step="0.01" min={0} max={100} value={share} onChange={(e) => setPct(s.id, Number(e.target.value))} />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-ink-3">%</span>
+                <span className="relative w-[84px]">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={100}
+                    value={share}
+                    onChange={(e) => setPct(s.id, Number(e.target.value))}
+                    className="num w-full h-9 rounded-[10px] border border-line-strong bg-card pl-2 pr-6 text-right text-[14px] focus:border-accent focus:outline-none"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[12px] text-ink-3">%</span>
                 </span>
               ) : (
-                <span className="num text-ink-3 w-16 text-right">{share.toFixed(2)}%</span>
+                <span className="num text-ink-3 w-16 text-right text-[13px]">{share.toFixed(share % 1 ? 2 : 0)}%</span>
               )}
-              <span className="num w-24 text-right">{money(amt)}</span>
+              <span className="num w-24 text-right font-medium">{money(amt)}</span>
             </li>
           );
         })}
-        {!active.length && <li className="px-3 py-3 text-[12px] text-ink-3">No active stakeholders. Add partners first.</li>}
+        {!active.length && <li className="px-3.5 py-3 text-[13px] text-ink-3">No active stakeholders yet. Add partners first.</li>}
       </ul>
-      <div className="flex items-center justify-between px-3 h-8 border-t border-line text-[11.5px]">
-        <span className={clsx('num', ok ? 'text-ink-3' : 'text-critical')}>
+      <div className="flex items-center justify-between px-3.5 h-9 border-t border-line text-[12.5px]">
+        <span className={clsx('num', ok ? 'text-ink-3' : 'text-critical font-medium')}>
           Total {total.toFixed(2)}% {ok ? '' : '— must equal 100%'}
         </span>
         {mode === 'custom' && (
-          <button type="button" className="text-ink-3 hover:text-ink underline-offset-2 hover:underline" onClick={equalize}>
+          <button type="button" className="text-accent font-medium" onClick={equalize}>
             Split equally
           </button>
         )}

@@ -8,13 +8,13 @@ import { useDateRange } from '@/lib/range';
 import { pct } from '@/lib/format';
 import { CategoryForm } from '@/components/forms/category-form';
 import { Button } from '@/components/ui/button';
-import { EmptyState, Loading, Meter, PageHeader, Panel, Tabs } from '@/components/ui/misc';
-import { EmptyRow, Table, Td, Th, Tr } from '@/components/ui/table';
+import { EmptyState, Loading, Meter, PageHeader, Card, Tabs, ListRow } from '@/components/ui/misc';
 import { Money } from '@/components/ui/money';
-import { Badge, Swatch } from '@/components/ui/badge';
+import { Badge, Swatch, Tile } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { Menu, MenuItem, MenuSeparator } from '@/components/ui/menu';
 import { errorMessage, useToast } from '@/components/ui/toast';
+import { Checkbox } from '@/components/ui/input';
 
 export function CategoriesPage() {
   const [kind, setKind] = useState<CategoryKind>('expense');
@@ -32,58 +32,58 @@ export function CategoriesPage() {
 
   return (
     <>
-      <PageHeader title="Categories" subtitle="Group entries, set monthly budgets on expense categories." actions={<Button variant="primary" icon={<Plus className="size-3.5" />} onClick={() => setEditing(null)}>New category</Button>} />
-      <div className="flex items-center justify-between mb-4">
-        <Tabs value={kind} onChange={setKind} items={[{ id: 'expense', label: 'Expense' }, { id: 'revenue', label: 'Revenue' }]} />
-        <label className="text-[12px] text-ink-3 inline-flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived</label>
+      <PageHeader title="Categories" subtitle="Group entries and set monthly budgets on expenses." actions={<Button variant="primary" size="sm" className="rounded-full" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>New category</Button>} />
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <Tabs value={kind} onChange={setKind} items={[{ id: 'expense', label: 'Expense' }, { id: 'revenue', label: 'Revenue' }]} className="md:w-auto" />
+        <Checkbox label="Archived" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} className="shrink-0" />
       </div>
-      <div className="grid grid-cols-12 gap-4">
-        <Panel className={clsx('col-span-12', kind === 'expense' && 'xl:col-span-7')}>
-          {q.isPending ? <Loading /> : (
-            <Table>
-              <thead><tr><Th>Name</Th>{kind === 'expense' && <Th align="right">Monthly budget</Th>}<Th>Status</Th><Th className="w-10" /></tr></thead>
-              <tbody>
-                {!items.length && <EmptyRow colSpan={4}>No {kind} categories.</EmptyRow>}
-                {items.map((c) => (
-                  <Tr key={c.id} className={clsx(c.archived && 'opacity-60')}>
-                    <Td><span className="inline-flex items-center gap-2"><Swatch color={c.color} size={10} /><span className="font-medium">{c.name}</span></span></Td>
-                    {kind === 'expense' && <Td align="right">{c.monthlyBudgetMinor ? <Money minor={c.monthlyBudgetMinor} /> : <span className="text-ink-4">—</span>}</Td>}
-                    <Td>{c.archived ? <Badge>archived</Badge> : <Badge tone="good">active</Badge>}</Td>
-                    <Td>
-                      <Menu trigger={() => <button className="size-6 inline-flex items-center justify-center rounded text-ink-3 hover:text-ink hover:bg-hover" aria-label="Actions"><MoreHorizontal className="size-3.5" /></button>}>
-                        {(close) => (
-                          <>
-                            <MenuItem icon={<Pencil />} onClick={() => { close(); setEditing(c); }}>Edit</MenuItem>
-                            <MenuItem icon={c.archived ? <ArchiveRestore /> : <Archive />} onClick={async () => { close(); try { await update.mutateAsync({ id: c.id, archived: !c.archived }); } catch (e) { toast.error('Failed', errorMessage(e)); } }}>{c.archived ? 'Restore' : 'Archive'}</MenuItem>
-                            <MenuSeparator />
-                            <MenuItem icon={<Trash2 />} danger onClick={() => { close(); setConfirm(c); }}>Delete</MenuItem>
-                          </>
-                        )}
-                      </Menu>
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Table>
+      <div className={clsx('grid grid-cols-1 gap-4', kind === 'expense' && 'xl:grid-cols-3')}>
+        <Card className={clsx(kind === 'expense' && 'xl:col-span-2')} flush>
+          {q.isPending ? <Loading /> : !items.length ? <EmptyState title={`No ${kind} categories`} action={<Button variant="soft" onClick={() => setEditing(null)}>Add one</Button>} /> : (
+            <ul className="divide-y divide-line">
+              {items.map((c) => (
+                <li key={c.id} className={clsx('flex items-center', c.archived && 'opacity-60')}>
+                  <ListRow
+                    className="flex-1"
+                    leading={<Tile color={c.color}><Swatch color={c.color} size={12} /></Tile>}
+                    title={<span className="inline-flex items-center gap-2">{c.name}{c.archived && <Badge>archived</Badge>}</span>}
+                    subtitle={kind === 'expense' ? (c.monthlyBudgetMinor ? `Budget ${money(c.monthlyBudgetMinor)} / month` : 'No budget') : undefined}
+                    onClick={() => setEditing(c)}
+                  />
+                  <div className="pr-3">
+                    <Menu trigger={() => <button type="button" className="size-9 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-card-hover" aria-label="Actions"><MoreHorizontal className="size-4" /></button>}>
+                      {(close) => (
+                        <>
+                          <MenuItem icon={<Pencil />} onClick={() => { close(); setEditing(c); }}>Edit</MenuItem>
+                          <MenuItem icon={c.archived ? <ArchiveRestore /> : <Archive />} onClick={async () => { close(); try { await update.mutateAsync({ id: c.id, archived: !c.archived }); } catch (e) { toast.error('Failed', errorMessage(e)); } }}>{c.archived ? 'Restore' : 'Archive'}</MenuItem>
+                          <MenuSeparator />
+                          <MenuItem icon={<Trash2 />} danger onClick={() => { close(); setConfirm(c); }}>Delete</MenuItem>
+                        </>
+                      )}
+                    </Menu>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </Panel>
+        </Card>
         {kind === 'expense' && (
-          <Panel className="col-span-12 xl:col-span-5" title="Budget vs actual" eyebrow={budgets.data?.month ?? ''}>
+          <Card title="Budgets this month" subtitle={budgets.data?.month}>
             {budgets.isPending ? <Loading /> : !budgets.data?.items.length ? <EmptyState title="No budgets yet" description="Edit an expense category and set a monthly budget." /> : (
-              <ul className="px-4 py-3 space-y-3">
+              <ul className="space-y-4">
                 {budgets.data.items.map((b) => (
                   <li key={b.categoryId}>
-                    <div className="flex items-center justify-between text-[12px] mb-1">
-                      <span className="inline-flex items-center gap-1.5"><Swatch color={b.color} />{b.name}</span>
-                      <span className="num"><span className={b.pct >= 100 ? 'text-critical' : ''}>{money(b.spentMinor)}</span><span className="text-ink-3"> / {money(b.budgetMinor)}</span><span className={clsx('ml-2 text-[10.5px]', b.pct >= 100 ? 'text-critical' : b.pct >= 85 ? 'text-warning' : 'text-ink-3')}>{pct(b.pct, 0)}</span></span>
+                    <div className="flex items-center justify-between text-[13.5px] mb-1.5">
+                      <span className="inline-flex items-center gap-2"><Swatch color={b.color} size={9} />{b.name}</span>
+                      <span className="num"><span className={clsx('font-medium', b.pct >= 100 && 'text-critical')}>{money(b.spentMinor, { compact: true })}</span><span className="text-ink-3"> / {money(b.budgetMinor, { compact: true })}</span></span>
                     </div>
                     <Meter value={b.pct} />
-                    <div className="text-[10.5px] text-ink-3 num mt-1">{b.remainingMinor >= 0 ? `${money(b.remainingMinor)} left` : `${money(-b.remainingMinor)} over`}</div>
+                    <div className={clsx('text-[12px] mt-1', b.pct >= 100 ? 'text-critical' : b.pct >= 85 ? 'text-warning' : 'text-ink-3')}>{pct(b.pct, 0)} used · {b.remainingMinor >= 0 ? `${money(b.remainingMinor)} left` : `${money(-b.remainingMinor)} over`}</div>
                   </li>
                 ))}
               </ul>
             )}
-          </Panel>
+          </Card>
         )}
       </div>
       <CategoryForm open={editing !== undefined} onClose={() => setEditing(undefined)} category={editing ?? null} kind={kind} />

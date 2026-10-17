@@ -54,8 +54,8 @@ export function StakeholderForm({ open, onClose, stakeholder, suggestedShare }: 
 
   return (
     <Sheet open={open} onClose={onClose} title={stakeholder ? 'Edit stakeholder' : 'New stakeholder'} description="Ownership share drives default expense splits and profit distribution."
-      footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={submit} loading={busy} disabled={!valid}>{stakeholder ? 'Save changes' : 'Add stakeholder'}</Button></>}>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
+      footer={<><Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">Cancel</Button><Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{stakeholder ? 'Save changes' : 'Add stakeholder'}</Button></>}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
           <Field label="Name" required><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!stakeholder} /></Field>
           <ColorPicker value={color} onChange={setColor} />
@@ -65,7 +65,7 @@ export function StakeholderForm({ open, onClose, stakeholder, suggestedShare }: 
           <Field label="Joined"><Input mono type="date" value={joinedAt} onChange={(e) => setJoinedAt(e.target.value)} /></Field>
         </div>
         <Field label="Email"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" /></Field>
-        <Toggle checked={active} onChange={setActive} label={active ? 'Active — included in ownership splits' : 'Inactive — excluded from new splits'} />
+        <Toggle checked={active} onChange={setActive} label="Active partner" description={active ? 'Included in ownership splits and distribution' : 'Kept for history, excluded from new splits'} />
         <Field label="Notes"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></Field>
         <CustomFieldInputs entity="stakeholder" values={custom} onChange={setCustom} errors={cfErrors} />
       </form>

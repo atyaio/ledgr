@@ -39,8 +39,8 @@ export function CustomFieldForm({ open, onClose, field, entity }: { open: boolea
     } catch (e) { toast.error('Could not save field', errorMessage(e)); }
   };
   return (
-    <Modal open={open} onClose={onClose} title={field ? 'Edit custom field' : `New ${entity} field`} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={submit} loading={busy} disabled={!valid}>{field ? 'Save' : 'Add field'}</Button></>}>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
+    <Modal open={open} onClose={onClose} title={field ? 'Edit custom field' : `New ${entity} field`} footer={<><Button variant="ghost" size="md" onClick={onClose}>Cancel</Button><Button variant="primary" size="md" onClick={submit} loading={busy} disabled={!valid}>{field ? 'Save' : 'Add field'}</Button></>}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Label" required><Input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus placeholder="Invoice no." /></Field>
           <Field label="Key" hint="CSV column id"><Input mono value={key} disabled={!!field} onChange={(e) => { setKeyTouched(true); setKey(e.target.value); }} /></Field>

@@ -42,12 +42,9 @@ export function SettlementForm({ open, onClose, settlement, prefill }: { open: b
 
   return (
     <Sheet open={open} onClose={onClose} title={settlement ? 'Edit settlement' : 'Record settlement'} description="A payment between partners (or into the company pool) that reduces what someone owes."
-      footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={submit} loading={busy} disabled={!valid}>{settlement ? 'Save' : 'Record'}</Button></>}>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Date" required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Amount" required><MoneyInput value={amount} onChange={setAmount} /></Field>
-        </div>
+      footer={<><Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">Cancel</Button><Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{settlement ? 'Save' : 'Record settlement'}</Button></>}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
+        <Field label="Amount" required><MoneyInput large value={amount} onChange={setAmount} /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="From (payer)" required>
             <Select value={from} onChange={(e) => setFrom(e.target.value)}>
@@ -62,6 +59,7 @@ export function SettlementForm({ open, onClose, settlement, prefill }: { open: b
             </Select>
           </Field>
         </div>
+        <Field label="Date" required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
         <Field label="Note"><Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Bank transfer ref, cash, …" /></Field>
       </form>
     </Sheet>

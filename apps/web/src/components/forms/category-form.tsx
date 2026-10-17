@@ -36,12 +36,12 @@ export function CategoryForm({ open, onClose, category, kind }: { open: boolean;
     }
   };
   return (
-    <Modal open={open} onClose={onClose} title={category ? 'Edit category' : `New ${kind} category`} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={submit} loading={busy} disabled={!valid}>{category ? 'Save' : 'Add'}</Button></>}>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
+    <Modal open={open} onClose={onClose} title={category ? 'Edit category' : `New ${kind} category`} footer={<><Button variant="ghost" size="md" onClick={onClose}>Cancel</Button><Button variant="primary" size="md" onClick={submit} loading={busy} disabled={!valid}>{category ? 'Save' : 'Add category'}</Button></>}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         <Field label="Name" required><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
         <ColorPicker value={color} onChange={setColor} />
         {kind === 'expense' && <Field label="Monthly budget" hint="optional"><MoneyInput value={budget} onChange={setBudget} /></Field>}
-        {category && <Toggle checked={archived} onChange={setArchived} label={archived ? 'Archived — hidden from forms' : 'Active'} />}
+        {category && <Toggle checked={!archived} onChange={(v) => setArchived(!v)} label="Active" description={archived ? 'Archived: hidden from forms, history kept' : 'Shown in forms and filters'} />}
       </form>
     </Modal>
   );

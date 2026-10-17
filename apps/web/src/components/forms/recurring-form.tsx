@@ -75,8 +75,8 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
 
   return (
     <Sheet open={open} onClose={onClose} title={rule ? 'Edit recurring rule' : 'New recurring rule'} description="Entries are generated automatically when they come due (checked hourly and on start)." width={520}
-      footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={submit} loading={busy} disabled={!valid}>{rule ? 'Save' : 'Create rule'}</Button></>}>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
+      footer={<><Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">Cancel</Button><Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{rule ? 'Save' : 'Create rule'}</Button></>}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         {!rule && <Segmented value={kind} onChange={(k) => { setKind(k); setCategoryId(''); }} items={[{ id: 'expense', label: 'Expense' }, { id: 'revenue', label: 'Revenue' }]} />}
         <Field label="Rule name" required><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Office rent" autoFocus={!rule} /></Field>
         <div className="grid grid-cols-[1fr_80px] gap-3">
@@ -87,8 +87,8 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
           <Field label="First occurrence" required><Input mono type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
           <Field label="Ends" hint="optional"><Input mono type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} /></Field>
         </div>
-        <Toggle checked={active} onChange={setActive} label={active ? 'Active' : 'Paused'} />
-        <div className="pt-3 mt-1 border-t border-line"><span className="eyebrow">Entry template</span></div>
+        <Toggle checked={active} onChange={setActive} label="Active" description={active ? 'Generates entries when due' : 'Paused: nothing is generated'} />
+        <div className="pt-4 mt-2 border-t border-line"><span className="label">Entry template</span></div>
         <Field label="Description" required><Input value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Amount" required><MoneyInput value={amount} onChange={setAmount} /></Field>

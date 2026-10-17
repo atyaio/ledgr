@@ -4,8 +4,8 @@ import { useProject } from '@/lib/project';
 import { Input } from '@/components/ui/input';
 
 /** Text input that edits an integer minor-unit value while showing major units. */
-export const MoneyInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> & { value: number | null; onChange: (minor: number | null) => void }>(
-  function MoneyInput({ value, onChange, ...rest }, ref) {
+export const MoneyInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> & { value: number | null; onChange: (minor: number | null) => void; large?: boolean }>(
+  function MoneyInput({ value, onChange, large, className, ...rest }, ref) {
     const { currency, toMajor, digits } = useProject();
     const [text, setText] = useState(value === null ? '' : toMajor(value).toFixed(digits));
     useEffect(() => {
@@ -15,12 +15,12 @@ export const MoneyInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<
     }, [value]);
     return (
       <div className="relative">
-        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 eyebrow !text-[10px] pointer-events-none">{currency}</span>
+        <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 font-medium pointer-events-none ${large ? 'text-[16px]' : 'text-[13px]'}`}>{currency}</span>
         <Input
           ref={ref}
           mono
           inputMode="decimal"
-          className="pl-12 text-right"
+          className={`${large ? 'pl-16 h-14 text-[26px] font-semibold rounded-[14px]' : 'pl-14'} text-right ${className ?? ''}`}
           value={text}
           placeholder="0.00"
           onChange={(e) => {

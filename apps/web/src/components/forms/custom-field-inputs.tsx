@@ -9,8 +9,8 @@ export function CustomFieldInputs({ entity, values, onChange, errors }: { entity
   if (!defs.length) return null;
   const set = (key: string, v: CustomFieldValue) => onChange({ ...values, [key]: v });
   return (
-    <fieldset className="space-y-3 pt-3 mt-1 border-t border-line">
-      <legend className="eyebrow pr-2">Custom fields</legend>
+    <fieldset className="space-y-3 pt-4 mt-2 border-t border-line">
+      <legend className="label pr-2">Custom fields</legend>
       {defs.map((d) => (
         <CustomFieldInput key={d.id} def={d} value={values[d.key] ?? null} onChange={(v) => set(d.key, v)} error={errors?.[d.key]} />
       ))}

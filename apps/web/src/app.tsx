@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/ui/toast';
 import { Loading } from '@/components/ui/misc';
 import { Shell } from '@/components/layout/shell';
 import { LoginPage } from '@/pages/login';
+import { QuickAddPage } from '@/pages/quick-add';
 
 const Overview = lazy(() => import('@/pages/overview').then((m) => ({ default: m.OverviewPage })));
 const Expenses = lazy(() => import('@/pages/expenses').then((m) => ({ default: m.ExpensesPage })));
@@ -24,9 +25,9 @@ const queryClient = new QueryClient({
 function Splash({ children }: { children?: ReactNode }) {
   return (
     <div className="h-full flex items-center justify-center bg-bg">
-      <div className="text-center">
-        <div className="serif italic text-[34px] leading-none">ledgr</div>
-        <div className="mt-3 text-ink-3 text-[12px] num">{children ?? <>booting <span className="blink">▍</span></>}</div>
+      <div className="text-center fade-up">
+        <div className="text-[22px] font-semibold tracking-tight">ledgr</div>
+        <div className="mt-2 text-ink-3 text-[13px]">{children ?? 'Loading…'}</div>
       </div>
     </div>
   );
@@ -57,6 +58,7 @@ const router = createBrowserRouter([
   {
     element: <Gate />,
     children: [
+      { path: 'add/:kind', element: <QuickAddPage /> },
       {
         element: <Shell />,
         children: [

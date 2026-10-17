@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 export function Table({ className, children, ...rest }: HTMLAttributes<HTMLTableElement>) {
   return (
     <div className="overflow-x-auto">
-      <table className={clsx('w-full border-collapse text-[12.5px]', className)} {...rest}>
+      <table className={clsx('w-full border-collapse text-[14px]', className)} {...rest}>
         {children}
       </table>
     </div>
@@ -17,7 +17,7 @@ export function Th({ className, children, align = 'left', sortable, sorted, onSo
   return (
     <th
       className={clsx(
-        'eyebrow font-medium h-8 px-3 border-b border-line bg-panel sticky top-0 z-[1] whitespace-nowrap',
+        'label h-10 px-4 border-b border-line bg-card sticky top-0 z-[1] whitespace-nowrap font-medium',
         align === 'right' && 'text-right',
         align === 'center' && 'text-center',
         sortable && 'cursor-pointer select-none hover:text-ink',
@@ -29,7 +29,7 @@ export function Th({ className, children, align = 'left', sortable, sorted, onSo
     >
       <span className={clsx('inline-flex items-center gap-1', align === 'right' && 'flex-row-reverse')}>
         {children}
-        {sortable && <Icon className={clsx('size-3', sorted ? 'text-accent' : 'text-ink-4')} />}
+        {sortable && <Icon className={clsx('size-3.5', sorted ? 'text-accent' : 'text-ink-4')} />}
       </span>
     </th>
   );
@@ -37,7 +37,7 @@ export function Th({ className, children, align = 'left', sortable, sorted, onSo
 
 export function Td({ className, children, align = 'left', ...rest }: TdHTMLAttributes<HTMLTableCellElement> & { align?: 'left' | 'right' | 'center' }) {
   return (
-    <td className={clsx('h-9 px-3 border-b border-line/70 align-middle', align === 'right' && 'text-right', align === 'center' && 'text-center', className)} {...rest}>
+    <td className={clsx('h-12 px-4 border-b border-line align-middle', align === 'right' && 'text-right', align === 'center' && 'text-center', className)} {...rest}>
       {children}
     </td>
   );
@@ -45,7 +45,7 @@ export function Td({ className, children, align = 'left', ...rest }: TdHTMLAttri
 
 export function Tr({ className, selected, children, ...rest }: HTMLAttributes<HTMLTableRowElement> & { selected?: boolean }) {
   return (
-    <tr className={clsx('row-hover transition-colors', selected && 'bg-accent-soft/60', className)} {...rest}>
+    <tr className={clsx('row-hover transition-colors last:[&>td]:border-b-0', selected && 'bg-accent-soft/60', className)} {...rest}>
       {children}
     </tr>
   );
@@ -54,7 +54,7 @@ export function Tr({ className, selected, children, ...rest }: HTMLAttributes<HT
 export function EmptyRow({ colSpan, children }: { colSpan: number; children: ReactNode }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="h-32 text-center text-ink-3 text-[12.5px]">
+      <td colSpan={colSpan} className="h-36 text-center text-ink-3 text-[14px]">
         {children}
       </td>
     </tr>
@@ -65,19 +65,20 @@ export function Pagination({ page, pageSize, total, onPage }: { page: number; pa
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
+  if (total <= pageSize) return null;
   return (
-    <div className="flex items-center justify-between gap-3 px-3 h-10 border-t border-line text-[12px] text-ink-3">
+    <div className="flex items-center justify-between gap-3 px-4 h-12 border-t border-line text-[13px] text-ink-3">
       <span className="num">
         {from}–{to} of {total}
       </span>
       <div className="flex items-center gap-1">
-        <button type="button" className="h-6 px-2 rounded-sm hover:bg-hover disabled:opacity-40" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+        <button type="button" className="h-8 px-3 rounded-[9px] hover:bg-card-hover disabled:opacity-40 font-medium" disabled={page <= 1} onClick={() => onPage(page - 1)}>
           Prev
         </button>
         <span className="num px-1">
           {page} / {pages}
         </span>
-        <button type="button" className="h-6 px-2 rounded-sm hover:bg-hover disabled:opacity-40" disabled={page >= pages} onClick={() => onPage(page + 1)}>
+        <button type="button" className="h-8 px-3 rounded-[9px] hover:bg-card-hover disabled:opacity-40 font-medium" disabled={page >= pages} onClick={() => onPage(page + 1)}>
           Next
         </button>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { todayISO, type CreateExpenseInput, type CustomFields, type Expense, type SplitMode } from '@ledgr/shared';
 import { useCategories, useExpenseMutations, useStakeholders } from '@/lib/queries';
 import { errorMessage, useToast } from '@/components/ui/toast';
@@ -10,7 +10,7 @@ import { CustomFieldInputs } from './custom-field-inputs';
 import { SplitEditor, type CustomSplit } from './split-editor';
 import { ApiRequestError } from '@/lib/api';
 
-export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolean; onClose: () => void; expense?: Expense | null; defaults?: Partial<CreateExpenseInput> }) {
+export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSaved }: { open: boolean; onClose: () => void; expense?: Expense | null; defaults?: Partial<CreateExpenseInput>; switcher?: ReactNode; onSaved?: () => void }) {
   const toast = useToast();
   const { create, update } = useExpenseMutations();
   const cats = useCategories('expense');
@@ -26,6 +26,7 @@ export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolea
   const [splits, setSplits] = useState<CustomSplit[]>([]);
   const [custom, setCustom] = useState<CustomFields>({});
   const [cfErrors, setCfErrors] = useState<Record<string, string>>({});
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -41,6 +42,7 @@ export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolea
       setSplitMode(expense.splitMode);
       setSplits(expense.splits.map((s) => ({ stakeholderId: s.stakeholderId, sharePercent: s.sharePercent })));
       setCustom(expense.customFields ?? {});
+      setMoreOpen(!!(expense.vendor || expense.notes));
     } else {
       setDate(defaults?.date ?? todayISO());
       setAmount(defaults?.amountMinor ?? null);
@@ -52,6 +54,7 @@ export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolea
       setSplitMode('ownership');
       setSplits([]);
       setCustom({});
+      setMoreOpen(false);
     }
   }, [open, expense, defaults]);
 
@@ -79,7 +82,7 @@ export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolea
       if (expense) await update.mutateAsync({ id: expense.id, ...body });
       else await create.mutateAsync(body);
       toast.success(expense ? 'Expense updated' : 'Expense added');
-      onClose();
+      onSaved ? onSaved() : onClose();
     } catch (e) {
       if (e instanceof ApiRequestError && e.code === 'CUSTOM_FIELDS' && Array.isArray(e.details)) {
         setCfErrors(Object.fromEntries((e.details as { key: string; message: string }[]).map((i) => [i.key, i.message])));
@@ -93,20 +96,17 @@ export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolea
       open={open}
       onClose={onClose}
       title={expense ? 'Edit expense' : 'New expense'}
-      description={expense ? `Created ${new Date(expense.createdAt).toLocaleString()}` : 'Split is snapshotted when you save.'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={submit} loading={busy} disabled={!valid}>{expense ? 'Save changes' : 'Add expense'}</Button>
+          <Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">Cancel</Button>
+          <Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{expense ? 'Save changes' : 'Add expense'}</Button>
         </>
       }
     >
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Date" required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
-          <Field label="Amount" required><MoneyInput value={amount} onChange={setAmount} autoFocus={!expense} /></Field>
-        </div>
-        <Field label="Description" required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this for?" /></Field>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
+        {switcher && !expense && <div>{switcher}</div>}
+        <Field label="Amount" required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!expense} /></Field>
+        <Field label="What for" required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Hosting, payroll, flight tickets" /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Category" required>
             <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
@@ -114,16 +114,24 @@ export function ExpenseForm({ open, onClose, expense, defaults }: { open: boolea
               {cats.data?.items.filter((c) => !c.archived || c.id === categoryId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           </Field>
-          <Field label="Paid by" hint="blank = company pool">
-            <Select value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
-              <option value="">Company pool</option>
-              {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
-          </Field>
+          <Field label="Date" required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
         </div>
-        <Field label="Vendor"><Input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="Optional" /></Field>
+        <Field label="Paid by">
+          <Select value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+            <option value="">Company account</option>
+            {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </Select>
+        </Field>
         <SplitEditor stakeholders={sh.data?.items ?? []} amountMinor={amount} mode={splitMode} onMode={setSplitMode} splits={splits} onSplits={setSplits} />
-        <Field label="Notes"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></Field>
+        <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setMoreOpen((o) => !o)}>
+          {moreOpen ? 'Hide' : 'Add'} vendor & notes
+        </button>
+        {moreOpen && (
+          <div className="space-y-4">
+            <Field label="Vendor"><Input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="Optional" /></Field>
+            <Field label="Notes"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></Field>
+          </div>
+        )}
         <CustomFieldInputs entity="expense" values={custom} onChange={setCustom} errors={cfErrors} />
       </form>
     </Sheet>

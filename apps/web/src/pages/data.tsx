@@ -7,7 +7,7 @@ import { api, downloadFile } from '@/lib/api';
 import { useDateRange } from '@/lib/range';
 import { Button } from '@/components/ui/button';
 import { Checkbox, Field, Select } from '@/components/ui/input';
-import { PageHeader, Panel, Segmented } from '@/components/ui/misc';
+import { PageHeader, Card, Tabs } from '@/components/ui/misc';
 import { Badge } from '@/components/ui/badge';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/dialog';
@@ -52,9 +52,7 @@ export function DataPage() {
       setBusy(false);
     }
   };
-
   const missingRequired = preview?.targets.filter((t) => t.required && !mapping[t.key]) ?? [];
-
   const commit = async () => {
     if (!file) return;
     setBusy(true);
@@ -73,9 +71,7 @@ export function DataPage() {
       setBusy(false);
     }
   };
-
   const reset = () => { setFile(null); setPreview(null); setResult(null); setMapping({}); if (inputRef.current) inputRef.current.value = ''; };
-
   const restore = async () => {
     if (!restoreFile) return;
     setBusy(true);
@@ -94,69 +90,67 @@ export function DataPage() {
 
   return (
     <>
-      <PageHeader title="Import / Export" subtitle="Bulk-load from spreadsheets, export any ledger, or back up the whole project." />
-      <div className="grid grid-cols-12 gap-4">
-        <Panel className="col-span-12 xl:col-span-8" title="Import CSV" eyebrow="01">
-          <div className="p-4 space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <Segmented value={entity} onChange={(e) => { setEntity(e); reset(); }} items={IMPORT_ENTITIES.map((e) => ({ id: e, label: LABELS[e] }))} />
-              <Button size="xs" variant="ghost" icon={<Download className="size-3" />} onClick={() => downloadFile(`/export/template/${entity}.csv`, `${entity}-template.csv`).catch((e) => toast.error('Failed', errorMessage(e)))}>Download template</Button>
-            </div>
+      <PageHeader title="Import & export" subtitle="Bulk-load from spreadsheets, export any ledger, back up the whole project." />
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Card className="xl:col-span-2" title="Import a CSV">
+          <div className="space-y-4">
+            <Tabs value={entity} onChange={(e) => { setEntity(e); reset(); }} items={IMPORT_ENTITIES.map((e) => ({ id: e, label: LABELS[e] }))} />
             {!preview && (
               <div
-                className={clsx('rounded-lg border border-dashed p-8 text-center transition-colors cursor-pointer', drag ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-ink-3 bg-sunken/50')}
+                className={clsx('rounded-[16px] border-2 border-dashed p-8 text-center transition-colors cursor-pointer', drag ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-ink-3 bg-sunken/40')}
                 onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
                 onDragLeave={() => setDrag(false)}
                 onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) pick(f); }}
                 onClick={() => inputRef.current?.click()}
               >
-                <FileUp className="size-6 mx-auto text-ink-3 mb-2" />
-                <div className="text-[13px] font-medium">Drop a CSV here or click to choose</div>
-                <div className="text-[11.5px] text-ink-3 mt-1">Any column names: you map them next. Dates, money formats and category names are matched for you.</div>
+                <FileUp className="size-7 mx-auto text-ink-3 mb-2" />
+                <div className="text-[15px] font-medium">Choose a CSV file</div>
+                <div className="text-[13px] text-ink-3 mt-1">Any column names: you map them next. Dates, money formats and category names are matched for you.</div>
                 <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); }} />
               </div>
             )}
-            {busy && !preview && <div className="text-[12px] text-ink-3">Reading…</div>}
+            {!preview && <Button size="xs" variant="ghost" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/template/${entity}.csv`, `${entity}-template.csv`).catch((e) => toast.error('Failed', errorMessage(e)))}>Download a template</Button>}
+            {busy && !preview && <div className="text-[13px] text-ink-3">Reading…</div>}
             {preview && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3 text-[12.5px]">
-                  <span><span className="font-medium">{file?.name}</span> <span className="text-ink-3 num">· {preview.rowCount} rows · {preview.headers.length} columns</span></span>
-                  <Button size="xs" variant="ghost" onClick={reset}>Choose another file</Button>
+                <div className="flex items-center justify-between gap-3 text-[13.5px]">
+                  <span className="min-w-0 truncate"><span className="font-medium">{file?.name}</span> <span className="text-ink-3 num">· {preview.rowCount} rows</span></span>
+                  <Button size="xs" variant="ghost" onClick={reset}>Change file</Button>
                 </div>
-                <div className="rounded-md border border-line overflow-hidden">
-                  <div className="grid grid-cols-[1fr_1fr_1.4fr] eyebrow px-3 h-8 items-center border-b border-line bg-sunken/60"><span>Field</span><span>CSV column</span><span>Sample</span></div>
+                <div className="rounded-[14px] border border-line overflow-hidden">
+                  <div className="hidden md:grid grid-cols-[1fr_1fr_1.4fr] label px-3.5 h-9 items-center border-b border-line bg-sunken/60"><span>Field</span><span>CSV column</span><span>Sample</span></div>
                   {preview.targets.map((t) => {
                     const src = mapping[t.key];
                     const idx = src ? preview.headers.indexOf(src) : -1;
                     return (
-                      <div key={t.key} className="grid grid-cols-[1fr_1fr_1.4fr] items-center gap-2 px-3 h-10 border-b border-line/70 last:border-b-0 text-[12.5px]">
-                        <span className="inline-flex items-center gap-1.5">{t.label}{t.required && <span className="text-accent">*</span>}{t.description && <span className="text-[10.5px] text-ink-3 truncate">{t.description}</span>}</span>
-                        <Select className={clsx('h-7', t.required && !src && 'border-critical/60')} value={src ?? ''} onChange={(e) => setMapping((m) => ({ ...m, [t.key]: e.target.value || null }))}>
+                      <div key={t.key} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1.4fr] items-center gap-1.5 md:gap-2 px-3.5 py-2.5 border-b border-line last:border-b-0 text-[13.5px]">
+                        <span className="inline-flex items-center gap-1.5 font-medium">{t.label}{t.required && <span className="text-critical">*</span>}{t.description && <span className="text-[12px] text-ink-3 font-normal truncate">{t.description}</span>}</span>
+                        <Select compact className={clsx(t.required && !src && 'border-critical/60')} value={src ?? ''} onChange={(e) => setMapping((m) => ({ ...m, [t.key]: e.target.value || null }))}>
                           <option value="">— skip —</option>
                           {preview.headers.map((h) => <option key={h} value={h}>{h}</option>)}
                         </Select>
-                        <span className="num text-ink-3 truncate">{idx >= 0 ? preview.sampleRows.slice(0, 3).map((r) => r[idx]).filter(Boolean).join(' · ') : ''}</span>
+                        <span className="num text-ink-3 truncate text-[12.5px]">{idx >= 0 ? preview.sampleRows.slice(0, 3).map((r) => r[idx]).filter(Boolean).join(' · ') : ''}</span>
                       </div>
                     );
                   })}
                 </div>
-                <div className="flex flex-wrap items-end gap-4">
-                  <Field label="Date format" className="w-40"><Select value={dateFormat} onChange={(e) => setDateFormat(e.target.value as ImportDateFormat)}><option value="auto">Auto-detect</option><option value="iso">ISO (YYYY-MM-DD)</option><option value="dmy">Day / Month / Year</option><option value="mdy">Month / Day / Year</option></Select></Field>
-                  <div className="flex flex-col gap-1.5 pb-1">
+                <div className="flex flex-col md:flex-row md:items-end gap-4">
+                  <Field label="Date format" className="md:w-48"><Select compact value={dateFormat} onChange={(e) => setDateFormat(e.target.value as ImportDateFormat)}><option value="auto">Auto-detect</option><option value="iso">ISO (YYYY-MM-DD)</option><option value="dmy">Day / Month / Year</option><option value="mdy">Month / Day / Year</option></Select></Field>
+                  <div className="flex flex-col gap-1">
                     <Checkbox label="Create missing categories" checked={createCats} onChange={(e) => setCreateCats(e.target.checked)} />
                     <Checkbox label="Create missing stakeholders (0% share)" checked={createSh} onChange={(e) => setCreateSh(e.target.checked)} />
-                    <Checkbox label="Skip rows that already exist (same date, amount, description)" checked={skipDup} onChange={(e) => setSkipDup(e.target.checked)} />
+                    <Checkbox label="Skip rows that already exist" checked={skipDup} onChange={(e) => setSkipDup(e.target.checked)} />
                   </div>
                 </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[12px] text-ink-3">{missingRequired.length ? <span className="text-critical">Map required fields: {missingRequired.map((t) => t.label).join(', ')}</span> : 'Ready to import.'}</span>
-                  <Button variant="primary" icon={<Upload className="size-3.5" />} loading={busy} disabled={!!missingRequired.length} onClick={commit}>Import {preview.rowCount} rows</Button>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <span className="text-[13px] text-ink-3">{missingRequired.length ? <span className="text-critical">Map required fields: {missingRequired.map((t) => t.label).join(', ')}</span> : 'Ready to import.'}</span>
+                  <Button variant="primary" size="md" icon={<Upload className="size-4" />} loading={busy} disabled={!!missingRequired.length} onClick={commit}>Import {preview.rowCount} rows</Button>
                 </div>
                 {result && (
-                  <div className="rounded-md border border-line bg-sunken/50 p-3 text-[12.5px]">
-                    <div className="flex items-center gap-3"><Badge tone="good">{result.inserted} inserted</Badge>{result.skipped > 0 && <Badge>{result.skipped} skipped</Badge>}{result.errors.length > 0 && <Badge tone="critical">{result.errors.length} errors</Badge>}</div>
+                  <div className="rounded-[14px] bg-sunken/60 p-3.5 text-[13.5px]">
+                    <div className="flex items-center gap-2 flex-wrap"><Badge tone="good">{result.inserted} inserted</Badge>{result.skipped > 0 && <Badge>{result.skipped} skipped</Badge>}{result.errors.length > 0 && <Badge tone="critical">{result.errors.length} errors</Badge>}</div>
                     {result.errors.length > 0 && (
-                      <ul className="mt-2 max-h-40 overflow-y-auto space-y-0.5 num text-[11.5px] text-ink-2">
+                      <ul className="mt-2 max-h-40 overflow-y-auto space-y-0.5 num text-[12.5px] text-ink-2">
                         {result.errors.slice(0, 100).map((e, i) => <li key={i}><span className="text-ink-3">row {e.row}</span> {e.message}</li>)}
                       </ul>
                     )}
@@ -165,32 +159,30 @@ export function DataPage() {
               </div>
             )}
           </div>
-        </Panel>
-        <div className="col-span-12 xl:col-span-4 space-y-4">
-          <Panel title="Export CSV" eyebrow="02">
-            <ul className="divide-y divide-line/70">
+        </Card>
+        <div className="space-y-4">
+          <Card title="Export CSV" flush>
+            <ul className="divide-y divide-line">
               {IMPORT_ENTITIES.map((e) => (
-                <li key={e} className="flex items-center justify-between px-4 h-10 text-[12.5px]">
-                  <span>{LABELS[e]}{(e === 'expenses' || e === 'revenue' || e === 'settlements') && <span className="text-ink-3 num text-[11px]"> · {range.from} → {range.to}</span>}</span>
-                  <Button size="xs" variant="outline" icon={<Download className="size-3" />} onClick={() => downloadFile(`/export/${e}.csv`, `${e}.csv`, e === 'stakeholders' || e === 'categories' ? undefined : { from: range.from, to: range.to }).catch((err) => toast.error('Export failed', errorMessage(err)))}>CSV</Button>
+                <li key={e} className="flex items-center justify-between px-4 md:px-5 h-13 text-[14px]">
+                  <span>{LABELS[e]}{(e === 'expenses' || e === 'revenue' || e === 'settlements') && <span className="block text-ink-3 num text-[12px]">{range.from} → {range.to}</span>}</span>
+                  <Button size="xs" variant="soft" className="rounded-full" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/${e}.csv`, `${e}.csv`, e === 'stakeholders' || e === 'categories' ? undefined : { from: range.from, to: range.to }).catch((err) => toast.error('Export failed', errorMessage(err)))}>CSV</Button>
                 </li>
               ))}
             </ul>
-          </Panel>
-          <Panel title="Backup & restore" eyebrow="03">
-            <div className="p-4 space-y-3 text-[12.5px]">
-              <p className="text-ink-2">A single JSON file with every table, custom field and rule. Keep one before big imports.</p>
-              <div className="flex gap-2">
-                <Button variant="outline" icon={<ShieldCheck className="size-3.5" />} onClick={() => downloadFile('/export/backup.json', 'ledgr-backup.json').catch((e) => toast.error('Backup failed', errorMessage(e)))}>Download backup</Button>
-                <Button variant="ghost" icon={<Upload className="size-3.5" />} onClick={() => setRestoreOpen(true)}>Restore…</Button>
-              </div>
+          </Card>
+          <Card title="Backup & restore">
+            <p className="text-[13.5px] text-ink-2 mb-3">One JSON file with every table, custom field and rule. Keep one before big imports.</p>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="secondary" icon={<ShieldCheck className="size-4" />} onClick={() => downloadFile('/export/backup.json', 'ledgr-backup.json').catch((e) => toast.error('Backup failed', errorMessage(e)))}>Download backup</Button>
+              <Button variant="ghost" icon={<Upload className="size-4" />} onClick={() => setRestoreOpen(true)}>Restore…</Button>
             </div>
-          </Panel>
+          </Card>
         </div>
       </div>
-      <Modal open={restoreOpen} onClose={() => setRestoreOpen(false)} title="Restore from backup" description="Restores a ledgr-backup.json. Only allowed into an empty project unless you choose to replace everything." footer={<><Button variant="ghost" onClick={() => setRestoreOpen(false)}>Cancel</Button><Button variant={replace ? 'danger' : 'primary'} loading={busy} disabled={!restoreFile} onClick={restore}>{replace ? 'Replace all data' : 'Restore'}</Button></>}>
+      <Modal open={restoreOpen} onClose={() => setRestoreOpen(false)} title="Restore from backup" description="Restores a ledgr-backup.json. Only allowed into an empty project unless you choose to replace everything." footer={<><Button variant="ghost" size="md" onClick={() => setRestoreOpen(false)}>Cancel</Button><Button variant={replace ? 'danger' : 'primary'} size="md" loading={busy} disabled={!restoreFile} onClick={restore}>{replace ? 'Replace all data' : 'Restore'}</Button></>}>
         <div className="space-y-3">
-          <input type="file" accept="application/json,.json" onChange={(e) => setRestoreFile(e.target.files?.[0] ?? null)} className="text-[12.5px]" />
+          <input type="file" accept="application/json,.json" onChange={(e) => setRestoreFile(e.target.files?.[0] ?? null)} className="text-[13.5px]" />
           <Checkbox label="Wipe current data first (irreversible)" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
         </div>
       </Modal>

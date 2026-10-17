@@ -1,18 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'system' | 'light' | 'dark';
 const KEY = 'ledgr:theme';
 
-export function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'));
+function read(): Theme {
+  try {
+    const t = localStorage.getItem(KEY);
+    return t === 'light' || t === 'dark' ? t : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+export function useTheme(): [Theme, (t: Theme) => void, 'light' | 'dark'] {
+  const [theme, setThemeState] = useState<Theme>(read);
+  const [resolved, setResolved] = useState<'light' | 'dark'>(() => (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = document.documentElement;
+    if (theme === 'system') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', theme);
     try {
-      localStorage.setItem(KEY, theme);
+      if (theme === 'system') localStorage.removeItem(KEY);
+      else localStorage.setItem(KEY, theme);
     } catch {
       /* ignore */
     }
   }, [theme]);
-  const toggle = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), []);
-  return [theme, toggle];
+  useEffect(() => {
+    const mq = matchMedia('(prefers-color-scheme: dark)');
+    const update = () => setResolved(theme === 'system' ? (mq.matches ? 'dark' : 'light') : theme);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [theme]);
+  const setTheme = useCallback((t: Theme) => setThemeState(t), []);
+  return [theme, setTheme, resolved];
 }

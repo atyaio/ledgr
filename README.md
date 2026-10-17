@@ -26,7 +26,9 @@ dashboard; nothing is shared with the host project and no database URL is requir
   (text, number, money, date, yes/no, select) on expenses, revenue and stakeholders.
 - **CSV import** with column mapping, date-format detection and duplicate skipping;
   **JSON backup/restore** of the whole project. **Audit log** of every change.
-- **Supabase Auth**, admins only (`app_metadata.role = "admin"`, set manually in Supabase).
+- **Supabase Auth**, admins only (`app_metadata.role = "admin"`, granted with SQL on `auth.users`).
+- **Mobile-first**: bottom tab bar, bottom-sheet forms, installable as a PWA. `/add/expense` and
+  `/add/revenue` open straight into the form (Android app shortcuts, iPhone home-screen links).
 
 ## Repo layout
 

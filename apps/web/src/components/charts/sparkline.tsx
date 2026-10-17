@@ -11,7 +11,7 @@ export function Sparkline({ values, color = 'var(--s-net)', width = 96, height =
     <svg width={width} height={height} aria-hidden className="overflow-visible">
       {baseline && <line x1={0} x2={width} y1={y(0)} y2={y(0)} stroke="var(--line-strong)" strokeWidth={1} />}
       <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={(values.length - 1) * step} cy={y(last)} r={2.5} fill={color} stroke="var(--panel)" strokeWidth={1.5} />
+      <circle cx={(values.length - 1) * step} cy={y(last)} r={2.5} fill={color} stroke="var(--card)" strokeWidth={1.5} />
     </svg>
   );
 }

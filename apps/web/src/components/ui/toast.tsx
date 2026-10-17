@@ -23,7 +23,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((t: Omit<Toast, 'id'>) => {
     const id = ++seq.current;
     setItems((xs) => [...xs, { ...t, id }]);
-    setTimeout(() => setItems((xs) => xs.filter((x) => x.id !== id)), t.tone === 'error' ? 6500 : 3800);
+    setTimeout(() => setItems((xs) => xs.filter((x) => x.id !== id)), t.tone === 'error' ? 6500 : 3200);
   }, []);
   const api = useMemo<ToastApi>(
     () => ({
@@ -34,25 +34,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }),
     [toast],
   );
-  const icons = { success: <CheckCircle2 className="size-4 text-good" />, error: <AlertTriangle className="size-4 text-critical" />, info: <Info className="size-4 text-net" /> };
+  const icons = { success: <CheckCircle2 className="size-5 text-good" />, error: <AlertTriangle className="size-5 text-critical" />, info: <Info className="size-5 text-net" /> };
   return (
     <Ctx.Provider value={api}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 w-[340px] pointer-events-none">
+      <div className="fixed top-3 inset-x-3 md:inset-x-auto md:top-auto md:bottom-5 md:right-5 z-[70] flex flex-col gap-2 md:w-[360px] pointer-events-none" style={{ paddingTop: 'var(--safe-top)' }}>
         <AnimatePresence>
           {items.map((t) => (
             <motion.div
               key={t.id}
               layout
-              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 6, scale: 0.98 }}
-              className="pointer-events-auto panel bg-raised px-3 py-2.5 flex gap-2.5 items-start"
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              className="pointer-events-auto card px-4 py-3 flex gap-3 items-start shadow-[var(--shadow-pop)]"
             >
-              <span className="mt-0.5">{icons[t.tone]}</span>
+              <span className="mt-px">{icons[t.tone]}</span>
               <div className="min-w-0">
-                <div className="text-[12.5px] font-medium leading-tight">{t.title}</div>
-                {t.description && <div className="text-[11.5px] text-ink-3 mt-0.5 break-words">{t.description}</div>}
+                <div className="text-[14px] font-medium leading-tight">{t.title}</div>
+                {t.description && <div className="text-[12.5px] text-ink-3 mt-0.5 break-words">{t.description}</div>}
               </div>
             </motion.div>
           ))}
