@@ -4,6 +4,7 @@ import { initCommand } from './commands/init.js';
 import { startCommand } from './commands/start.js';
 import { doctorCommand } from './commands/doctor.js';
 import { seedCommand } from './commands/seed.js';
+import { upgradeCommand } from './commands/upgrade.js';
 
 const program = new Command();
 program
@@ -19,7 +20,17 @@ program
   .option('--name <name>', 'project name')
   .option('--currency <code>', 'ISO currency, e.g. EGP')
   .option('--no-auth', 'skip Supabase auth (local only)')
+  .option('-s, --standalone', 'also clone the ledgr source into the folder so the project can customise it (upgrade later with `ledgr upgrade`)')
+  .option('--from <repoOrPath>', 'where to clone the source from (default: GitHub atyaio/ledgr; a local checkout path works too)')
+  .option('--no-build', 'standalone: skip pnpm install && pnpm build')
   .action((folder: string | undefined, opts) => initCommand({ ...opts, dir: folder ?? opts.dir }));
+
+program
+  .command('upgrade')
+  .description('Standalone projects: merge the latest ledgr from GitHub into this folder and rebuild')
+  .option('-d, --dir <dir>', 'project folder', process.cwd())
+  .option('--no-build', 'skip pnpm install && pnpm build after merging')
+  .action(upgradeCommand);
 
 program
   .command('start')

@@ -1,0 +1,11 @@
+# Run this project's ledgr dashboard in Docker. From the project folder:
+#   docker compose up -d --build
+# Data stays in ./.ledgr (config.json + data.db), mounted into the container.
+services:
+  ledgr:
+    build: .
+    ports:
+      - '4848:4848'
+    volumes:
+      - ./.ledgr:/project/.ledgr
+    restart: unless-stopped

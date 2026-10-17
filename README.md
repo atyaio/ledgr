@@ -31,6 +31,26 @@ dashboard; nothing is shared with the host project and no database URL is requir
 - **Mobile-first**: bottom tab bar, bottom-sheet forms, installable as a PWA. `/add/expense` and
   `/add/revenue` open straight into the form (Android app shortcuts, iPhone home-screen links).
 
+## Two ways to use it
+
+**Shared install (default).** `ledgr init` only writes `./.ledgr/` into a project folder; the
+code runs from the installed `ledgr` package. Upgrade the package once and every project gets it.
+
+**Standalone (for projects that will customise ledgr).**
+
+```bash
+npx ledgr init my-business --standalone   # clones this repo into ./my-business, builds it, then inits
+cd my-business
+ledgr start --open                        # runs the folder's own code
+ledgr upgrade                             # git fetch + merge from the `ledgr` upstream remote, then rebuild
+docker compose up -d --build              # host it; data stays in ./.ledgr
+```
+
+The folder is a full git clone with the upstream remote named `ledgr`, so `origin` is free for
+the project's own repository. Customise anything under `apps/` and `packages/`; `ledgr upgrade`
+merges newer upstream commits into your changes (conflicts are left for you to resolve).
+`ledgr start` always prefers the source in the current folder when one is present.
+
 ## Repo layout
 
 ```

@@ -4,8 +4,9 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_REVENUE_CATEGORIES, slugifyKey, type CustomFieldEntity, type CustomFieldType } from '@ledgr/shared';
 import { loadApi, type ProjectConfigLike } from '../api.js';
+import { cloneSource, hasLocalSource, installAndBuild, localSourceBuilt } from '../source.js';
 
-interface Opts { dir: string; yes?: boolean; name?: string; currency?: string; auth?: boolean }
+interface Opts { dir: string; yes?: boolean; name?: string; currency?: string; auth?: boolean; standalone?: boolean; from?: string; build?: boolean }
 
 const bail = (v: unknown): never => {
   if (p.isCancel(v)) {
@@ -21,10 +22,24 @@ const ask = async <T>(v: Promise<T>): Promise<Exclude<T, symbol>> => {
 };
 
 export async function initCommand(opts: Opts) {
-  const api = loadApi();
   const projectDir = path.resolve(opts.dir);
+  p.intro(pc.bgYellow(pc.black(' ledgr ')) + pc.dim(opts.standalone ? ' init --standalone' : ' init'));
+
+  if (opts.standalone) {
+    if (hasLocalSource(projectDir)) {
+      p.log.info('This folder already carries the ledgr source.');
+    } else {
+      p.log.step(`Cloning the ledgr source into ${pc.cyan(path.relative(process.cwd(), projectDir) || '.')} (upstream remote: ${pc.cyan('ledgr')})`);
+      cloneSource(projectDir, opts.from);
+    }
+    if (opts.build !== false && !localSourceBuilt(projectDir)) {
+      p.log.step('Installing dependencies and building (this takes a minute the first time)…');
+      installAndBuild(projectDir);
+    }
+    p.log.success('Source ready. Customise anything under apps/ and packages/; run `ledgr upgrade` to merge upstream changes later.');
+  }
+  const api = loadApi(projectDir);
   const paths = api.resolvePaths(path.join(projectDir, '.ledgr'));
-  p.intro(pc.bgYellow(pc.black(' ledgr ')) + pc.dim(' init'));
   if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true });
     p.log.info(`Created folder ${pc.cyan(path.relative(process.cwd(), projectDir) || '.')}`);
@@ -144,5 +159,16 @@ export async function initCommand(opts: Opts) {
   }
   if (auth.mode === 'supabase') p.log.info(`${pc.yellow('Note:')} config.json contains the Supabase anon key. It is a public key, but add ${pc.cyan('.ledgr/')} to .gitignore if you prefer to keep it out of the repo.`);
 
-  p.outro(`Done. Run ${pc.cyan('npx ledgr start --open')} to open the dashboard${auth.mode === 'none' ? '' : ' and sign in as an admin'}.`);
+  if (opts.standalone) {
+    p.note(
+      [
+        `${pc.cyan('ledgr start --open')}      run the dashboard from this folder's own code`,
+        `${pc.cyan('ledgr upgrade')}           merge the latest ledgr into your copy`,
+        `${pc.cyan('docker compose up -d')}    host it (data stays in ./.ledgr)`,
+        `${pc.cyan('git remote add origin …')} push the folder as your own repository`,
+      ].join('\n'),
+      'Standalone project',
+    );
+  }
+  p.outro(`Done. Run ${pc.cyan('ledgr start --open')} in ${pc.cyan(path.relative(process.cwd(), projectDir) || 'this folder')}${auth.mode === 'none' ? '' : ' and sign in as an admin'}.`);
 }

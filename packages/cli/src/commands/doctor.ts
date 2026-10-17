@@ -2,10 +2,17 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import pc from 'picocolors';
 import { loadApi, resolveWebDist } from '../api.js';
+import { hasLocalSource, localSourceBuilt } from '../source.js';
 
 export async function doctorCommand(opts: { dir: string }) {
-  const api = loadApi();
-  const paths = api.resolvePaths(path.join(path.resolve(opts.dir), '.ledgr'));
+  const projectDir = path.resolve(opts.dir);
+  const standalone = hasLocalSource(projectDir);
+  if (standalone && !localSourceBuilt(projectDir)) {
+    console.log(`${pc.red('✖')} standalone source present but not built — run ${pc.cyan('pnpm install && pnpm build')} here.`);
+    process.exit(1);
+  }
+  const api = loadApi(projectDir);
+  const paths = api.resolvePaths(path.join(projectDir, '.ledgr'));
   const ok = (m: string) => console.log(`${pc.green('✔')} ${m}`);
   const bad = (m: string) => console.log(`${pc.red('✖')} ${m}`);
   const warn = (m: string) => console.log(`${pc.yellow('▲')} ${m}`);
@@ -34,7 +41,8 @@ export async function doctorCommand(opts: { dir: string }) {
     bad(`database: ${(e as Error).message}`);
     failures++;
   }
-  const web = resolveWebDist();
+  if (standalone) ok('standalone project: using the ledgr source in this folder');
+  const web = resolveWebDist(projectDir);
   if (web) ok(`dashboard build found at ${web}`);
   else {
     warn('dashboard build missing (@ledgr/web/dist) — `ledgr start` will serve the API only.');

@@ -26,11 +26,27 @@ export interface ProjectConfigLike {
   auth: { mode: 'supabase' | 'none'; supabaseUrl?: string; supabaseAnonKey?: string };
 }
 
-export function loadApi(): LedgrApi {
+/**
+ * Load the API. A standalone project folder (one that carries its own ledgr source,
+ * see `ledgr init --standalone`) uses its own built copy, so customised code runs;
+ * otherwise the globally installed @ledgr/api is used.
+ */
+export function loadApi(projectDir?: string): LedgrApi {
+  const local = projectDir && localApiEntry(projectDir);
+  if (local) return require(local) as LedgrApi;
   return require('@ledgr/api') as LedgrApi;
 }
 
-export function resolveWebDist(): string | undefined {
+export function localApiEntry(projectDir: string): string | undefined {
+  const entry = path.join(projectDir, 'apps', 'api', 'dist', 'main.js');
+  return fs.existsSync(entry) ? entry : undefined;
+}
+
+export function resolveWebDist(projectDir?: string): string | undefined {
+  if (projectDir) {
+    const local = path.join(projectDir, 'apps', 'web', 'dist');
+    if (fs.existsSync(path.join(local, 'index.html'))) return local;
+  }
   // Resolve from the CLI package first (it depends on @ledgr/web); fall back to the API's own lookup.
   try {
     const pkg = require.resolve('@ledgr/web/package.json');
