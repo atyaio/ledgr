@@ -11,7 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "typecheck": "pnpm prisma:generate && tsc --noEmit -p tsconfig.json",
-    "test": "jest --passWithNoTests",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --passWithNoTests",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json"
   },
   "dependencies": {
@@ -45,5 +45,14 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.0",
     "typescript": "~5.9.3"
+  },
+  "jest": {
+    "rootDir": "src",
+    "testEnvironment": "node",
+    "testRegex": ".*\\.spec\\.ts$",
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "transform": {
+      "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/../tsconfig.json", "diagnostics": false }]
+    }
   }
 }

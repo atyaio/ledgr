@@ -56,11 +56,16 @@ export function LoginPage() {
 
           {status === 'not-admin' && (
             <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-3 text-[12.5px] leading-relaxed">
-              <strong className="font-semibold">Signed in, but not an admin.</strong> Ask the project owner to set <code className="num">app_metadata.role = "admin"</code> on your user in the Supabase dashboard, then{' '}
+              <strong className="font-semibold">Signed in, but not an admin.</strong> Ask the project owner to set <code className="num">app_metadata.role = "admin"</code> on your user (SQL on <code className="num">auth.users</code> in
+              Supabase), then{' '}
+              <button type="button" className="underline" onClick={() => window.location.reload()}>
+                reload this page
+              </button>
+              . No need to sign out. Wrong account?{' '}
               <button type="button" className="underline" onClick={() => signOut()}>
-                sign out
-              </button>{' '}
-              and back in.
+                Sign out
+              </button>
+              .
             </div>
           )}
           {(error || (status === 'signed-out' && authError)) && <div className="mb-4 rounded-md border border-critical/40 bg-critical/10 p-3 text-[12.5px]">{error ?? authError}</div>}

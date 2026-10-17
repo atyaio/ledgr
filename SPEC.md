@@ -45,8 +45,12 @@ splitting and settlements**, **budgets**, **recurring entries**, **custom column
   password, magic link also works) and sends `Authorization: Bearer <access_token>`.
 - The API verifies the token by calling `supabase.auth.getUser(token)` with the
   anon key (cached in memory per token for 5 minutes) and then requires
-  `user.app_metadata.role === "admin"`. Admins are only created manually in the
-  Supabase dashboard. Non-admins receive `403 { code: "NOT_ADMIN" }`.
+  `user.app_metadata.role === "admin"`. Non-admins receive `403 { code: "NOT_ADMIN" }`.
+- Admins are only granted manually, with SQL in the Supabase SQL Editor (the
+  dashboard has no app-metadata editor):
+  `update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"admin"}'::jsonb where email = '…';`
+  A NOT_ADMIN verdict is never cached, so after the update a page reload is
+  enough; signing out is not required.
 - `GET /api/auth/config` is public and returns `{ mode, supabaseUrl, supabaseAnonKey }`
   so the frontend can bootstrap. `GET /api/me` returns the current user.
 - `auth.mode = "none"` skips the guard and reports a synthetic user `local@ledgr`.

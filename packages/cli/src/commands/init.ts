@@ -48,7 +48,10 @@ export async function initCommand(opts: Opts) {
     const supabaseUrl = await ask(p.text({ message: 'Supabase project URL', placeholder: 'https://xxxx.supabase.co', validate: (v) => (/^https?:\/\/.+/.test(v ?? '') ? undefined : 'Enter the project URL') }));
     const supabaseAnonKey = await ask(p.password({ message: 'Supabase anon (public) key', validate: (v) => (v && v.length > 10 ? undefined : 'Paste the anon key') }));
     auth = { mode: 'supabase', supabaseUrl: supabaseUrl.replace(/\/$/, ''), supabaseAnonKey };
-    p.note(`Only users with ${pc.cyan('app_metadata.role = "admin"')} can sign in.\nSet it in Supabase → Authentication → Users → (user) → Raw app metadata:\n${pc.dim('{ "role": "admin" }')}`, 'Who gets access');
+    p.note(
+      `Only users with ${pc.cyan('app_metadata.role = "admin"')} can sign in.\nGrant it from the Supabase SQL Editor (the dashboard has no app-metadata editor):\n${pc.dim(`update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"admin"}'::jsonb where email = 'you@example.com';`)}\nAfter running it, a page reload is enough; no sign-out needed.`,
+      'Who gets access',
+    );
   } else {
     p.log.warn('No auth: anyone who can reach the port can use the dashboard. Keep it on localhost.');
   }

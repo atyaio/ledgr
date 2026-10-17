@@ -9,6 +9,16 @@ import { IS_PUBLIC } from './public.decorator';
 
 const CACHE_TTL_MS = 5 * 60_000;
 
+/** `exp` of a JWT in ms, or null when the token is not a decodable JWT. Signature is NOT checked here; Supabase does that. */
+function jwtExpiresAtMs(token: string): number | null {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8')) as { exp?: unknown };
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   private readonly logger = new Logger('Auth');
@@ -55,7 +65,9 @@ export class AuthGuard implements CanActivate {
     }
     const user: CurrentUser = { id: data.user.id, email: data.user.email ?? '', role: 'admin' };
     if (this.cache.size > 500) this.cache.clear();
-    this.cache.set(token, { user, expires: Date.now() + CACHE_TTL_MS });
+    // Never serve a token from the cache past its own expiry, even inside the 5-minute window.
+    const expires = Math.min(Date.now() + CACHE_TTL_MS, jwtExpiresAtMs(token) ?? Number.POSITIVE_INFINITY);
+    if (expires > Date.now()) this.cache.set(token, { user, expires });
     req.user = user;
     return true;
   }
