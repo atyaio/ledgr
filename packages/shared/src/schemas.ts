@@ -60,6 +60,7 @@ export const projectConfigSchema = z.object({
   locale: z.string().trim().min(2).max(20),
   weekStartsOn: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
   fiscalYearStartMonth: z.number().int().min(1).max(12),
+  timezone: z.string().trim().min(1).max(64).optional(),
   port: z.number().int().min(1).max(65535),
   auth: z.object({
     mode: z.enum(['supabase', 'none']),
@@ -68,7 +69,7 @@ export const projectConfigSchema = z.object({
   }),
 });
 export const updateProjectSchema = projectConfigSchema
-  .pick({ name: true, nameAr: true, currency: true, locale: true, weekStartsOn: true, fiscalYearStartMonth: true })
+  .pick({ name: true, nameAr: true, currency: true, locale: true, weekStartsOn: true, fiscalYearStartMonth: true, timezone: true })
   .partial();
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 
@@ -291,3 +292,21 @@ export const auditQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
 });
+
+// ─── Integrations ──────────────────────────────────────────────────────────────
+export const integrationProviderSchema = z.enum(['loyverse']);
+export const connectLoyverseSchema = z.object({ accessToken: z.string().trim().min(10).max(400) });
+export type ConnectLoyverseInput = z.infer<typeof connectLoyverseSchema>;
+export const loyverseSettingsSchema = z.object({
+  storeIds: z.array(z.string().min(1)).max(100).optional(),
+  paymentTypeIds: z.array(z.string().min(1)).max(100).optional(),
+  methodMap: z.record(z.string(), z.string().min(1)).optional(),
+  categoryId: z.string().min(1).nullable().optional(),
+});
+export type UpdateLoyverseSettingsInput = z.infer<typeof loyverseSettingsSchema>;
+export const pullShiftSchema = z.object({ shiftId: z.string().min(1).optional() });
+export type PullShiftInput = z.infer<typeof pullShiftSchema>;
+export const posItemsQuery = z.object({ q: z.string().trim().max(100).optional(), categoryId: z.string().optional(), includeDeleted: queryBool });
+export type PosItemsQuery = z.infer<typeof posItemsQuery>;
+export const shiftsQuery = z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) });
+export type ShiftsQuery = z.infer<typeof shiftsQuery>;

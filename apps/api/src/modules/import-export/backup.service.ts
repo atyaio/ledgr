@@ -12,7 +12,7 @@ import { toCategoryDto } from '../categories/categories.service';
 import { toCustomFieldDto } from '../custom-fields/custom-fields.service';
 import { toExpenseDto } from '../expenses/expenses.service';
 import { toRecurringDto } from '../recurring/recurring.service';
-import { toRevenueDto } from '../revenue/revenue.service';
+import { REVENUE_INCLUDE, toRevenueDto } from '../revenue/revenue.service';
 import { toPaymentMethodDto } from '../payment-methods/payment-methods.service';
 import { toSettlementDto } from '../settlements/settlements.service';
 import { toStakeholderDto } from '../stakeholders/stakeholders.service';
@@ -63,7 +63,7 @@ export class BackupService {
       }),
       this.prisma.revenue.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        include: { category: { select: { id: true, name: true, nameAr: true, color: true } }, receivedBy: { select: { id: true, name: true, nameAr: true, color: true } }, payments: { include: { paymentMethod: { select: { name: true, nameAr: true, color: true, sortOrder: true } } } } },
+        include: REVENUE_INCLUDE,
       }),
       this.prisma.settlement.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],

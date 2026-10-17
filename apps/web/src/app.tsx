@@ -20,6 +20,7 @@ const Payments = lazy(() => import('@/pages/payments').then((m) => ({ default: m
 const Recurring = lazy(() => import('@/pages/recurring').then((m) => ({ default: m.RecurringPage })));
 const Data = lazy(() => import('@/pages/data').then((m) => ({ default: m.DataPage })));
 const Settings = lazy(() => import('@/pages/settings').then((m) => ({ default: m.SettingsPage })));
+const Integrations = lazy(() => import('@/pages/integrations').then((m) => ({ default: m.IntegrationsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 10_000 } },
@@ -74,6 +75,7 @@ const router = createBrowserRouter([
           { path: 'payments', element: page(<Payments />) },
           { path: 'recurring', element: page(<Recurring />) },
           { path: 'data', element: page(<Data />) },
+          { path: 'integrations', element: page(<Integrations />) },
           { path: 'settings', element: page(<Settings />) },
           { path: '*', element: <Navigate to="/" replace /> },
         ],

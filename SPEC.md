@@ -75,6 +75,10 @@ JSON text (`string` in Prisma), validated against the project's
 | `CustomFieldDefinition` | `entity ('expense'|'revenue'|'stakeholder'), key (slug), label, type ('text'|'number'|'money'|'date'|'boolean'|'select'), options (JSON string[] for select), required, sortOrder, archived` |
 | `RecurringRule` | `kind ('expense'|'revenue'), frequency ('daily'|'weekly'|'monthly'|'quarterly'|'yearly'), interval (Int ≥1), startDate, endDate?, nextRunAt, active, template (JSON: description, amountMinor, categoryId, paidBy/receivedBy, customFields, splitMode, customSplits), lastGeneratedAt?` |
 | `AuditLog` | `at, actorId, actorEmail, action ('create'|'update'|'delete'|'import'|'settle'|'recompute'|'generate'), entity, entityId, before (JSON?), after (JSON?)` |
+| `Integration` | one row per provider (`loyverse`): `accessToken` (lives in `data.db`, never in `config.json`), `merchantName, currency, decimalPlaces, settings (JSON: storeIds, paymentTypeIds, methodMap, categoryId), meta (JSON: stores, paymentTypes), lastItemsSyncAt, lastShiftPullAt, lastError` |
+| `PosCategory` / `PosItem` | cached POS catalogue: `provider, externalId (unique per provider), name`; items carry `categoryId?, sku?, priceMinor?, costMinor?, variantCount, deletedAt?` (soft-deleted when they vanish upstream) |
+| `PosShift` | a closed shift pulled into the ledger: `provider, externalId, storeId, storeName?, openedAt, closedAt, raw (JSON: provider shift + per-payment-type amounts + totals), receipts, revenueId? (unique; SetNull when the row is deleted so the shift can be pulled again)` |
+| `PosSale` | what sold during a pulled shift, aggregated per item variant: `shiftId, itemId?, externalItemId?, itemName, variantName?, sku?, categoryName?, quantity, grossMinor, netMinor, costMinor` |
 
 Rules:
 - Stakeholder shares should total 100%; the API returns `shareTotal` and the UI
@@ -83,6 +87,15 @@ Rules:
   `POST /api/expenses/:id/recompute-split` and the bulk variant re-snapshot from
   current ownership (audited).
 - Revenue and profit distribution is **computed live** from current shares.
+- **Loyverse shift pull**: amounts come from the shift's receipts (same store and POS
+  device, created inside the shift window; cancelled receipts skipped; `REFUND`
+  receipts subtract). Only the payment types in `settings.paymentTypeIds` (default: the
+  `CASH` ones) go on the revenue row, each mapped to a ledgr payment method by
+  `methodMap`, else matched or created by name. Row: `date` = local day of `closedAt`
+  (`config.timezone`, default the machine zone), `description` = `Shift · store ·
+  HH:mm–HH:mm`, `source` = `Loyverse`, category = `settings.categoryId` or the default
+  revenue category. Re-pulling the same shift updates that row (date, description,
+  payments) and keeps the user's category, notes and custom fields.
 
 ## 4. Balances & settlements
 
@@ -121,6 +134,7 @@ sort, order, page, pageSize (default 50, max 500)` → `{ items, total, page, pa
 | analytics | `GET /analytics/overview?from&to&granularity=day|week|month` (see §6), `GET /analytics/insights?from&to&ledger=both|revenue|expenses&categoryIds=a,b&paymentMethodIds=x,y&stakeholderId&granularity` → `InsightsResponse` (filtered totals with previous-period deltas, series with previous overlay, breakdowns by category / payment method / partner, weekday averages, month table, top entries; a payment-method filter counts only that method's share of each entry) |
 | import/export | `GET /export/:entity.csv?from&to` (entity ∈ expenses, revenue, stakeholders, categories, settlements), `GET /export/template/:entity.csv`, `POST /import/:entity/preview` (multipart `file`) → `{ headers, sampleRows, suggestedMapping, rowCount }`, `POST /import/:entity/commit` (multipart `file` + `mapping` JSON + `options`) → `{ inserted, skipped, errors[] }`, `GET /export/backup.json`, `POST /import/backup` |
 | audit | `GET /audit?entity&entityId&page` |
+| integrations | `GET /integrations` → `{ items: IntegrationStatus[] }`. Loyverse: `GET /integrations/loyverse` (status, never the token), `POST /integrations/loyverse/connect { accessToken }` (verifies against `/merchant`, 400 `CURRENCY_MISMATCH` / `LOYVERSE_UNAUTHORIZED`), `DELETE /integrations/loyverse`, `PUT /integrations/loyverse/settings { storeIds?, paymentTypeIds?, methodMap?, categoryId? }`, `POST /integrations/loyverse/sync-items` → `{ categories, items, removed }`, `GET /integrations/loyverse/items?q&categoryId&includeDeleted`, `GET /integrations/loyverse/shifts?limit` (closed shifts from Loyverse, newest first, with `pulled`), `POST /integrations/loyverse/pull-shift { shiftId? }` (latest closed when omitted) → `{ revenue, shift, created, sales }`, `GET /integrations/loyverse/shifts/:shiftId/sales`. Set `LEDGR_LOYVERSE_API_BASE` to point the client at a stub. |
 
 Errors: `{ statusCode, code, message, details? }`. Validation errors `400` with zod issues.
 

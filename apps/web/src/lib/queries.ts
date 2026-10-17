@@ -37,6 +37,17 @@ import type {
   PaymentMethod,
   CreatePaymentMethodInput,
   UpdatePaymentMethodInput,
+  ConnectLoyverseInput,
+  IntegrationStatus,
+  IntegrationsResponse,
+  ItemsSyncResponse,
+  LoyverseIntegration,
+  LoyverseShiftPreview,
+  PosItemsResponse,
+  PullShiftInput,
+  PullShiftResponse,
+  ShiftSalesResponse,
+  UpdateLoyverseSettingsInput,
 } from '@ledgr/shared';
 import { api, type Query } from './api';
 
@@ -216,3 +227,27 @@ export function useProjectMutations() {
 }
 export const useAudit = (params: Query) =>
   useQuery({ queryKey: ['audit', params], queryFn: () => api.get<Paginated<AuditLogEntry>>('/audit', params), placeholderData: keepPreviousData });
+
+// ─── Integrations ──────────────────────────────────────────────────────────────
+export const useIntegrations = () =>
+  useQuery({ queryKey: ['integrations'], queryFn: () => api.get<IntegrationsResponse>('/integrations'), staleTime: 30_000 });
+export const useLoyverse = () =>
+  useQuery({ queryKey: ['integrations', 'loyverse'], queryFn: () => api.get<IntegrationStatus>('/integrations/loyverse'), staleTime: 30_000 });
+export const useLoyverseItems = (params: Query, enabled = true) =>
+  useQuery({ queryKey: ['integrations', 'loyverse', 'items', params], queryFn: () => api.get<PosItemsResponse>('/integrations/loyverse/items', params), placeholderData: keepPreviousData, enabled });
+export const useLoyverseShifts = (enabled: boolean, limit = 10) =>
+  useQuery({ queryKey: ['integrations', 'loyverse', 'shifts', limit], queryFn: () => api.get<LoyverseShiftPreview[]>('/integrations/loyverse/shifts', { limit }), enabled, staleTime: 15_000 });
+export const useShiftSales = (shiftId: string | null | undefined) =>
+  useQuery({ queryKey: ['integrations', 'loyverse', 'sales', shiftId], queryFn: () => api.get<ShiftSalesResponse>(`/integrations/loyverse/shifts/${shiftId}/sales`), enabled: !!shiftId, staleTime: 60_000 });
+export function useLoyverseMutations() {
+  const qc = useQueryClient();
+  const invAll = useInvalidateAll();
+  const inv = () => qc.invalidateQueries({ queryKey: ['integrations'] });
+  return {
+    connect: useMutation({ mutationFn: (b: ConnectLoyverseInput) => api.post<LoyverseIntegration>('/integrations/loyverse/connect', b), onSuccess: inv }),
+    disconnect: useMutation({ mutationFn: () => api.delete('/integrations/loyverse'), onSuccess: () => Promise.all([inv(), invAll()]) }),
+    settings: useMutation({ mutationFn: (b: UpdateLoyverseSettingsInput) => api.put<LoyverseIntegration>('/integrations/loyverse/settings', b), onSuccess: inv }),
+    syncItems: useMutation({ mutationFn: () => api.post<ItemsSyncResponse>('/integrations/loyverse/sync-items'), onSuccess: inv }),
+    pullShift: useMutation({ mutationFn: (b: PullShiftInput) => api.post<PullShiftResponse>('/integrations/loyverse/pull-shift', b), onSuccess: () => Promise.all([inv(), invAll()]) }),
+  };
+}

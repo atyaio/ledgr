@@ -30,6 +30,7 @@ dashboard; nothing is shared with the host project and no database URL is requir
   (text, number, money, date, yes/no, select) on expenses, revenue and stakeholders.
 - **CSV import** with column mapping, date-format detection and duplicate skipping;
   **JSON backup/restore** of the whole project. **Audit log** of every change.
+- **Loyverse POS integration** (Integrations page): connect with a personal access token, sync the item catalogue with its categories, prices and costs, and on the Revenue page tap **Pull last shift** to turn the latest closed shift into a revenue row. By default only the cash payment type is pulled (switch others on in the settings); the row keeps what sold by item and category, and Insights shows best sellers across pulled shifts. Re-pulling a shift updates the same row.
 - **Supabase Auth**, admins only (`app_metadata.role = "admin"`, granted with SQL on `auth.users`).
 - **Mobile-first**: bottom tab bar, bottom-sheet forms, installable as a PWA. `/add/expense` and
   `/add/revenue` open straight into the form (Android app shortcuts, iPhone home-screen links).
@@ -100,9 +101,9 @@ docker run -p 4848:4848 -v "$PWD/.ledgr:/project/.ledgr" ledgr
 {
   "name": "Axial", "slug": "axial",
   "currency": "EGP", "locale": "en-EG",
-  "weekStartsOn": 6, "fiscalYearStartMonth": 1, "port": 4848,
+  "weekStartsOn": 6, "fiscalYearStartMonth": 1, "timezone": "Africa/Cairo", "port": 4848,
   "auth": { "mode": "supabase", "supabaseUrl": "https://xxx.supabase.co", "supabaseAnonKey": "…" }
 }
 ```
 
-`auth.mode: "none"` disables sign-in (local use only). Money is stored in integer minor units.
+`auth.mode: "none"` disables sign-in (local use only). Money is stored in integer minor units. `timezone` (IANA name, written by `ledgr init` from the machine) decides which ledger day a POS shift lands on; the Loyverse token itself lives in `data.db`, never in this file.

@@ -15,6 +15,7 @@ import { LedgrContext } from '../../common/config/ledgr-config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { deltaPct, pct } from '../../common/query';
 import type { Prisma } from '../../generated/prisma/client';
+import { LoyverseService } from '../integrations/loyverse/loyverse.service';
 import { POOL_COLOR } from '../stakeholders/balances.service';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -42,6 +43,7 @@ export class InsightsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ctx: LedgrContext,
+    private readonly loyverse: LoyverseService,
   ) {}
 
   async insights(q: InsightsQuery): Promise<InsightsResponse> {
@@ -214,6 +216,7 @@ export class InsightsService {
       byMonth,
       topRevenue: top(revenue),
       topExpenses: top(expenses),
+      posSales: q.ledger === 'expenses' ? null : await this.loyverse.salesSummary(range),
     };
   }
 

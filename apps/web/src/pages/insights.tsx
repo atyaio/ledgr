@@ -17,6 +17,8 @@ import { Swatch } from '@/components/ui/badge';
 import { Table, Td, Th, Tr } from '@/components/ui/table';
 import { ChartTooltip, Legend } from '@/components/charts/tooltip';
 import { Breakdown } from '@/components/charts/breakdown';
+import { qty } from '@/components/integrations/shift-sales';
+import { CATEGORICAL_PALETTE } from '@ledgr/shared';
 
 const LEDGERS: { id: InsightsLedger; label: string }[] = [
   { id: 'both', label: 'Both' },
@@ -112,6 +114,8 @@ function Body({ d, ledger, filtered }: { d: InsightsResponse; ledger: InsightsLe
         </Card>
       </div>
 
+      {showRev && d.posSales && <PosSales s={d.posSales} />}
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card className="xl:col-span-2" title={tr('Month by month')} flush>
           <Table>
@@ -142,6 +146,35 @@ function Body({ d, ledger, filtered }: { d: InsightsResponse; ledger: InsightsLe
           </ul>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function PosSales({ s }: { s: NonNullable<InsightsResponse['posSales']> }) {
+  const { t } = useI18n();
+  const { money, locale } = useProject();
+  const margin = s.netMinor > 0 && s.costMinor > 0 ? ((s.netMinor - s.costMinor) / s.netMinor) * 100 : null;
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <Card className="xl:col-span-2" title={t('Best sellers')} subtitle={t('From {n} Loyverse shifts in this range · {qty} items · {amount} net', { n: s.shifts, qty: qty(s.quantity, locale), amount: money(s.netMinor, { compact: true }) })} flush>
+        <Table>
+          <thead><tr><Th>{t('Item')}</Th><Th>{t('Category')}</Th><Th align="right">{t('Qty')}</Th><Th align="right">{t('Net sales')}</Th><Th align="right">{t('Share')}</Th></tr></thead>
+          <tbody>
+            {s.byItem.map((i) => (
+              <Tr key={`${i.itemName}|${i.variantName ?? ''}`}>
+                <Td><div dir="auto" className="font-medium truncate max-w-[320px]">{i.itemName}{i.variantName ? <span className="text-ink-3 font-normal"> · {i.variantName}</span> : null}</div></Td>
+                <Td className="text-ink-2 text-[13px]">{i.categoryName ?? <span className="text-ink-4">—</span>}</Td>
+                <Td align="right" className="num text-ink-2">{qty(i.quantity, locale)}</Td>
+                <Td align="right"><Money minor={i.netMinor} className="font-medium" /></Td>
+                <Td align="right" className="num text-ink-2">{pct(i.pct, 0)}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card>
+      <Card title={t('Sales by category')} subtitle={margin !== null ? t('gross margin {pct} after item costs', { pct: pct(margin, 0) }) : undefined}>
+        <Breakdown items={s.byCategory.map((c, i) => ({ id: c.name || null, name: c.name || t('Uncategorised'), color: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length], amountMinor: c.netMinor, pct: c.pct, count: Math.round(c.quantity) }))} emptyLabel={t('No sales')} />
+      </Card>
     </div>
   );
 }

@@ -1,11 +1,11 @@
 import { clsx } from 'clsx';
-import { MoreHorizontal, Pencil, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
+import { Download, MoreHorizontal, Pencil, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
 import { PaymentAmountPopup, type PaymentTarget } from '@/components/forms/payment-amount-popup';
 import { useMemo, useState } from 'react';
 import type { CustomFieldDefinition, MethodPayment, PaymentMethod, Revenue } from '@ledgr/shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
-import { useCategories, useCustomFields, usePaymentMethods, useRevenue, useRevenueMutations, useStakeholders } from '@/lib/queries';
+import { useCategories, useCustomFields, useLoyverse, usePaymentMethods, useRevenue, useRevenueMutations, useStakeholders } from '@/lib/queries';
 import { downloadFile } from '@/lib/api';
 import { useIsMobile } from '@/lib/media';
 import { useI18n } from '@/i18n';
@@ -21,6 +21,9 @@ import { ConfirmDialog, Modal } from '@/components/ui/dialog';
 import { Menu, MenuItem, MenuSeparator } from '@/components/ui/menu';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { CustomCell } from '@/components/custom-cell';
+import { PullShiftSheet } from '@/components/integrations/pull-shift-sheet';
+import { ShiftSalesForRevenue } from '@/components/integrations/shift-sales';
+import { Badge } from '@/components/ui/badge';
 
 const PAGE = 50;
 
@@ -36,6 +39,9 @@ export function RevenuePage() {
   const sh = useStakeholders();
   const cf = useCustomFields('revenue');
   const pm = usePaymentMethods(true);
+  const lv = useLoyverse();
+  const posConnected = !!lv.data?.connected;
+  const [pullOpen, setPullOpen] = useState(false);
   const params = useMemo(
     () => ({ from: range.from, to: range.to, q: p.q, categoryId: p.categoryId, stakeholderId: p.stakeholderId, paymentMethodId: p.paymentMethodId, sort: p.sort, order: p.order, page: p.page, pageSize: PAGE }),
     [range, p.q, p.categoryId, p.stakeholderId, p.paymentMethodId, p.sort, p.order, p.page],
@@ -75,12 +81,14 @@ export function RevenuePage() {
             <Menu trigger={() => <Button variant="secondary" size="sm" icon={<MoreHorizontal className="size-4" />} className="rounded-full">{t('More')}</Button>} title={t('Revenue')}>
               {(close) => (
                 <>
+                  {posConnected && <MenuItem icon={<Download />} onClick={() => { close(); setPullOpen(true); }}>{t('Pull last shift')}</MenuItem>}
                   <MenuItem icon={selecting ? <CheckSquare /> : <Square />} onClick={() => { close(); setSelecting((s) => !s); setSelected(new Set()); }}>{selecting ? t('Done selecting') : t('Select entries')}</MenuItem>
                   <MenuSeparator />
                   <MenuItem icon={<Trash2 />} danger disabled={!selected.size} onClick={() => { close(); setBulkConfirm(true); }}>{t('Delete {n} selected', { n: selected.size || '' })}</MenuItem>
                 </>
               )}
             </Menu>
+            {posConnected && <Button variant="secondary" size="sm" className="rounded-full max-md:hidden" icon={<Download className="size-4" />} onClick={() => setPullOpen(true)}>{t('Pull last shift')}</Button>}
             <Button variant="primary" size="sm" className="rounded-full max-md:hidden" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>{t('New revenue')}</Button>
           </>
         }
@@ -118,7 +126,7 @@ export function RevenuePage() {
                         <span className="inline-flex items-center justify-center size-10 rounded-[12px] shrink-0" style={{ background: `${r.category?.color ?? 'var(--s-revenue)'}1f` }}><Swatch color={r.category?.color ?? 'var(--s-revenue)'} size={10} /></span>
                       )}
                       <span className="flex-1 min-w-0">
-                        <span dir="auto" className="block text-[15px] font-medium truncate">{r.description}</span>
+                        <span dir="auto" className="block text-[15px] font-medium truncate">{r.pos && <span className="inline-block size-1.5 rounded-full bg-[#1e9e6a] me-1.5 align-middle" title="Loyverse" />}{r.description}</span>
                         <span className="block text-[12.5px] text-ink-3 truncate">{r.payments.filter((p) => p.amountMinor > 0).length ? r.payments.filter((p) => p.amountMinor > 0).map((p) => `${payName(p)} ${money(p.amountMinor, { compact: true })}`).join(' · ') : (r.category ? name(r.category) : t('Uncategorised'))}{r.receivedBy ? ` · ${name(r.receivedBy)}` : ''}</span>
                       </span>
                       <Money minor={r.amountMinor} tone="revenue" className="text-[15px] font-semibold shrink-0" />
@@ -154,7 +162,7 @@ export function RevenuePage() {
                 <Tr key={r.id} selected={selected.has(r.id)} className="cursor-pointer" onClick={() => (selecting ? toggle(r.id) : setDetail(r))}>
                   {selecting && <Td onClick={(ev) => ev.stopPropagation()}><Checkbox checked={selected.has(r.id)} onChange={() => toggle(r.id)} aria-label={t('Select')} /></Td>}
                   <Td className="num text-ink-2 whitespace-nowrap">{date(r.date)}</Td>
-                  <Td><div dir="auto" className="font-medium truncate max-w-[380px]">{r.description}</div>{r.recurringRuleId && <div className="text-[12px] text-ink-3">{t('recurring')}</div>}</Td>
+                  <Td><div dir="auto" className="font-medium truncate max-w-[380px]">{r.description}</div>{r.recurringRuleId && <div className="text-[12px] text-ink-3">{t('recurring')}</div>}{r.pos && <div className="text-[12px] text-ink-3">{t('Loyverse shift · {n} receipts', { n: r.pos.receipts })}</div>}</Td>
                   <Td>{r.category ? <Chip color={r.category.color}>{name(r.category)}</Chip> : <span className="text-ink-4">—</span>}</Td>
                   <Td className="text-ink-2">{r.source ?? <span className="text-ink-4">—</span>}</Td>
                   <Td>{r.receivedBy ? <span className="inline-flex items-center gap-2"><Avatar name={name(r.receivedBy)} color={r.receivedBy.color} size={22} />{name(r.receivedBy)}</span> : <span className="text-ink-3">{t('Company')}</span>}</Td>
@@ -197,11 +205,18 @@ export function RevenuePage() {
               {defs.map((d) => <span key={d.id} className="contents"><dt className="text-ink-3">{label(d)}</dt><dd><CustomCell def={d} value={detail.customFields?.[d.key]} /></dd></span>)}
               {detail.notes && <><dt className="text-ink-3">{t('Notes')}</dt><dd className="whitespace-pre-wrap">{detail.notes}</dd></>}
             </dl>
+            {detail.pos && (
+              <div>
+                <div className="flex items-center gap-2 mb-2"><Badge tone="revenue">Loyverse</Badge><span className="text-[12.5px] text-ink-3">{t('What sold this shift')}</span></div>
+                <ShiftSalesForRevenue shiftId={detail.pos.shiftId} />
+              </div>
+            )}
           </div>
         )}
       </Modal>
       <RevenueForm open={editing !== undefined} onClose={() => setEditing(undefined)} revenue={editing ?? null} />
       <PaymentAmountPopup target={payTarget} onClose={() => setPayTarget(null)} />
+      <PullShiftSheet open={pullOpen} onClose={() => setPullOpen(false)} />
       <ConfirmDialog open={!!confirm} onClose={() => setConfirm(null)} onConfirm={async () => { try { await remove.mutateAsync(confirm!.id); toast.success(t('Revenue deleted')); setConfirm(null); setDetail(null); } catch (e) { toast.error(t('Delete failed'), errorMessage(e)); } }} loading={remove.isPending} title={t('Delete this revenue entry?')} description={confirm ? t('{description} · {amount} on {date}', { description: confirm.description, amount: money(confirm.amountMinor), date: date(confirm.date) }) : ''} />
       <ConfirmDialog open={bulkConfirm} onClose={() => setBulkConfirm(false)} onConfirm={async () => { try { await bulkDelete.mutateAsync([...selected]); toast.success(t('{n} entries deleted', { n: selected.size })); setSelected(new Set()); setSelecting(false); setBulkConfirm(false); } catch (e) { toast.error(t('Delete failed'), errorMessage(e)); } }} loading={bulkDelete.isPending} title={t('Delete {n} entries?', { n: selected.size })} description={t('This cannot be undone.')} />
     </>

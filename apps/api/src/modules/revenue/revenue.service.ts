@@ -12,10 +12,11 @@ import { CustomFieldsService } from '../custom-fields/custom-fields.service';
 import { StakeholdersService, stakeholderRef } from '../stakeholders/stakeholders.service';
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 
-const REVENUE_INCLUDE = {
+export const REVENUE_INCLUDE = {
   category: { select: { id: true, name: true, nameAr: true, color: true } },
   receivedBy: { select: { id: true, name: true, nameAr: true, color: true } },
   payments: { include: { paymentMethod: { select: { name: true, nameAr: true, color: true, sortOrder: true } } } },
+  posShift: { select: { id: true, provider: true, externalId: true, storeName: true, openedAt: true, closedAt: true, receipts: true } },
 } satisfies Prisma.RevenueInclude;
 
 type RevenueRow = Prisma.RevenueGetPayload<{ include: typeof REVENUE_INCLUDE }>;
@@ -37,6 +38,7 @@ export function toRevenueDto(r: RevenueRow): Revenue {
     notes: r.notes,
     recurringRuleId: r.recurringRuleId,
     customFields: parseCustomFields(r.customFields),
+    pos: r.posShift ? { provider: r.posShift.provider as 'loyverse', shiftId: r.posShift.id, externalId: r.posShift.externalId, storeName: r.posShift.storeName, openedAt: toIso(r.posShift.openedAt), closedAt: toIso(r.posShift.closedAt), receipts: r.posShift.receipts } : null,
     createdAt: toIso(r.createdAt),
     updatedAt: toIso(r.updatedAt),
   };

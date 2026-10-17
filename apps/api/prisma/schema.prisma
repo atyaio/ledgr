@@ -154,6 +154,7 @@ model Revenue {
   receivedBy    Stakeholder?     @relation("ReceivedBy", fields: [receivedByStakeholderId], references: [id], onDelete: SetNull)
   payments      RevenuePayment[]
   recurringRule RecurringRule? @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
+  posShift      PosShift?
 
   @@index([date])
   @@index([categoryId])
@@ -225,4 +226,105 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([at])
+}
+
+// ─── Integrations (POS systems) ───────────────────────────────────────────────
+
+/// One row per connected provider ("loyverse"). The token lives here, in data.db, never in config.json.
+model Integration {
+  id              String    @id @default(cuid())
+  provider        String    @unique
+  accessToken     String
+  merchantId      String?
+  merchantName    String?
+  currency        String?
+  decimalPlaces   Int       @default(2)
+  /// JSON: provider settings (stores, payment types to pull, category, method map)
+  settings        String    @default("{}")
+  /// JSON: cached provider reference data (stores, payment types)
+  meta            String    @default("{}")
+  lastItemsSyncAt DateTime?
+  lastShiftPullAt DateTime?
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model PosCategory {
+  id         String    @id @default(cuid())
+  provider   String
+  externalId String
+  name       String
+  color      String?
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  items PosItem[]
+
+  @@unique([provider, externalId])
+}
+
+model PosItem {
+  id           String    @id @default(cuid())
+  provider     String
+  externalId   String
+  name         String
+  categoryId   String?
+  sku          String?
+  priceMinor   Int?
+  costMinor    Int?
+  variantCount Int       @default(1)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  category PosCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sales    PosSale[]
+
+  @@unique([provider, externalId])
+  @@index([categoryId])
+}
+
+/// A closed POS shift that was pulled into the ledger. `revenueId` is the row it produced.
+model PosShift {
+  id         String   @id @default(cuid())
+  provider   String
+  externalId String
+  storeId    String
+  storeName  String?
+  openedAt   DateTime
+  closedAt   DateTime
+  /// JSON: the provider's shift object as received
+  raw        String
+  receipts   Int      @default(0)
+  revenueId  String?  @unique
+  pulledAt   DateTime @default(now())
+
+  revenue Revenue?  @relation(fields: [revenueId], references: [id], onDelete: SetNull)
+  sales   PosSale[]
+
+  @@unique([provider, externalId])
+}
+
+/// What sold during a pulled shift, aggregated per item (variant).
+model PosSale {
+  id             String  @id @default(cuid())
+  shiftId        String
+  itemId         String?
+  externalItemId String?
+  itemName       String
+  variantName    String?
+  sku            String?
+  categoryName   String?
+  quantity       Float
+  grossMinor     Int
+  netMinor       Int
+  costMinor      Int
+
+  shift PosShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  item  PosItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([shiftId])
+  @@index([itemId])
 }

@@ -141,6 +141,7 @@ export async function initCommand(opts: Opts) {
     locale: locale || 'en-US',
     weekStartsOn,
     fiscalYearStartMonth: 1,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     port: port || 4848,
     auth,
   };

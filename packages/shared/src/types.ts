@@ -42,6 +42,8 @@ export interface ProjectConfig {
   locale: string;
   weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   fiscalYearStartMonth: number;
+  /** IANA zone used to turn POS timestamps into ledger days. Defaults to the machine's zone. */
+  timezone?: string;
   port: number;
   auth: {
     mode: AuthMode;
@@ -173,6 +175,8 @@ export interface Revenue {
   notes: string | null;
   recurringRuleId: string | null;
   customFields: CustomFields;
+  /** Set when a POS integration produced this row (a pulled shift). */
+  pos?: PosShiftRef | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -428,6 +432,8 @@ export interface InsightsResponse {
   byMonth: { month: string; revenueMinor: number; expenseMinor: number; netMinor: number; marginPct: number | null; revenueCount: number; expenseCount: number }[];
   topRevenue: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupNameAr?: string | null; groupColor: string }[];
   topExpenses: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupNameAr?: string | null; groupColor: string }[];
+  /** What sold on pulled POS shifts in the range (null when no integration has pulled anything). */
+  posSales: PosSalesSummary | null;
 }
 
 // ─── Import / export ───────────────────────────────────────────────────────────
@@ -479,4 +485,162 @@ export interface BackupFile {
 
 export interface RecurringRunResponse {
   generated: { ruleId: string; kind: CategoryKind; entryId: string; date: string }[];
+}
+
+// ─── Integrations (POS) ────────────────────────────────────────────────────────
+export const INTEGRATION_PROVIDERS = ['loyverse'] as const;
+export type IntegrationProvider = (typeof INTEGRATION_PROVIDERS)[number];
+
+export interface PosShiftRef {
+  provider: IntegrationProvider;
+  shiftId: string;
+  externalId: string;
+  storeName: string | null;
+  openedAt: string;
+  closedAt: string;
+  receipts: number;
+}
+
+export interface LoyverseStore {
+  id: string;
+  name: string;
+}
+
+export interface LoyversePaymentType {
+  id: string;
+  name: string;
+  /** Loyverse kind: CASH, NONINTEGRATEDCARD, CHECK, OTHER or an integrated gateway. */
+  type: string;
+}
+
+export interface LoyverseSettings {
+  /** Loyverse store ids to pull from; empty = every store. */
+  storeIds: string[];
+  /** Loyverse payment type ids whose amounts go on the shift row. Defaults to the CASH ones. */
+  paymentTypeIds: string[];
+  /** Loyverse payment type id → ledgr payment method id. Missing entries are matched or created by name. */
+  methodMap: Record<string, string>;
+  /** ledgr revenue category for shift rows; null = the default revenue category. */
+  categoryId: string | null;
+}
+
+export interface LoyverseIntegration {
+  provider: 'loyverse';
+  connected: true;
+  merchantId: string | null;
+  merchantName: string | null;
+  currency: string | null;
+  decimalPlaces: number;
+  settings: LoyverseSettings;
+  stores: LoyverseStore[];
+  paymentTypes: LoyversePaymentType[];
+  lastItemsSyncAt: string | null;
+  lastShiftPullAt: string | null;
+  lastError: string | null;
+  itemCount: number;
+  categoryCount: number;
+  shiftCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DisconnectedIntegration {
+  provider: IntegrationProvider;
+  connected: false;
+}
+
+export type IntegrationStatus = LoyverseIntegration | DisconnectedIntegration;
+
+export interface IntegrationsResponse {
+  items: IntegrationStatus[];
+}
+
+export interface PosCategory {
+  id: string;
+  externalId: string;
+  name: string;
+  color: string | null;
+  itemCount: number;
+  deletedAt: string | null;
+}
+
+export interface PosItem {
+  id: string;
+  externalId: string;
+  name: string;
+  categoryId: string | null;
+  category: { id: string; name: string; color: string | null } | null;
+  sku: string | null;
+  priceMinor: number | null;
+  costMinor: number | null;
+  variantCount: number;
+  deletedAt: string | null;
+  updatedAt: string;
+}
+
+export interface PosItemsResponse {
+  items: PosItem[];
+  categories: PosCategory[];
+  total: number;
+}
+
+export interface ItemsSyncResponse {
+  categories: number;
+  items: number;
+  removed: number;
+  syncedAt: string;
+}
+
+/** A closed shift as the provider reports it, with whether ledgr already holds it. */
+export interface LoyverseShiftPreview {
+  externalId: string;
+  storeId: string;
+  storeName: string | null;
+  openedAt: string;
+  closedAt: string;
+  /** Provider totals in minor units. */
+  grossSalesMinor: number;
+  netSalesMinor: number;
+  refundsMinor: number;
+  cashMinor: number;
+  payments: { paymentTypeId: string; name: string; type: string; amountMinor: number; selected: boolean }[];
+  pulled: { shiftId: string; revenueId: string | null; pulledAt: string } | null;
+}
+
+export interface PosSaleLine {
+  itemId: string | null;
+  externalItemId: string | null;
+  itemName: string;
+  variantName: string | null;
+  sku: string | null;
+  categoryName: string | null;
+  quantity: number;
+  grossMinor: number;
+  netMinor: number;
+  costMinor: number;
+}
+
+export interface ShiftSalesResponse {
+  shift: PosShiftRef;
+  /** Amount per Loyverse payment type across the shift's receipts (all types, not only the pulled ones). */
+  payments: { paymentTypeId: string; name: string; type: string; amountMinor: number; pulled: boolean }[];
+  totals: { receipts: number; refunds: number; grossMinor: number; netMinor: number; costMinor: number; quantity: number };
+  lines: PosSaleLine[];
+  byCategory: { name: string; quantity: number; netMinor: number; pct: number }[];
+}
+
+export interface PullShiftResponse {
+  revenue: Revenue;
+  shift: PosShiftRef;
+  created: boolean;
+  sales: ShiftSalesResponse;
+}
+
+export interface PosSalesSummary {
+  shifts: number;
+  quantity: number;
+  netMinor: number;
+  costMinor: number;
+  byItem: { itemName: string; variantName: string | null; categoryName: string | null; quantity: number; netMinor: number; pct: number }[];
+  byCategory: { name: string; quantity: number; netMinor: number; pct: number }[];
 }

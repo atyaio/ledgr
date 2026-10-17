@@ -202,6 +202,7 @@ function AuditTab() {
   const q = useAudit({ page, pageSize: 50, entity: entity || undefined, action: action || undefined });
   const [open, setOpen] = useState<string | null>(null);
   const { t } = useI18n();
+  const { locale } = useProject();
   return (
     <Card title={t('Audit log')} flush actions={<div className="flex gap-2"><Select compact className="w-36" value={entity} onChange={(e) => { setEntity(e.target.value); setPage(1); }}><option value="">{t('All entities')}</option>{['expense', 'revenue', 'stakeholder', 'category', 'settlement', 'customField', 'recurringRule', 'project', 'import', 'backup'].map((x) => <option key={x} value={x}>{t(x)}</option>)}</Select><Select compact className="w-32" value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}><option value="">{t('All actions')}</option>{['create', 'update', 'delete', 'import', 'settle', 'recompute', 'generate', 'restore'].map((x) => <option key={x} value={x}>{t(x)}</option>)}</Select></div>}>
       {q.isPending && <Loading />}
@@ -214,7 +215,7 @@ function AuditTab() {
                 <Badge tone={a.action === 'delete' ? 'critical' : a.action === 'create' || a.action === 'import' ? 'good' : 'neutral'}>{t(a.action)}</Badge>
                 <span className="font-medium">{t(a.entity)}</span>
                 <span className="text-ink-3 truncate">{a.actorEmail}</span>
-                <span className="ms-auto text-ink-3 num text-[12.5px]" title={new Date(a.at).toLocaleString()}>{relativeTime(a.at)}</span>
+                <span className="ms-auto text-ink-3 num text-[12.5px]" title={new Date(a.at).toLocaleString()}>{relativeTime(a.at, locale)}</span>
               </div>
               <div className="text-[12.5px] text-ink-3 mt-1 truncate">{summarize(a.before, a.after, t)}</div>
               {open === a.id && <pre className="mono whitespace-pre-wrap max-h-64 overflow-auto text-[11.5px] bg-sunken rounded-[10px] p-3 mt-2">{JSON.stringify({ before: a.before, after: a.after }, null, 2)}</pre>}
