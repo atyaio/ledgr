@@ -118,7 +118,7 @@ sort, order, page, pageSize (default 50, max 500)` → `{ items, total, page, pa
 | settlements | `GET/POST /settlements`, `PATCH/DELETE /settlements/:id`, `GET /settlements/suggest?from&to` |
 | custom fields | `GET /custom-fields?entity`, `POST /custom-fields`, `PATCH/DELETE /custom-fields/:id`, `POST /custom-fields/reorder` |
 | recurring | `GET/POST /recurring`, `PATCH/DELETE /recurring/:id`, `POST /recurring/run` (generate due entries now), `POST /recurring/:id/run` |
-| analytics | `GET /analytics/overview?from&to&granularity=day|week|month` (see §6) |
+| analytics | `GET /analytics/overview?from&to&granularity=day|week|month` (see §6), `GET /analytics/insights?from&to&ledger=both|revenue|expenses&categoryIds=a,b&paymentMethodIds=x,y&stakeholderId&granularity` → `InsightsResponse` (filtered totals with previous-period deltas, series with previous overlay, breakdowns by category / payment method / partner, weekday averages, month table, top entries; a payment-method filter counts only that method's share of each entry) |
 | import/export | `GET /export/:entity.csv?from&to` (entity ∈ expenses, revenue, stakeholders, categories, settlements), `GET /export/template/:entity.csv`, `POST /import/:entity/preview` (multipart `file`) → `{ headers, sampleRows, suggestedMapping, rowCount }`, `POST /import/:entity/commit` (multipart `file` + `mapping` JSON + `options`) → `{ inserted, skipped, errors[] }`, `GET /export/backup.json`, `POST /import/backup` |
 | audit | `GET /audit?entity&entityId&page` |
 
@@ -156,7 +156,7 @@ navigation. Granularity auto: ≤ 31 days → day, ≤ 26 weeks → week, else m
 
 ## 7. Frontend (React 19 + Vite + Tailwind 4)
 
-Routes: `/login`, `/` (Overview), `/expenses`, `/revenue`, `/stakeholders`
+Routes: `/login`, `/` (Overview), `/insights` (filtered analytics), `/expenses`, `/revenue`, `/stakeholders`
 (tabs: Ownership · Balances · Settlements · Distribution), `/categories` (with
 budgets), `/recurring`, `/data` (import/export + backup), `/settings` (project,
 custom fields, audit log).

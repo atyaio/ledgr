@@ -10,6 +10,7 @@ import { LoginPage } from '@/pages/login';
 import { QuickAddPage } from '@/pages/quick-add';
 
 const Overview = lazy(() => import('@/pages/overview').then((m) => ({ default: m.OverviewPage })));
+const Insights = lazy(() => import('@/pages/insights').then((m) => ({ default: m.InsightsPage })));
 const Expenses = lazy(() => import('@/pages/expenses').then((m) => ({ default: m.ExpensesPage })));
 const Revenue = lazy(() => import('@/pages/revenue').then((m) => ({ default: m.RevenuePage })));
 const Stakeholders = lazy(() => import('@/pages/stakeholders').then((m) => ({ default: m.StakeholdersPage })));
@@ -64,6 +65,7 @@ const router = createBrowserRouter([
         element: <Shell />,
         children: [
           { index: true, element: page(<Overview />) },
+          { path: 'insights', element: page(<Insights />) },
           { path: 'expenses', element: page(<Expenses />) },
           { path: 'revenue', element: page(<Revenue />) },
           { path: 'stakeholders', element: page(<Stakeholders />) },

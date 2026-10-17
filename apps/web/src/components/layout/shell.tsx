@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { ArrowLeftRight, BarChart3, CreditCard, Database, LogOut, Menu as MenuIcon, Monitor, Moon, Plus, Repeat, Settings2, Sun, Tags, TrendingDown, TrendingUp, Users, X } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, CreditCard, Compass, Database, LogOut, Menu as MenuIcon, Monitor, Moon, Plus, Repeat, Settings2, Sun, Tags, TrendingDown, TrendingUp, Users, X } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
@@ -14,6 +14,7 @@ import { SettlementForm } from '@/components/forms/settlement-form';
 
 const NAV = [
   { to: '/', label: 'Overview', icon: BarChart3, end: true, mobile: true },
+  { to: '/insights', label: 'Insights', icon: Compass, mobile: false },
   { to: '/expenses', label: 'Expenses', icon: TrendingDown, mobile: true },
   { to: '/revenue', label: 'Revenue', icon: TrendingUp, mobile: true },
   { to: '/stakeholders', label: 'Stakeholders', icon: Users, mobile: false },

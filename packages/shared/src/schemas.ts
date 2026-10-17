@@ -242,6 +242,21 @@ export const analyticsQuery = z.object({
 });
 export type AnalyticsQuery = z.infer<typeof analyticsQuery>;
 
+const idList = z
+  .union([z.string(), z.array(z.string())])
+  .transform((v) => (Array.isArray(v) ? v : v.split(',')).map((s) => s.trim()).filter(Boolean))
+  .optional();
+export const insightsQuery = z.object({
+  from: isoDate,
+  to: isoDate,
+  granularity: z.enum(GRANULARITIES).optional(),
+  ledger: z.enum(['both', 'revenue', 'expenses']).default('both'),
+  categoryIds: idList,
+  paymentMethodIds: idList,
+  stakeholderId: z.string().optional(),
+});
+export type InsightsQuery = z.infer<typeof insightsQuery>;
+
 // ─── Import / export ───────────────────────────────────────────────────────────
 export const importEntitySchema = z.enum(IMPORT_ENTITIES);
 export const importOptionsSchema = z.object({

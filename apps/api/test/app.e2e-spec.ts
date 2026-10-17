@@ -425,6 +425,39 @@ describe('ledgr API (e2e)', () => {
     await http().delete(`/api/payment-methods/${cash.id}`).expect(204);
   });
 
+  it('insights: filters by ledger, category, payment method; previous overlay; weekday and month tables', async () => {
+    const cash = (await http().post('/api/payment-methods').send({ name: 'Till', isDefault: true }).expect(201)).body;
+    const card = (await http().post('/api/payment-methods').send({ name: 'POS card' }).expect(201)).body;
+    const cats = (await http().get('/api/categories?kind=revenue').expect(200)).body as { id: string }[];
+    const other = (await http().post('/api/categories').send({ name: 'Insights other', kind: 'revenue' }).expect(201)).body;
+    cats[1] = other;
+    const a = (await http().post('/api/revenue').send({ date: '2026-05-04', description: 'Mon', categoryId: cats[0].id, payments: [{ paymentMethodId: cash.id, amountMinor: 600 }, { paymentMethodId: card.id, amountMinor: 400 }] }).expect(201)).body;
+    const b = (await http().post('/api/revenue').send({ date: '2026-05-05', description: 'Tue', categoryId: cats[1]?.id ?? cats[0].id, amountMinor: 300 }).expect(201)).body;
+    const all = (await http().get('/api/analytics/insights?from=2026-05-01&to=2026-05-31&ledger=revenue').expect(200)).body;
+    expect(all.totals.revenueMinor).toBe(1300);
+    expect(all.totals.revenueCount).toBe(2);
+    expect(all.range.granularity).toBe('day');
+    expect(all.series).toHaveLength(31);
+    expect(all.byPaymentMethod.map((m: { name: string; revenueMinor: number }) => [m.name, m.revenueMinor])).toEqual(expect.arrayContaining([['Till', 900], ['POS card', 400]]));
+    expect(all.byWeekday).toHaveLength(7);
+    expect(all.byWeekday.reduce((x: number, w: { revenueMinor: number }) => x + w.revenueMinor, 0)).toBe(1300);
+    expect(all.byMonth).toEqual([expect.objectContaining({ month: '2026-05', revenueMinor: 1300, revenueCount: 2 })]);
+    expect(all.totals.bestDay).toEqual({ date: '2026-05-04', revenueMinor: 1000 });
+    // Payment-method filter counts only that method's share.
+    const card_only = (await http().get(`/api/analytics/insights?from=2026-05-01&to=2026-05-31&ledger=revenue&paymentMethodIds=${card.id}`).expect(200)).body;
+    expect(card_only.totals.revenueMinor).toBe(400);
+    expect(card_only.totals.revenueCount).toBe(1);
+    const catOnly = (await http().get(`/api/analytics/insights?from=2026-05-01&to=2026-05-31&categoryIds=${cats[0].id}`).expect(200)).body;
+    expect(catOnly.totals.revenueMinor).toBe(1000);
+    // Previous period overlay: June compares to May.
+    const june = (await http().get('/api/analytics/insights?from=2026-06-01&to=2026-06-30&ledger=revenue').expect(200)).body;
+    expect(june.previous.revenueMinor).toBe(1300);
+    expect(june.series[3].prevRevenueMinor).toBe(1000);
+    for (const id of [a.id, b.id]) await http().delete(`/api/revenue/${id}`).expect(204);
+    for (const id of [cash.id, card.id]) await http().delete(`/api/payment-methods/${id}`).expect(204);
+    await http().delete(`/api/categories/${other.id}`).expect(204);
+  });
+
   it('CSV export → import round-trip', async () => {
     const exp = await http().get('/api/export/expenses.csv?from=2026-01-01&to=2026-12-31').expect(200);
     expect(exp.headers['content-type']).toMatch(/text\/csv/);

@@ -359,6 +359,63 @@ export interface AnalyticsOverview {
   pool: { revenueMinor: number; expenseMinor: number; netMinor: number };
 }
 
+// ─── Insights (filtered analytics) ─────────────────────────────────────────────
+export type InsightsLedger = 'both' | 'revenue' | 'expenses';
+
+export interface InsightsBucket {
+  bucket: string;
+  revenueMinor: number;
+  expenseMinor: number;
+  netMinor: number;
+  revenueCount: number;
+  expenseCount: number;
+  /** Same bucket index in the previous period (for the overlay). */
+  prevRevenueMinor: number;
+  prevExpenseMinor: number;
+}
+
+export interface InsightsGroup {
+  id: string | null;
+  name: string;
+  color: string;
+  revenueMinor: number;
+  expenseMinor: number;
+  count: number;
+  /** Share of the ledger total (revenue share for revenue groups, expense share for expense groups). */
+  pct: number;
+}
+
+export interface InsightsResponse {
+  range: { from: string; to: string; days: number; granularity: Granularity; previousFrom: string; previousTo: string };
+  filters: { ledger: InsightsLedger; categoryIds: string[]; paymentMethodIds: string[]; stakeholderId: string | null };
+  totals: {
+    revenueMinor: number;
+    expenseMinor: number;
+    netMinor: number;
+    marginPct: number | null;
+    revenueCount: number;
+    expenseCount: number;
+    avgRevenuePerEntryMinor: number;
+    avgExpensePerEntryMinor: number;
+    avgRevenuePerDayMinor: number;
+    avgExpensePerDayMinor: number;
+    activeDays: number;
+    bestDay: { date: string; revenueMinor: number } | null;
+    quietestDay: { date: string; revenueMinor: number } | null;
+  };
+  previous: { revenueMinor: number; expenseMinor: number; netMinor: number; revenueCount: number; expenseCount: number };
+  delta: { revenuePct: number | null; expensePct: number | null; netPct: number | null };
+  series: InsightsBucket[];
+  revenueByCategory: InsightsGroup[];
+  expensesByCategory: InsightsGroup[];
+  byPaymentMethod: InsightsGroup[];
+  byStakeholder: InsightsGroup[];
+  byWeekday: { weekday: number; label: string; days: number; revenueMinor: number; expenseMinor: number; avgRevenueMinor: number; avgExpenseMinor: number }[];
+  byMonth: { month: string; revenueMinor: number; expenseMinor: number; netMinor: number; marginPct: number | null; revenueCount: number; expenseCount: number }[];
+  topRevenue: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupColor: string }[];
+  topExpenses: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupColor: string }[];
+}
+
 // ─── Import / export ───────────────────────────────────────────────────────────
 export interface ImportColumn {
   key: string; // target field key, e.g. "date", "amount", "cf:client"

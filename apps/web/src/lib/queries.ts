@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type {
   AnalyticsOverview,
+  InsightsResponse,
   BalancesResponse,
   BudgetStatus,
   Category,
@@ -72,6 +73,9 @@ export const useOverview = (from: string, to: string) =>
     queryFn: () => api.get<AnalyticsOverview>('/analytics/overview', { from, to }),
     placeholderData: keepPreviousData,
   });
+
+export const useInsights = (params: Query) =>
+  useQuery({ queryKey: ['analytics', 'insights', params], queryFn: () => api.get<InsightsResponse>('/analytics/insights', params), placeholderData: keepPreviousData });
 
 // ─── Stakeholders ──────────────────────────────────────────────────────────────
 export const useStakeholders = () =>
