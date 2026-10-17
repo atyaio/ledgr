@@ -224,6 +224,8 @@ textarea {
   font-family: 'Geist', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
   direction: ltr;
   unicode-bidi: isolate;
+  /* Block-level numbers follow the mirrored layout; Tailwind text-* utilities still win. */
+  text-align: right;
 }
 [dir='rtl'] .rtl-flip {
   transform: scaleX(-1);

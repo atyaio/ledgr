@@ -91,9 +91,12 @@ export function Shell() {
                 <div className="text-[11.5px] text-ink-3 truncate">{projectName}</div>
               </div>
             </div>
-            <button type="button" onClick={() => setMore(true)} aria-label={t('Menu')} className="size-10 inline-flex items-center justify-center rounded-full hover:bg-card-hover">
-              <MenuIcon className="size-5" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <LangPill />
+              <button type="button" onClick={() => setMore(true)} aria-label={t('Menu')} className="size-10 inline-flex items-center justify-center rounded-full hover:bg-card-hover">
+                <MenuIcon className="size-5" />
+              </button>
+            </div>
           </div>
           <div className="px-4 pb-2.5">
             <RangePicker />
@@ -102,7 +105,10 @@ export function Shell() {
         {/* Desktop top bar */}
         <header className="hidden md:flex h-16 shrink-0 px-6 items-center justify-between gap-4">
           <div className="text-[15px] font-semibold text-ink-2">{current ? t(current.label) : ''}</div>
-          <RangePicker />
+          <div className="flex items-center gap-3">
+            <RangePicker />
+            <LangPill />
+          </div>
         </header>
 
         <main className="flex-1 min-h-0 overflow-y-auto">
@@ -221,6 +227,26 @@ export function ThemeSwitch() {
         { id: 'dark', label: <span className="inline-flex items-center gap-1.5"><Moon className="size-3.5" /> {t('Dark')}</span> },
       ]}
     />
+  );
+}
+
+/** Compact EN | ع pill for the top bars. */
+export function LangPill() {
+  const { lang, setLang } = useI18n();
+  return (
+    <div className="inline-flex items-center rounded-full border border-line bg-card p-0.5 h-8 shrink-0" role="group" aria-label="Language">
+      {(['en', 'ar'] as Lang[]).map((l) => (
+        <button
+          type="button"
+          key={l}
+          lang={l}
+          onClick={() => setLang(l)}
+          className={clsx('h-7 px-2.5 rounded-full text-[12.5px] font-semibold transition-colors', lang === l ? 'bg-primary text-primary-ink' : 'text-ink-2 hover:text-ink')}
+        >
+          {l === 'en' ? 'EN' : 'ع'}
+        </button>
+      ))}
+    </div>
   );
 }
 

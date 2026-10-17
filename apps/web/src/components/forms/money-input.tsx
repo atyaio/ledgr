@@ -14,7 +14,7 @@ export const MoneyInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value]);
     return (
-      <div className="relative">
+      <div className="relative" dir="ltr">
         <span className={`absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-3 font-medium pointer-events-none ${large ? 'text-[16px]' : 'text-[13px]'}`}>{currency}</span>
         <Input
           ref={ref}
