@@ -62,7 +62,7 @@ export class BackupService {
       }),
       this.prisma.revenue.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        include: { category: { select: { id: true, name: true, color: true } }, receivedBy: { select: { id: true, name: true, color: true } }, paymentMethod: { select: { id: true, name: true, color: true } } },
+        include: { category: { select: { id: true, name: true, color: true } }, receivedBy: { select: { id: true, name: true, color: true } }, payments: { include: { paymentMethod: { select: { name: true, color: true, sortOrder: true } } } } },
       }),
       this.prisma.settlement.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
@@ -114,6 +114,7 @@ export class BackupService {
       if (replace) {
         await tx.expenseSplit.deleteMany();
         await tx.expense.deleteMany();
+        await tx.revenuePayment.deleteMany();
         await tx.revenue.deleteMany();
         await tx.settlement.deleteMany();
         await tx.recurringRule.deleteMany();
@@ -244,7 +245,6 @@ export class BackupService {
             amountMinor: r.amountMinor,
             description: r.description,
             categoryId: r.categoryId,
-            paymentMethodId: r.paymentMethodId ?? null,
             source: r.source,
             receivedByStakeholderId: r.receivedByStakeholderId,
             notes: r.notes,
@@ -255,6 +255,8 @@ export class BackupService {
           })),
         }),
       );
+      const payments = file.revenue.flatMap((r) => (r.payments ?? []).map((p) => ({ revenueId: r.id, paymentMethodId: p.paymentMethodId, amountMinor: p.amountMinor })));
+      await chunked(payments, (rows) => tx.revenuePayment.createMany({ data: rows }));
       await chunked(file.settlements, (rows) =>
         tx.settlement.createMany({
           data: rows.map<Prisma.SettlementCreateManyInput>((s) => ({

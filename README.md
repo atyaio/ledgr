@@ -23,7 +23,7 @@ dashboard; nothing is shared with the host project and no database URL is requir
 - **Distribution** — each partner's share of revenue and profit for any period.
 - **Analytics overview** for today / week / month / quarter / year / custom ranges, with
   previous-period deltas, cashflow chart, category breakdowns, budgets and largest expenses.
-- **Payment methods** (cash, cards, online…) on revenue, with an analytics breakdown and dropdowns in Excel exports.
+- **Payment methods** (cash, cards, online…): each revenue row holds an amount per method side by side; adding revenue fills the default method, the others can be added later from the table. Analytics breakdown and one column per method in Excel/CSV.
 - **Categories & monthly budgets**, **recurring entries** (rent, retainers…), **custom columns**
   (text, number, money, date, yes/no, select) on expenses, revenue and stakeholders.
 - **CSV import** with column mapping, date-format detection and duplicate skipping;

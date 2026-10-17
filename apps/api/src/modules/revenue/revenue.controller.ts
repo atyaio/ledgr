@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   bulkIdsSchema,
   createRevenueSchema,
   listQuery,
+  setRevenuePaymentSchema,
   updateRevenueSchema,
   type CreateRevenueInput,
   type ListQuery,
@@ -42,6 +43,11 @@ export class RevenueController {
   @Patch(':id')
   update(@Param('id') id: string, @Body(zod(updateRevenueSchema)) body: UpdateRevenueInput, @User() user: CurrentUser) {
     return this.service.update(id, body, user);
+  }
+
+  @Put(':id/payments/:methodId')
+  setPayment(@Param('id') id: string, @Param('methodId') methodId: string, @Body(zod(setRevenuePaymentSchema)) body: { amountMinor: number }, @User() user: CurrentUser) {
+    return this.service.setPayment(id, methodId, body.amountMinor, user);
   }
 
   @Delete(':id')

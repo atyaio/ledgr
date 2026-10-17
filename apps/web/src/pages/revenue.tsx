@@ -1,7 +1,8 @@
 import { clsx } from 'clsx';
 import { MoreHorizontal, Pencil, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
+import { PaymentAmountPopup } from '@/components/forms/payment-amount-popup';
 import { useMemo, useState } from 'react';
-import type { CustomFieldDefinition, Revenue } from '@ledgr/shared';
+import type { CustomFieldDefinition, PaymentMethod, Revenue } from '@ledgr/shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { useCategories, useCustomFields, usePaymentMethods, useRevenue, useRevenueMutations, useStakeholders } from '@/lib/queries';
@@ -44,6 +45,8 @@ export function RevenuePage() {
   const [selecting, setSelecting] = useState(false);
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [detail, setDetail] = useState<Revenue | null>(null);
+  const [payTarget, setPayTarget] = useState<{ revenue: Revenue; method: PaymentMethod } | null>(null);
+  const methods: PaymentMethod[] = useMemo(() => (pm.data?.items ?? []).filter((m) => !m.archived), [pm.data]);
 
   const items = q.data?.items ?? [];
   const defs: CustomFieldDefinition[] = cf.data?.items ?? [];
@@ -113,7 +116,7 @@ export function RevenuePage() {
                       )}
                       <span className="flex-1 min-w-0">
                         <span className="block text-[15px] font-medium truncate">{r.description}</span>
-                        <span className="block text-[12.5px] text-ink-3 truncate">{r.category?.name ?? 'Uncategorised'}{r.paymentMethod ? ` · ${r.paymentMethod.name}` : ''}{r.source ? ` · ${r.source}` : ''}{r.receivedBy ? ` · ${r.receivedBy.name}` : ''}</span>
+                        <span className="block text-[12.5px] text-ink-3 truncate">{r.payments.filter((p) => p.amountMinor > 0).length ? r.payments.filter((p) => p.amountMinor > 0).map((p) => `${p.name} ${money(p.amountMinor, { compact: true })}`).join(' · ') : (r.category?.name ?? 'Uncategorised')}{r.receivedBy ? ` · ${r.receivedBy.name}` : ''}</span>
                       </span>
                       <Money minor={r.amountMinor} tone="revenue" className="text-[15px] font-semibold shrink-0" />
                     </button>
@@ -134,16 +137,16 @@ export function RevenuePage() {
                 <Th sortable sorted={sorted('description')} onSort={() => sortBy('description')}>Description</Th>
                 <Th>Category</Th>
                 <Th>Source</Th>
-                <Th>Payment</Th>
                 <Th>Received by</Th>
                 {defs.map((d) => <Th key={d.id} align={d.type === 'money' || d.type === 'number' ? 'right' : 'left'}>{d.label}</Th>)}
-                <Th align="right" sortable sorted={sorted('amountMinor')} onSort={() => sortBy('amountMinor')} className="w-36">Amount</Th>
+                {methods.map((m) => <Th key={m.id} align="right"><span className="inline-flex items-center gap-1.5"><Swatch color={m.color} />{m.name}</span></Th>)}
+                <Th align="right" sortable sorted={sorted('amountMinor')} onSort={() => sortBy('amountMinor')} className="w-36">{methods.length ? 'Total' : 'Amount'}</Th>
                 <Th className="w-12" />
               </tr>
             </thead>
             <tbody>
-              {q.isPending && <EmptyRow colSpan={9 + defs.length}>Loading…</EmptyRow>}
-              {!q.isPending && !items.length && <EmptyRow colSpan={9 + defs.length}>No revenue in this period.</EmptyRow>}
+              {q.isPending && <EmptyRow colSpan={8 + defs.length + methods.length}>Loading…</EmptyRow>}
+              {!q.isPending && !items.length && <EmptyRow colSpan={8 + defs.length + methods.length}>No revenue in this period.</EmptyRow>}
               {items.map((r) => (
                 <Tr key={r.id} selected={selected.has(r.id)} className="cursor-pointer" onClick={() => (selecting ? toggle(r.id) : setDetail(r))}>
                   {selecting && <Td onClick={(ev) => ev.stopPropagation()}><Checkbox checked={selected.has(r.id)} onChange={() => toggle(r.id)} aria-label="Select" /></Td>}
@@ -151,9 +154,20 @@ export function RevenuePage() {
                   <Td><div className="font-medium truncate max-w-[380px]">{r.description}</div>{r.recurringRuleId && <div className="text-[12px] text-ink-3">recurring</div>}</Td>
                   <Td>{r.category ? <Chip color={r.category.color}>{r.category.name}</Chip> : <span className="text-ink-4">—</span>}</Td>
                   <Td className="text-ink-2">{r.source ?? <span className="text-ink-4">—</span>}</Td>
-                  <Td>{r.paymentMethod ? <Chip color={r.paymentMethod.color}>{r.paymentMethod.name}</Chip> : <span className="text-ink-4">—</span>}</Td>
                   <Td>{r.receivedBy ? <span className="inline-flex items-center gap-2"><Avatar name={r.receivedBy.name} color={r.receivedBy.color} size={22} />{r.receivedBy.name}</span> : <span className="text-ink-3">Company</span>}</Td>
                   {defs.map((d) => <Td key={d.id} align={d.type === 'money' || d.type === 'number' ? 'right' : 'left'}><CustomCell def={d} value={r.customFields?.[d.key]} /></Td>)}
+                  {methods.map((m) => {
+                    const p = r.payments.find((x) => x.paymentMethodId === m.id);
+                    return (
+                      <Td key={m.id} align="right" onClick={(ev) => ev.stopPropagation()}>
+                        {p && p.amountMinor > 0 ? (
+                          <button type="button" className="num hover:text-accent" title={`Edit ${m.name} amount`} onClick={() => setPayTarget({ revenue: r, method: m })}>{money(p.amountMinor)}</button>
+                        ) : (
+                          <button type="button" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-accent/80 hover:text-accent whitespace-nowrap" onClick={() => setPayTarget({ revenue: r, method: m })}><Plus className="size-3.5" />Add {m.name}</button>
+                        )}
+                      </Td>
+                    );
+                  })}
                   <Td align="right"><Money minor={r.amountMinor} className="font-semibold" /></Td>
                   <Td onClick={(ev) => ev.stopPropagation()}>
                     <Menu trigger={() => <button type="button" className="size-8 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-card-hover" aria-label="Actions"><MoreHorizontal className="size-4" /></button>}>
@@ -174,7 +188,7 @@ export function RevenuePage() {
           <div className="space-y-4">
             <div className="num text-[32px] font-semibold tracking-tight text-revenue">{money(detail.amountMinor)}</div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[14px]">
-              <dt className="text-ink-3">Payment method</dt><dd className="font-medium">{detail.paymentMethod?.name ?? 'Unspecified'}</dd>
+              {detail.payments.filter((p) => p.amountMinor > 0).map((p) => <span key={p.paymentMethodId} className="contents"><dt className="text-ink-3">{p.name}</dt><dd className="num">{money(p.amountMinor)}</dd></span>)}
               <dt className="text-ink-3">Received by</dt><dd className="font-medium">{detail.receivedBy?.name ?? 'Company account'}</dd>
               {detail.source && <><dt className="text-ink-3">Source</dt><dd>{detail.source}</dd></>}
               {defs.map((d) => <span key={d.id} className="contents"><dt className="text-ink-3">{d.label}</dt><dd><CustomCell def={d} value={detail.customFields?.[d.key]} /></dd></span>)}
@@ -184,6 +198,7 @@ export function RevenuePage() {
         )}
       </Modal>
       <RevenueForm open={editing !== undefined} onClose={() => setEditing(undefined)} revenue={editing ?? null} />
+      <PaymentAmountPopup target={payTarget} onClose={() => setPayTarget(null)} />
       <ConfirmDialog open={!!confirm} onClose={() => setConfirm(null)} onConfirm={async () => { try { await remove.mutateAsync(confirm!.id); toast.success('Revenue deleted'); setConfirm(null); setDetail(null); } catch (e) { toast.error('Delete failed', errorMessage(e)); } }} loading={remove.isPending} title="Delete this revenue entry?" description={confirm ? `${confirm.description} · ${money(confirm.amountMinor)} on ${date(confirm.date)}` : ''} />
       <ConfirmDialog open={bulkConfirm} onClose={() => setBulkConfirm(false)} onConfirm={async () => { try { await bulkDelete.mutateAsync([...selected]); toast.success(`${selected.size} entries deleted`); setSelected(new Set()); setSelecting(false); setBulkConfirm(false); } catch (e) { toast.error('Delete failed', errorMessage(e)); } }} loading={bulkDelete.isPending} title={`Delete ${selected.size} entries?`} description="This cannot be undone." />
     </>

@@ -344,42 +344,57 @@ describe('ledgr API (e2e)', () => {
 
   // ─── CSV round-trip ─────────────────────────────────────────────────────────
 
-  it('payment methods: CRUD, revenue link, filter, analytics, export column', async () => {
+  it('payment methods: per-method amounts, default, filter, analytics, export columns', async () => {
     const cash = (await http().post('/api/payment-methods').send({ name: 'Cash', isDefault: true }).expect(201)).body;
-    const visa = (await http().post('/api/payment-methods').send({ name: 'Visa', isDefault: true }).expect(201)).body;
+    const visa = (await http().post('/api/payment-methods').send({ name: 'Visa' }).expect(201)).body;
     await http().post('/api/payment-methods').send({ name: 'cash' }).expect(409);
-    const list = (await http().get('/api/payment-methods').expect(200)).body as { id: string; isDefault: boolean }[];
-    expect(list.filter((m) => m.isDefault).map((m) => m.id)).toEqual([visa.id]);
 
-    const r = (await http().post('/api/revenue').send({ date: '2026-03-10', amountMinor: 7000, description: 'Till sales', paymentMethodId: cash.id }).expect(201)).body;
-    expect(r.paymentMethod).toMatchObject({ id: cash.id, name: 'Cash' });
-    await http().post('/api/revenue').send({ date: '2026-03-11', amountMinor: 1000, description: 'Bad method', paymentMethodId: 'nope' }).expect(404);
-    const filtered = (await http().get(`/api/revenue?paymentMethodId=${cash.id}`).expect(200)).body;
-    expect(filtered.items.map((x: { id: string }) => x.id)).toEqual([r.id]);
+    // A bare amount goes to the default method.
+    const r = (await http().post('/api/revenue').send({ date: '2026-03-10', amountMinor: 7000, description: 'Till sales' }).expect(201)).body;
+    expect(r.amountMinor).toBe(7000);
+    expect(r.payments).toEqual([expect.objectContaining({ paymentMethodId: cash.id, name: 'Cash', amountMinor: 7000 })]);
+
+    // Add a Visa amount later: the total follows.
+    const r2 = (await http().put(`/api/revenue/${r.id}/payments/${visa.id}`).send({ amountMinor: 3000 }).expect(200)).body;
+    expect(r2.amountMinor).toBe(10000);
+    expect(r2.payments.map((p: { name: string; amountMinor: number }) => [p.name, p.amountMinor])).toEqual([['Cash', 7000], ['Visa', 3000]]);
+    // Changing the bare amount on a split entry is ambiguous.
+    await http().patch(`/api/revenue/${r.id}`).send({ amountMinor: 1 }).expect(400);
+    // Explicit payments on create: total is their sum.
+    const r3 = (await http().post('/api/revenue').send({ date: '2026-03-11', description: 'Mixed', payments: [{ paymentMethodId: cash.id, amountMinor: 100 }, { paymentMethodId: visa.id, amountMinor: 50 }] }).expect(201)).body;
+    expect(r3.amountMinor).toBe(150);
+    await http().post('/api/revenue').send({ date: '2026-03-11', description: 'Nothing' }).expect(400);
+    await http().post('/api/revenue').send({ date: '2026-03-11', description: 'Bad', payments: [{ paymentMethodId: 'nope', amountMinor: 5 }] }).expect(404);
+
+    const filtered = (await http().get(`/api/revenue?paymentMethodId=${visa.id}`).expect(200)).body;
+    expect(filtered.items.map((x: { id: string }) => x.id).sort()).toEqual([r.id, r3.id].sort());
 
     const o = (await http().get('/api/analytics/overview?from=2026-03-01&to=2026-03-31').expect(200)).body;
     const cashBucket = o.revenueByPaymentMethod.find((m: { paymentMethodId: string | null }) => m.paymentMethodId === cash.id);
-    expect(cashBucket).toMatchObject({ name: 'Cash', amountMinor: 7000, count: 1 });
+    expect(cashBucket).toMatchObject({ name: 'Cash', amountMinor: 7100, count: 2 });
 
+    // Export: one column per method plus Total; import reads them back.
     const csv = (await http().get('/api/export/revenue.csv?from=2026-03-01&to=2026-03-31').expect(200)).text;
     const [header, first] = csv.split(/\r?\n/);
-    expect(header.split(',')).toContain('Payment method');
-    expect(first).toContain('Cash');
-
-    // Import with a new method name creates it (option on by default)
+    expect(header.split(',')).toEqual(expect.arrayContaining(['Cash', 'Visa', 'Total']));
+    expect(first).toContain('70.00');
     const imported = await http()
       .post('/api/import/revenue/commit')
-      .attach('file', Buffer.from('Date,Description,Payment method,Amount\n2026-03-12,Online order,Instapay,55.00\n'), 'r.csv')
-      .field('mapping', JSON.stringify({ date: 'Date', description: 'Description', paymentMethod: 'Payment method', amount: 'Amount' }))
-      .field('options', JSON.stringify({ dateFormat: 'iso', createMissingCategories: true, createMissingStakeholders: false, createMissingPaymentMethods: true, skipDuplicates: true }))
+      .attach('file', Buffer.from(`Date,Description,Cash,Visa,Total\n2026-03-12,Online order,,55.00,\n2026-03-13,Walk-in,20.00,5.00,25.00\n2026-03-14,Wrong,20.00,5.00,99.00\n`), 'r.csv')
+      .field('mapping', JSON.stringify({ date: 'Date', description: 'Description', [`pm:${cash.id}`]: 'Cash', [`pm:${visa.id}`]: 'Visa', amount: 'Total' }))
+      .field('options', JSON.stringify({ dateFormat: 'iso', createMissingCategories: true, createMissingStakeholders: false, skipDuplicates: true }))
       .expect(201);
-    expect(imported.body).toMatchObject({ inserted: 1, errors: [] });
-    const names = ((await http().get('/api/payment-methods').expect(200)).body as { name: string }[]).map((m) => m.name);
-    expect(names).toContain('Instapay');
+    expect(imported.body.inserted).toBe(2);
+    expect(imported.body.errors).toHaveLength(1);
+    const online = (await http().get('/api/revenue?q=Online%20order').expect(200)).body.items[0];
+    expect(online.amountMinor).toBe(5500);
+    expect(online.payments).toEqual([expect.objectContaining({ paymentMethodId: visa.id, amountMinor: 5500 })]);
 
     await http().delete(`/api/payment-methods/${cash.id}`).expect(409); // in use
     await http().patch(`/api/payment-methods/${cash.id}`).send({ archived: true }).expect(200);
-    await http().delete(`/api/revenue/${r.id}`).expect(204);
+    for (const id of [r.id, r3.id, online.id]) await http().delete(`/api/revenue/${id}`).expect(204);
+    const walk = (await http().get('/api/revenue?q=Walk-in').expect(200)).body.items[0];
+    await http().delete(`/api/revenue/${walk.id}`).expect(204);
     await http().delete(`/api/payment-methods/${cash.id}`).expect(204);
   });
 

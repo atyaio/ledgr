@@ -34,7 +34,6 @@ import { CategoriesService } from '../categories/categories.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RevenueService } from '../revenue/revenue.service';
 import { SettlementsService } from '../settlements/settlements.service';
-import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { StakeholdersService } from '../stakeholders/stakeholders.service';
 import { CUSTOM_FIELD_ENTITY_FOR, ExportService } from './export.service';
 
@@ -72,7 +71,6 @@ export class ImportService {
     private readonly expenses: ExpensesService,
     private readonly revenue: RevenueService,
     private readonly settlements: SettlementsService,
-    private readonly paymentMethods: PaymentMethodsService,
   ) {}
 
   // ─── Parsing ────────────────────────────────────────────────────────────────
@@ -127,8 +125,7 @@ export class ImportService {
 
   async preview(entity: ImportEntity, buffer: Buffer, filename = ''): Promise<ImportPreviewResponse> {
     const { headers, rows } = await this.parse(buffer, filename);
-    const defs = await this.exporter.definitionsFor(entity);
-    const targets = importTargets(entity, defs);
+    const { targets } = await this.exporter.targets(entity);
     const suggestedMapping = suggestMapping(headers, targets);
     const dateHeader = suggestedMapping['date'] ?? suggestedMapping['joinedAt'];
     const detectedDateFormat = dateHeader ? detectDateFormat(rows.slice(0, 200).map((r) => r[dateHeader] ?? '')) : 'auto';
@@ -146,8 +143,7 @@ export class ImportService {
 
   async commit(entity: ImportEntity, buffer: Buffer, input: ImportCommitInput, actor: CurrentUser, filename = ''): Promise<ImportCommitResponse> {
     const { headers, rows } = await this.parse(buffer, filename);
-    const defs = await this.exporter.definitionsFor(entity);
-    const targets = importTargets(entity, defs);
+    const { defs, methods, targets } = await this.exporter.targets(entity);
     const mapping = input.mapping;
     const missing = targets.filter((t) => t.required && !mapping[t.key]);
     if (missing.length) throw badRequest('MAPPING', `Map the required column(s): ${missing.map((m) => m.label).join(', ')}`, missing.map((m) => m.key));
@@ -155,7 +151,7 @@ export class ImportService {
     if (unknown.length) throw badRequest('MAPPING', `Mapped columns not found in file: ${unknown.join(', ')}`, unknown);
 
     const batchId = `imp_${Date.now().toString(36)}`;
-    const ctx = new ImportContext(this, rows, mapping, input.options, defs, actor, batchId);
+    const ctx = new ImportContext(this, rows, mapping, input.options, defs, methods, actor, batchId);
     const result = await (() => {
       switch (entity) {
         case 'expenses': return ctx.expenses();
@@ -192,7 +188,7 @@ export class ImportService {
     return this.prisma;
   }
   get svc() {
-    return { categories: this.categories, stakeholders: this.stakeholders, expenses: this.expenses, revenue: this.revenue, settlements: this.settlements, paymentMethods: this.paymentMethods };
+    return { categories: this.categories, stakeholders: this.stakeholders, expenses: this.expenses, revenue: this.revenue, settlements: this.settlements };
   }
 }
 
@@ -212,6 +208,7 @@ class ImportContext {
     private readonly mapping: Record<string, string | null>,
     private readonly options: ImportOptions,
     private readonly defs: CustomFieldDefinition[],
+    private readonly methods: { id: string; name: string }[],
     private readonly actor: CurrentUser,
     private readonly batchId: string,
   ) {}
@@ -280,19 +277,21 @@ class ImportContext {
     return cat.id;
   }
 
-  private readonly paymentMethodCache = new Map<string, { id: string }>();
-
-  private async paymentMethod(row: Row): Promise<string | null> {
-    const name = this.cell(row, 'paymentMethod');
-    if (!name) return null;
-    const k = name.toLowerCase();
-    let pm = this.paymentMethodCache.get(k) ?? (await this.s.svc.paymentMethods.findByName(name));
-    if (!pm) {
-      if (!this.options.createMissingPaymentMethods) throw new RowFail(`Unknown payment method "${name}"`);
-      pm = await this.s.svc.paymentMethods.create({ name }, this.actor, { audit: false });
+  /** Per-method amounts from the "pm:<id>" columns; blank cells are skipped. */
+  private payments(row: Row): { paymentMethodId: string; amountMinor: number }[] {
+    const out: { paymentMethodId: string; amountMinor: number }[] = [];
+    for (const m of this.methods) {
+      const raw = this.cell(row, `pm:${m.id}`);
+      if (!raw) continue;
+      const n = parseMoney(raw, this.s.currency);
+      if (n === null) throw new RowFail(`Unrecognised ${m.name} amount "${raw}"`);
+      if (n < 0) throw new RowFail(`Negative ${m.name} amount "${raw}"`);
+      if (n > 0) out.push({ paymentMethodId: m.id, amountMinor: n });
     }
-    this.paymentMethodCache.set(k, pm);
-    return pm.id;
+    return out;
+  }
+  private moneyOpt(row: Row, key: string): number | undefined {
+    return this.cell(row, key) ? this.money(row, key) : undefined;
   }
 
   private async stakeholder(row: Row, key: string, required: boolean): Promise<string | null> {
@@ -381,14 +380,18 @@ class ImportContext {
   async revenue(): Promise<ImportCommitResponse> {
     const prepared = await this.prepare(async (row, line) => {
       const date = this.date(row, 'date', true) as string;
-      const amountMinor = this.money(row, 'amount');
+      const payments = this.payments(row);
+      const paymentsTotal = payments.reduce((a, p) => a + p.amountMinor, 0);
+      const amountMinor = this.moneyOpt(row, 'amount') ?? (paymentsTotal > 0 ? paymentsTotal : undefined);
+      if (amountMinor === undefined) throw new RowFail('Amount is missing (fill the total or a payment method column)');
+      if (payments.length && paymentsTotal !== amountMinor) throw new RowFail(`Payment columns add up to ${paymentsTotal / 100} but the total says ${amountMinor / 100}`);
       const input = this.validate(createRevenueSchema, {
         date,
         amountMinor,
         description: this.cell(row, 'description'),
         categoryId: await this.category(row, 'revenue', false),
         source: this.opt(row, 'source'),
-        paymentMethodId: await this.paymentMethod(row),
+        payments: payments.length ? payments : undefined,
         receivedByStakeholderId: await this.stakeholder(row, 'receivedBy', false),
         notes: this.opt(row, 'notes'),
         customFields: this.customFields(row),

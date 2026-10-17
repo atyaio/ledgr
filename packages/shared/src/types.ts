@@ -113,6 +113,13 @@ export interface PaymentMethod {
   updatedAt: string;
 }
 
+export interface RevenuePayment {
+  paymentMethodId: string;
+  name?: string;
+  color?: string;
+  amountMinor: number;
+}
+
 export interface ExpenseSplit {
   id: string;
   expenseId: string;
@@ -149,8 +156,8 @@ export interface Revenue {
   categoryId: string | null;
   category?: Pick<Category, 'id' | 'name' | 'color'> | null;
   source: string | null;
-  paymentMethodId: string | null;
-  paymentMethod?: Pick<PaymentMethod, 'id' | 'name' | 'color'> | null;
+  /** Amount received per payment method. Their sum is `amountMinor` when any exist. */
+  payments: RevenuePayment[];
   receivedByStakeholderId: string | null;
   receivedBy?: Pick<Stakeholder, 'id' | 'name' | 'color'> | null;
   notes: string | null;

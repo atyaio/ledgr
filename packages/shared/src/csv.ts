@@ -14,7 +14,7 @@ const SYNONYMS: Record<string, string[]> = {
   category: ['category', 'cat', 'type', 'group', 'bucket'],
   paidBy: ['paid by', 'payer', 'who paid', 'paidby', 'stakeholder', 'partner'],
   receivedBy: ['received by', 'receiver', 'receivedby', 'stakeholder', 'partner', 'account'],
-  paymentMethod: ['payment method', 'payment', 'payment type', 'method', 'paid via', 'paid with', 'channel', 'tender'],
+  amountTotal: ['total', 'amount', 'sum'],
   vendor: ['vendor', 'merchant', 'supplier', 'payee', 'shop', 'store'],
   source: ['source', 'client', 'customer', 'payer', 'platform', 'channel'],
   notes: ['notes', 'note', 'comment', 'comments', 'remarks'],
@@ -30,8 +30,13 @@ const SYNONYMS: Record<string, string[]> = {
   splitMode: ['split', 'split mode'],
 };
 
-export function importTargets(entity: ImportEntity, customFields: { key: string; label: string; required: boolean }[] = []): ImportColumn[] {
+export function importTargets(
+  entity: ImportEntity,
+  customFields: { key: string; label: string; required: boolean }[] = [],
+  paymentMethods: { id: string; name: string }[] = [],
+): ImportColumn[] {
   const cf = customFields.map<ImportColumn>((f) => ({ key: `cf:${f.key}`, label: f.label, required: f.required, description: 'Custom field' }));
+  const pm = paymentMethods.map<ImportColumn>((m) => ({ key: `pm:${m.id}`, label: m.name, required: false, description: 'Amount received this way' }));
   switch (entity) {
     // Column order mirrors the dashboard tables: date, description, category, party, custom columns, amount, then extras.
     case 'expenses':
@@ -51,10 +56,10 @@ export function importTargets(entity: ImportEntity, customFields: { key: string;
         { key: 'description', label: 'Description', required: true },
         { key: 'category', label: 'Category', required: false },
         { key: 'source', label: 'Source', required: false },
-        { key: 'paymentMethod', label: 'Payment method', required: false, description: 'Cash, Visa, online…' },
         { key: 'receivedBy', label: 'Received by', required: false, description: 'Stakeholder name; blank = company account' },
         ...cf,
-        { key: 'amount', label: 'Amount', required: true },
+        ...pm,
+        { key: 'amount', label: pm.length ? 'Total' : 'Amount', required: pm.length === 0, description: pm.length ? 'Blank = sum of the payment columns' : undefined },
         { key: 'notes', label: 'Notes', required: false },
       ];
     case 'stakeholders':

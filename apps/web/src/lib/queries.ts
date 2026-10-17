@@ -158,6 +158,7 @@ export function useRevenueMutations() {
     update: useMutation({ mutationFn: ({ id, ...b }: UpdateRevenueInput & { id: string }) => api.patch<Revenue>(`/revenue/${id}`, b), onSuccess: inv }),
     remove: useMutation({ mutationFn: (id: string) => api.delete(`/revenue/${id}`), onSuccess: inv }),
     bulkDelete: useMutation({ mutationFn: (ids: string[]) => api.post('/revenue/bulk-delete', { ids }), onSuccess: inv }),
+    setPayment: useMutation({ mutationFn: ({ id, paymentMethodId, amountMinor }: { id: string; paymentMethodId: string; amountMinor: number }) => api.put<Revenue>(`/revenue/${id}/payments/${paymentMethodId}`, { amountMinor }), onSuccess: inv }),
   };
 }
 

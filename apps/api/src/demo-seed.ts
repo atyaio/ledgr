@@ -221,6 +221,7 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
       for (let i = 0; i < 8; i++) {
         const client = pick(CLIENTS);
         const method = chance(0.55) ? methods[0] : chance(0.6) ? methods[1] : methods[2];
+        const split = chance(0.3) && methods.length > 1;
         const catName = pick(DEFAULT_REVENUE_CATEGORIES);
         const base = catName === 'Subscriptions' ? between(200, 1500) : catName === 'Consulting' ? between(800, 6000) : between(1500, 14000);
         await revenue.create(
@@ -230,7 +231,9 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
             description: `${client} – ${catName === 'Subscriptions' ? 'monthly plan' : catName === 'Consulting' ? 'advisory hours' : `milestone ${1 + Math.floor(rand() * 4)}`}`,
             categoryId: revenueCats.get(catName)!.id,
             source: client,
-            paymentMethodId: method.id,
+            payments: split
+              ? [{ paymentMethodId: methods[0].id, amountMinor: Math.round(money(base * growth) * 0.6) }, { paymentMethodId: methods[1].id, amountMinor: money(base * growth) - Math.round(money(base * growth) * 0.6) }]
+              : [{ paymentMethodId: method.id, amountMinor: money(base * growth) }],
             receivedByStakeholderId: chance(0.7) ? null : pick(people).id,
             customFields: { client, channel: pick(CHANNELS) },
           },

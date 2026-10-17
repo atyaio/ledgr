@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { todayISO, type CategoryKind, type CreateRecurringInput, type CustomFields, type RecurringFrequency, type RecurringRule, type SplitMode } from '@ledgr/shared';
-import { useCategories, useRecurringMutations, useStakeholders } from '@/lib/queries';
+import { useCategories, usePaymentMethods, useRecurringMutations, useStakeholders } from '@/lib/queries';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,8 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
   const sh = useStakeholders();
   const [kind, setKind] = useState<CategoryKind>('expense');
   const cats = useCategories(kind);
+  const pm = usePaymentMethods();
+  const [paymentMethodId, setPaymentMethodId] = useState('');
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState<RecurringFrequency>('monthly');
   const [interval, setInterval] = useState(1);
@@ -54,6 +56,7 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
     setSplitMode(rule?.template.splitMode ?? 'ownership');
     setSplits(rule?.template.customSplits ?? []);
     setCustom(rule?.template.customFields ?? {});
+    setPaymentMethodId(rule?.template.paymentMethodId ?? '');
   }, [open, rule]);
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
   const submit = async () => {
     const body: CreateRecurringInput = {
       kind, name: name.trim(), frequency, interval, startDate, endDate: endDate || null, active,
-      template: { description: description.trim(), amountMinor: amount!, categoryId: categoryId || null, partyStakeholderId: party || null, vendorOrSource: vendorOrSource.trim() || null, notes: notes.trim() || null, splitMode, customSplits: splitMode === 'custom' ? splits : [], customFields: custom },
+      template: { description: description.trim(), amountMinor: amount!, categoryId: categoryId || null, partyStakeholderId: party || null, paymentMethodId: kind === 'revenue' ? paymentMethodId || null : null, vendorOrSource: vendorOrSource.trim() || null, notes: notes.trim() || null, splitMode, customSplits: splitMode === 'custom' ? splits : [], customFields: custom },
     };
     try {
       if (rule) { const { kind: _k, ...rest } = body; await update.mutateAsync({ id: rule.id, ...rest }); }
@@ -109,6 +112,14 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
           <Field label={kind === 'expense' ? 'Paid by' : 'Received by'}><Select value={party} onChange={(e) => setParty(e.target.value)}><option value="">Company pool</option>{sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>
           <Field label={kind === 'expense' ? 'Vendor' : 'Source'}><Input value={vendorOrSource} onChange={(e) => setVendorOrSource(e.target.value)} /></Field>
         </div>
+        {kind === 'revenue' && (pm.data?.items.length ?? 0) > 0 && (
+          <Field label="Payment method" hint="blank = default">
+            <Select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}>
+              <option value="">Default method</option>
+              {pm.data?.items.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </Select>
+          </Field>
+        )}
         {kind === 'expense' && <SplitEditor stakeholders={sh.data?.items ?? []} amountMinor={amount} mode={splitMode} onMode={setSplitMode} splits={splits} onSplits={setSplits} />}
         <Field label="Notes"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
         <CustomFieldInputs entity={kind} values={custom} onChange={setCustom} />

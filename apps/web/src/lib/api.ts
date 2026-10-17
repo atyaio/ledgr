@@ -62,6 +62,7 @@ export const api = {
   get: <T>(path: string, params?: Query) => request<T>('GET', `${path}${qs(params)}`),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
+  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   delete: <T>(path: string, params?: Query) => request<T>('DELETE', `${path}${qs(params)}`),
   upload: <T>(path: string, form: FormData) => request<T>('POST', path, undefined, { form }),
   text: (path: string, params?: Query) => request<string>('GET', `${path}${qs(params)}`, undefined, { raw: true }),

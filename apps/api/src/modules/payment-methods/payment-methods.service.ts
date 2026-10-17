@@ -78,7 +78,7 @@ export class PaymentMethodsService {
 
   async remove(id: string, actor: CurrentUser): Promise<void> {
     const before = await this.get(id);
-    const used = await this.prisma.revenue.count({ where: { paymentMethodId: id } });
+    const used = await this.prisma.revenuePayment.count({ where: { paymentMethodId: id } });
     if (used > 0) throw conflict('HAS_RECORDS', `${used} revenue entries use this payment method. Archive it instead.`);
     await this.prisma.paymentMethod.delete({ where: { id } });
     await this.audit.log({ actor, action: 'delete', entity: 'paymentMethod', entityId: id, before });

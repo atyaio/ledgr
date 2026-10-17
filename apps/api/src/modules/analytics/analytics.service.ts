@@ -59,7 +59,7 @@ export class AnalyticsService {
       }),
       this.prisma.revenue.findMany({
         where,
-        select: { date: true, amountMinor: true, categoryId: true, receivedByStakeholderId: true, paymentMethodId: true, category: { select: { name: true, color: true } }, paymentMethod: { select: { name: true, color: true } } },
+        select: { date: true, amountMinor: true, categoryId: true, receivedByStakeholderId: true, category: { select: { name: true, color: true } }, payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, color: true } } } } },
       }),
       this.prisma.expense.aggregate({ where: prevWhere, _sum: { amountMinor: true } }),
       this.prisma.revenue.aggregate({ where: prevWhere, _sum: { amountMinor: true } }),
@@ -118,11 +118,21 @@ export class AnalyticsService {
     const revenueByCategory = groupByCategory(revenue, revenueMinor);
     const byMethod = new Map<string, { paymentMethodId: string | null; name: string; color: string; amountMinor: number; count: number }>();
     for (const r of revenue) {
-      const key = r.paymentMethodId ?? '';
-      const cur = byMethod.get(key) ?? { paymentMethodId: r.paymentMethodId, name: r.paymentMethod?.name ?? 'Unspecified', color: r.paymentMethod?.color ?? UNCATEGORISED.color, amountMinor: 0, count: 0 };
-      cur.amountMinor += r.amountMinor;
-      cur.count += 1;
-      byMethod.set(key, cur);
+      let attributed = 0;
+      for (const p of r.payments) {
+        const cur = byMethod.get(p.paymentMethodId) ?? { paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: 0, count: 0 };
+        cur.amountMinor += p.amountMinor;
+        cur.count += 1;
+        attributed += p.amountMinor;
+        byMethod.set(p.paymentMethodId, cur);
+      }
+      const rest = r.amountMinor - attributed;
+      if (rest > 0) {
+        const cur = byMethod.get('') ?? { paymentMethodId: null, name: 'Unspecified', color: UNCATEGORISED.color, amountMinor: 0, count: 0 };
+        cur.amountMinor += rest;
+        cur.count += 1;
+        byMethod.set('', cur);
+      }
     }
     const revenueByPaymentMethod = [...byMethod.values()].sort((a, b) => b.amountMinor - a.amountMinor).map((m) => ({ ...m, pct: pct(m.amountMinor, revenueMinor) }));
 

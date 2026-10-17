@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
-import { importTargets, parseISODate, type CustomFieldDefinition, type ImportColumn, type ImportEntity, type RangeQuery } from '@ledgr/shared';
+import { parseISODate, type CustomFieldDefinition, type ImportColumn, type ImportEntity, type RangeQuery } from '@ledgr/shared';
 import { LedgrContext } from '../../common/config/ledgr-config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ExportService, type CsvTable } from './export.service';
@@ -30,14 +30,12 @@ export class XlsxService {
   }
 
   async template(entity: ImportEntity): Promise<Buffer> {
-    const defs = await this.exporter.definitionsFor(entity);
-    const headers = importTargets(entity, defs).map((c) => c.label);
-    return this.build(entity, { headers, rows: [this.exporter.exampleRow(entity, defs)] });
+    const { defs, methods, targets } = await this.exporter.targets(entity);
+    return this.build(entity, { headers: targets.map((c) => c.label), rows: [this.exporter.exampleRow(entity, defs, methods)] });
   }
 
   private async build(entity: ImportEntity, table: CsvTable): Promise<Buffer> {
-    const defs = await this.exporter.definitionsFor(entity);
-    const targets = importTargets(entity, defs);
+    const { defs, targets } = await this.exporter.targets(entity);
     const lists = await this.lists(entity, defs);
     const currency = this.ctx.currency;
 
@@ -137,10 +135,6 @@ export class XlsxService {
       const sh = await this.prisma.stakeholder.findMany({ where: { active: true }, orderBy: [{ sharePercent: 'desc' }, { name: 'asc' }] });
       out.set('stakeholder', sh.map((s) => s.name));
     }
-    if (entity === 'revenue') {
-      const pm = await this.prisma.paymentMethod.findMany({ where: { archived: false }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
-      out.set('paymentMethod', pm.map((m) => m.name));
-    }
     if (entity === 'categories') out.set('kind', ['expense', 'revenue']);
     out.set('yesno', ['yes', 'no']);
     for (const d of defs) if (d.type === 'select') out.set(`cf:${d.key}`, d.options);
@@ -167,6 +161,7 @@ function columnKind(t: ImportColumn, def?: CustomFieldDefinition): Kind {
     if (def.type === 'select' || def.type === 'boolean') return 'list';
     return 'text';
   }
+  if (t.key.startsWith('pm:')) return 'money';
   switch (t.key) {
     case 'date':
     case 'joinedAt':
@@ -177,7 +172,6 @@ function columnKind(t: ImportColumn, def?: CustomFieldDefinition): Kind {
     case 'sharePercent':
       return 'number';
     case 'category':
-    case 'paymentMethod':
     case 'paidBy':
     case 'receivedBy':
     case 'from':
@@ -192,7 +186,6 @@ function columnKind(t: ImportColumn, def?: CustomFieldDefinition): Kind {
 function listNameFor(t: ImportColumn, def?: CustomFieldDefinition): string | undefined {
   if (def) return def.type === 'boolean' ? 'yesno' : def.type === 'select' ? `cf:${def.key}` : undefined;
   if (t.key === 'category') return 'category';
-  if (t.key === 'paymentMethod') return 'paymentMethod';
   if (['paidBy', 'receivedBy', 'from', 'to'].includes(t.key)) return 'stakeholder';
   if (t.key === 'kind') return 'kind';
   return undefined;

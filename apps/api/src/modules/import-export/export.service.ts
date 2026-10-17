@@ -41,6 +41,18 @@ export class ExportService {
     return cfEntity ? this.customFields.definitions(cfEntity) : [];
   }
 
+  /** Active payment methods, one export column each (revenue only). */
+  async paymentMethodsFor(entity: ImportEntity): Promise<{ id: string; name: string }[]> {
+    if (entity !== 'revenue') return [];
+    const rows = await this.prisma.paymentMethod.findMany({ where: { archived: false }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+    return rows.map((m) => ({ id: m.id, name: m.name }));
+  }
+
+  async targets(entity: ImportEntity) {
+    const [defs, methods] = await Promise.all([this.definitionsFor(entity), this.paymentMethodsFor(entity)]);
+    return { defs, methods, targets: importTargets(entity, defs, methods) };
+  }
+
   filename(entity: ImportEntity, range: RangeQuery, ext: 'csv' | 'xlsx' = 'csv'): string {
     const from = range.from ?? 'all';
     const to = range.to ?? todayISO();
@@ -53,9 +65,8 @@ export class ExportService {
   }
 
   async templateCsv(entity: ImportEntity): Promise<string> {
-    const defs = await this.definitionsFor(entity);
-    const headers = importTargets(entity, defs).map((c) => c.label);
-    return toCSV([headers, this.exampleRow(entity, defs)]);
+    const { defs, methods, targets } = await this.targets(entity);
+    return toCSV([targets.map((c) => c.label), this.exampleRow(entity, defs, methods)]);
   }
 
   private money(minor: number): string {
@@ -67,8 +78,8 @@ export class ExportService {
   }
 
   async table(entity: ImportEntity, range: RangeQuery): Promise<CsvTable> {
-    const defs = await this.definitionsFor(entity);
-    const headers = importTargets(entity, defs).map((c) => c.label);
+    const { defs, methods, targets } = await this.targets(entity);
+    const headers = targets.map((c) => c.label);
     const date = dateRangeWhere(range.from, range.to);
     const dated = date ? { date } : {};
     switch (entity) {
@@ -95,7 +106,7 @@ export class ExportService {
       case 'revenue': {
         const rows = await this.prisma.revenue.findMany({
           where: dated,
-          include: { category: { select: { name: true } }, receivedBy: { select: { name: true } }, paymentMethod: { select: { name: true } } },
+          include: { category: { select: { name: true } }, receivedBy: { select: { name: true } }, payments: true },
           orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         });
         return {
@@ -105,9 +116,12 @@ export class ExportService {
             r.description,
             r.category?.name ?? '',
             r.source ?? '',
-            r.paymentMethod?.name ?? '',
             r.receivedBy?.name ?? '',
             ...this.cfCells(parseCustomFields(r.customFields), defs),
+            ...methods.map((m) => {
+              const p = r.payments.find((x) => x.paymentMethodId === m.id);
+              return p ? this.money(p.amountMinor) : '';
+            }),
             this.money(r.amountMinor),
             r.notes ?? '',
           ]),
@@ -138,7 +152,7 @@ export class ExportService {
     }
   }
 
-  exampleRow(entity: ImportEntity, defs: CustomFieldDefinition[]): string[] {
+  exampleRow(entity: ImportEntity, defs: CustomFieldDefinition[], methods: { id: string; name: string }[] = []): string[] {
     const today = todayISO();
     const cf = defs.map((d) => {
       switch (d.type) {
@@ -152,7 +166,10 @@ export class ExportService {
     });
     switch (entity) {
       case 'expenses': return [today, 'Cloud hosting – October', 'Hosting & infrastructure', '', ...cf, this.money(125_000), 'AWS', 'Paid from the company account'];
-      case 'revenue': return [today, 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', '', ...cf, this.money(2_500_000), ''];
+      case 'revenue': {
+        const perMethod = methods.map((_, i) => (i === 0 ? this.money(2_000_000) : i === 1 ? this.money(500_000) : ''));
+        return [today, 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', ...cf, ...perMethod, this.money(2_500_000), ''];
+      }
       case 'stakeholders': return ['Jane Doe', '50', 'jane@example.com', today, '', ...cf];
       case 'categories': return ['Marketing', 'expense', '#E0A458', this.money(500_000)];
       case 'settlements': return [today, 'Jane Doe', '', this.money(30_000), 'Reimbursement for September'];

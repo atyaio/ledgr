@@ -141,18 +141,27 @@ export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 export const bulkIdsSchema = z.object({ ids: z.array(z.string().min(1)).min(1).max(1000) });
 
 // ─── Revenue ───────────────────────────────────────────────────────────────────
-export const createRevenueSchema = z.object({
+export const revenuePaymentInput = z.object({ paymentMethodId: z.string().min(1), amountMinor: minorAmount.min(0) });
+const revenueBase = z.object({
   date: isoDate,
-  amountMinor: positiveMinor,
+  /** Total. Optional when `payments` are given (then it is their sum). */
+  amountMinor: positiveMinor.optional(),
   description: z.string().trim().min(1).max(200),
   categoryId: z.string().nullable().optional(),
   source: z.string().trim().max(120).nullable().optional(),
-  paymentMethodId: z.string().nullable().optional(),
+  /** Per-method amounts. Omitted → the whole amount goes to the default payment method (if any). */
+  payments: z.array(revenuePaymentInput).max(50).optional(),
   receivedByStakeholderId: z.string().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   customFields: customFields.optional(),
 });
-export const updateRevenueSchema = createRevenueSchema.partial();
+const paymentsTotal = (p?: { amountMinor: number }[]) => (p ?? []).reduce((a, x) => a + x.amountMinor, 0);
+export const createRevenueSchema = revenueBase.refine((v) => (v.amountMinor ?? 0) > 0 || paymentsTotal(v.payments) > 0, {
+  message: 'Enter an amount, or at least one payment method amount',
+  path: ['amountMinor'],
+});
+export const updateRevenueSchema = revenueBase.partial();
+export const setRevenuePaymentSchema = z.object({ amountMinor: minorAmount.min(0) });
 export type CreateRevenueInput = z.infer<typeof createRevenueSchema>;
 export type UpdateRevenueInput = z.infer<typeof updateRevenueSchema>;
 
