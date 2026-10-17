@@ -4,7 +4,7 @@ import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import type { Db } from '../../common/db';
 import { toIso } from '../../common/db';
-import { conflict, notFound } from '../../common/errors';
+import { badRequest, conflict, notFound } from '../../common/errors';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import type { PaymentMethod as Row } from '../../generated/prisma/client';
 
@@ -76,10 +76,33 @@ export class PaymentMethodsService {
     return after;
   }
 
+  /**
+   * Resolve per-method amounts for a new entry (expense or revenue). Explicit `payments`
+   * win (total = their sum); a bare amount goes to the default method when one exists,
+   * else it stays unattributed.
+   */
+  async resolveAmounts(input: { amountMinor?: number; payments?: { paymentMethodId: string; amountMinor: number }[] }, db: Db = this.prisma): Promise<{ total: number; payments: { paymentMethodId: string; amountMinor: number }[] }> {
+    const given = (input.payments ?? []).filter((p) => p.amountMinor > 0);
+    if (given.length) {
+      const seen = new Set<string>();
+      for (const p of given) {
+        if (seen.has(p.paymentMethodId)) throw badRequest('DUPLICATE_PAYMENT_METHOD', 'Each payment method can appear once');
+        seen.add(p.paymentMethodId);
+        await this.get(p.paymentMethodId, db);
+      }
+      return { total: given.reduce((a, p) => a + p.amountMinor, 0), payments: given };
+    }
+    const total = input.amountMinor ?? 0;
+    if (total <= 0) throw badRequest('AMOUNT_REQUIRED', 'Enter an amount, or at least one payment method amount');
+    const def = await db.paymentMethod.findFirst({ where: { isDefault: true, archived: false } });
+    return { total, payments: def ? [{ paymentMethodId: def.id, amountMinor: total }] : [] };
+  }
+
   async remove(id: string, actor: CurrentUser): Promise<void> {
     const before = await this.get(id);
-    const used = await this.prisma.revenuePayment.count({ where: { paymentMethodId: id } });
-    if (used > 0) throw conflict('HAS_RECORDS', `${used} revenue entries use this payment method. Archive it instead.`);
+    const [usedRevenue, usedExpenses] = await Promise.all([this.prisma.revenuePayment.count({ where: { paymentMethodId: id } }), this.prisma.expensePayment.count({ where: { paymentMethodId: id } })]);
+    const used = usedRevenue + usedExpenses;
+    if (used > 0) throw conflict('HAS_RECORDS', `${used} entries use this payment method. Archive it instead.`);
     await this.prisma.paymentMethod.delete({ where: { id } });
     await this.audit.log({ actor, action: 'delete', entity: 'paymentMethod', entityId: id, before });
   }

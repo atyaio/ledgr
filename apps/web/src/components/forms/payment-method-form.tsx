@@ -39,7 +39,7 @@ export function PaymentMethodForm({ open, onClose, method }: { open: boolean; on
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         <Field label="Name" required><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="Cash, Visa, Instapay, PayPal…" /></Field>
         <ColorPicker value={color} onChange={setColor} />
-        <Toggle checked={isDefault} onChange={setIsDefault} label="Default for new revenue" description="Preselected in the revenue form. Only one method can be the default." />
+        <Toggle checked={isDefault} onChange={setIsDefault} label="Default for new entries" description="The expense and revenue forms ask for this method's amount first. Only one method can be the default." />
         {method && <Toggle checked={!archived} onChange={(v) => setArchived(!v)} label="Active" description={archived ? 'Archived: hidden from forms, history kept' : 'Shown in forms, filters and exports'} />}
       </form>
     </Modal>

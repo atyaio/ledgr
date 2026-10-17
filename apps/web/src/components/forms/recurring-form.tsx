@@ -70,7 +70,7 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
   const submit = async () => {
     const body: CreateRecurringInput = {
       kind, name: name.trim(), frequency, interval, startDate, endDate: endDate || null, active,
-      template: { description: description.trim(), amountMinor: amount!, categoryId: categoryId || null, partyStakeholderId: party || null, paymentMethodId: kind === 'revenue' ? paymentMethodId || null : null, vendorOrSource: vendorOrSource.trim() || null, notes: notes.trim() || null, splitMode, customSplits: splitMode === 'custom' ? splits : [], customFields: custom },
+      template: { description: description.trim(), amountMinor: amount!, categoryId: categoryId || null, partyStakeholderId: party || null, paymentMethodId: paymentMethodId || null, vendorOrSource: vendorOrSource.trim() || null, notes: notes.trim() || null, splitMode, customSplits: splitMode === 'custom' ? splits : [], customFields: custom },
     };
     try {
       if (rule) { const { kind: _k, ...rest } = body; await update.mutateAsync({ id: rule.id, ...rest }); }
@@ -112,7 +112,7 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
           <Field label={kind === 'expense' ? 'Paid by' : 'Received by'}><Select value={party} onChange={(e) => setParty(e.target.value)}><option value="">Company pool</option>{sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>
           <Field label={kind === 'expense' ? 'Vendor' : 'Source'}><Input value={vendorOrSource} onChange={(e) => setVendorOrSource(e.target.value)} /></Field>
         </div>
-        {kind === 'revenue' && (pm.data?.items.length ?? 0) > 0 && (
+        {(pm.data?.items.length ?? 0) > 0 && (
           <Field label="Payment method" hint="blank = default">
             <Select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}>
               <option value="">Default method</option>

@@ -149,6 +149,7 @@ export function useExpenseMutations() {
     bulkDelete: useMutation({ mutationFn: (ids: string[]) => api.post('/expenses/bulk-delete', { ids }), onSuccess: inv }),
     recompute: useMutation({ mutationFn: (id: string) => api.post<Expense>(`/expenses/${id}/recompute-split`), onSuccess: inv }),
     recomputeRange: useMutation({ mutationFn: (r: { from?: string; to?: string }) => api.post<{ updated: number }>('/expenses/recompute-splits', r), onSuccess: inv }),
+    setPayment: useMutation({ mutationFn: ({ id, paymentMethodId, amountMinor }: { id: string; paymentMethodId: string; amountMinor: number }) => api.put<Expense>(`/expenses/${id}/payments/${paymentMethodId}`, { amountMinor }), onSuccess: inv }),
   };
 }
 export function useRevenueMutations() {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { PaymentMethod, Revenue } from '@ledgr/shared';
-import { useRevenueMutations } from '@/lib/queries';
+import type { Expense, PaymentMethod, Revenue } from '@ledgr/shared';
+import { useExpenseMutations, useRevenueMutations } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/dialog';
@@ -8,21 +8,25 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/input';
 import { MoneyInput } from './money-input';
 
-/** "Add Visa amount": set one payment method's amount on an existing revenue entry. */
-export function PaymentAmountPopup({ target, onClose }: { target: { revenue: Revenue; method: PaymentMethod } | null; onClose: () => void }) {
+export type PaymentTarget = { kind: 'revenue'; entry: Revenue; method: PaymentMethod } | { kind: 'expense'; entry: Expense; method: PaymentMethod };
+
+/** "Add Visa amount": set one payment method's amount on an existing expense or revenue entry. */
+export function PaymentAmountPopup({ target, onClose }: { target: PaymentTarget | null; onClose: () => void }) {
   const { money } = useProject();
-  const { setPayment } = useRevenueMutations();
+  const revenue = useRevenueMutations();
+  const expenses = useExpenseMutations();
   const toast = useToast();
   const [amount, setAmount] = useState<number | null>(null);
-  const existing = target?.revenue.payments.find((p) => p.paymentMethodId === target.method.id)?.amountMinor ?? null;
+  const existing = target?.entry.payments.find((p) => p.paymentMethodId === target.method.id)?.amountMinor ?? null;
   useEffect(() => setAmount(existing), [existing, target]);
-  if (!target) return <Modal open={false} onClose={onClose} title=""><span /></Modal>;
-  const { revenue, method } = target;
-  const othersTotal = revenue.payments.filter((p) => p.paymentMethodId !== method.id).reduce((a, p) => a + p.amountMinor, 0);
+  if (!target) return null;
+  const { entry, method } = target;
+  const mutation = target.kind === 'revenue' ? revenue.setPayment : expenses.setPayment;
+  const othersTotal = entry.payments.filter((p) => p.paymentMethodId !== method.id).reduce((a, p) => a + p.amountMinor, 0);
   const newTotal = othersTotal + (amount ?? 0);
   const save = async () => {
     try {
-      await setPayment.mutateAsync({ id: revenue.id, paymentMethodId: method.id, amountMinor: amount ?? 0 });
+      await mutation.mutateAsync({ id: entry.id, paymentMethodId: method.id, amountMinor: amount ?? 0 });
       toast.success(amount ? `${method.name} amount saved` : `${method.name} amount removed`);
       onClose();
     } catch (e) {
@@ -34,12 +38,12 @@ export function PaymentAmountPopup({ target, onClose }: { target: { revenue: Rev
       open
       onClose={onClose}
       title={`${existing ? 'Edit' : 'Add'} ${method.name} amount`}
-      description={revenue.description}
+      description={entry.description}
       footer={
         <>
-          {existing !== null && <Button variant="danger" size="md" onClick={() => { setAmount(0); }} disabled={amount === 0}>Clear</Button>}
+          {existing !== null && <Button variant="danger" size="md" onClick={() => setAmount(0)} disabled={amount === 0}>Clear</Button>}
           <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" size="md" onClick={save} loading={setPayment.isPending} disabled={amount === null || amount < 0 || newTotal <= 0}>Save</Button>
+          <Button variant="primary" size="md" onClick={save} loading={mutation.isPending} disabled={amount === null || amount < 0 || newTotal <= 0}>Save</Button>
         </>
       }
     >

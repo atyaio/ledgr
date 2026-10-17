@@ -102,26 +102,8 @@ export class RevenueService {
     if (input.receivedByStakeholderId) await this.stakeholders.get(input.receivedByStakeholderId, db);
   }
 
-  /**
-   * Resolve the per-method amounts for a new entry. Explicit `payments` win (total = their
-   * sum); a bare amount goes to the default payment method when one exists, else it stays
-   * unattributed.
-   */
-  private async resolvePayments(input: { amountMinor?: number; payments?: { paymentMethodId: string; amountMinor: number }[] }, db: Db): Promise<{ total: number; payments: { paymentMethodId: string; amountMinor: number }[] }> {
-    const given = (input.payments ?? []).filter((p) => p.amountMinor > 0);
-    if (given.length) {
-      const seen = new Set<string>();
-      for (const p of given) {
-        if (seen.has(p.paymentMethodId)) throw badRequest('DUPLICATE_PAYMENT_METHOD', 'Each payment method can appear once');
-        seen.add(p.paymentMethodId);
-        await this.paymentMethods.get(p.paymentMethodId, db);
-      }
-      return { total: given.reduce((a, p) => a + p.amountMinor, 0), payments: given };
-    }
-    const total = input.amountMinor ?? 0;
-    if (total <= 0) throw badRequest('AMOUNT_REQUIRED', 'Enter an amount, or at least one payment method amount');
-    const def = await db.paymentMethod.findFirst({ where: { isDefault: true, archived: false } });
-    return { total, payments: def ? [{ paymentMethodId: def.id, amountMinor: total }] : [] };
+  private resolvePayments(input: { amountMinor?: number; payments?: { paymentMethodId: string; amountMinor: number }[] }, db: Db) {
+    return this.paymentMethods.resolveAmounts(input, db);
   }
 
   async create(input: CreateRevenueInput, actor: CurrentUser, opts: RevenueCreateOpts = {}): Promise<Revenue> {

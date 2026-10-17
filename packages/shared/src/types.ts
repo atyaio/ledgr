@@ -113,12 +113,14 @@ export interface PaymentMethod {
   updatedAt: string;
 }
 
-export interface RevenuePayment {
+/** Amount paid/received through one payment method. */
+export interface MethodPayment {
   paymentMethodId: string;
   name?: string;
   color?: string;
   amountMinor: number;
 }
+export type RevenuePayment = MethodPayment;
 
 export interface ExpenseSplit {
   id: string;
@@ -142,6 +144,8 @@ export interface Expense {
   notes: string | null;
   splitMode: SplitMode;
   splits: ExpenseSplit[];
+  /** Amount paid per payment method; their sum is `amountMinor` when any exist. */
+  payments: MethodPayment[];
   recurringRuleId: string | null;
   customFields: CustomFields;
   createdAt: string;
@@ -199,7 +203,7 @@ export interface RecurringTemplate {
   amountMinor: number;
   categoryId: string | null;
   partyStakeholderId: string | null; // paidBy for expenses, receivedBy for revenue
-  paymentMethodId?: string | null; // revenue only
+  paymentMethodId?: string | null; // method the generated entry is paid/received through
   vendorOrSource: string | null;
   notes: string | null;
   splitMode: SplitMode;
@@ -336,6 +340,7 @@ export interface AnalyticsOverview {
   delta: { revenuePct: number | null; expensePct: number | null; netPct: number | null };
   series: { bucket: string; revenueMinor: number; expenseMinor: number; netMinor: number; cumulativeNetMinor: number }[];
   expensesByCategory: { categoryId: string; name: string; color: string; amountMinor: number; pct: number; count: number }[];
+  expensesByPaymentMethod: { paymentMethodId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
   revenueByCategory: { categoryId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
   revenueByPaymentMethod: { paymentMethodId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
   topExpenses: { id: string; date: string; description: string; amountMinor: number; categoryName: string; categoryColor: string }[];

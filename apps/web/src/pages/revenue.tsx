@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import { MoreHorizontal, Pencil, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
-import { PaymentAmountPopup } from '@/components/forms/payment-amount-popup';
+import { PaymentAmountPopup, type PaymentTarget } from '@/components/forms/payment-amount-popup';
 import { useMemo, useState } from 'react';
 import type { CustomFieldDefinition, PaymentMethod, Revenue } from '@ledgr/shared';
 import { useDateRange } from '@/lib/range';
@@ -45,7 +45,7 @@ export function RevenuePage() {
   const [selecting, setSelecting] = useState(false);
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [detail, setDetail] = useState<Revenue | null>(null);
-  const [payTarget, setPayTarget] = useState<{ revenue: Revenue; method: PaymentMethod } | null>(null);
+  const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
   const methods: PaymentMethod[] = useMemo(() => (pm.data?.items ?? []).filter((m) => !m.archived), [pm.data]);
 
   const items = q.data?.items ?? [];
@@ -161,9 +161,9 @@ export function RevenuePage() {
                     return (
                       <Td key={m.id} align="right" onClick={(ev) => ev.stopPropagation()}>
                         {p && p.amountMinor > 0 ? (
-                          <button type="button" className="num hover:text-accent" title={`Edit ${m.name} amount`} onClick={() => setPayTarget({ revenue: r, method: m })}>{money(p.amountMinor)}</button>
+                          <button type="button" className="num hover:text-accent" title={`Edit ${m.name} amount`} onClick={() => setPayTarget({ kind: 'revenue', entry: r, method: m })}>{money(p.amountMinor)}</button>
                         ) : (
-                          <button type="button" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-accent/80 hover:text-accent whitespace-nowrap" onClick={() => setPayTarget({ revenue: r, method: m })}><Plus className="size-3.5" />Add {m.name}</button>
+                          <button type="button" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-accent/80 hover:text-accent whitespace-nowrap" onClick={() => setPayTarget({ kind: 'revenue', entry: r, method: m })}><Plus className="size-3.5" />Add {m.name}</button>
                         )}
                       </Td>
                     );

@@ -65,8 +65,9 @@ model Expense {
 
   category      Category       @relation(fields: [categoryId], references: [id])
   paidBy        Stakeholder?   @relation("PaidBy", fields: [paidByStakeholderId], references: [id], onDelete: SetNull)
-  recurringRule RecurringRule? @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
+  recurringRule RecurringRule?   @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
   splits        ExpenseSplit[]
+  payments      ExpensePayment[]
 
   @@index([date])
   @@index([categoryId])
@@ -97,7 +98,23 @@ model PaymentMethod {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  payments RevenuePayment[]
+  payments        RevenuePayment[]
+  expensePayments ExpensePayment[]
+}
+
+/// Part of an expense paid through one payment method (cash, card…); the expense's
+/// amountMinor is the sum of its payments when any exist.
+model ExpensePayment {
+  id              String @id @default(cuid())
+  expenseId       String
+  paymentMethodId String
+  amountMinor     Int
+
+  expense       Expense       @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@unique([expenseId, paymentMethodId])
+  @@index([paymentMethodId])
 }
 
 /// Part of a revenue entry received through one payment method. A revenue row can

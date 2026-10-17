@@ -229,6 +229,7 @@ export class RecurringService implements OnApplicationBootstrap {
           amountMinor: t.amountMinor,
           description: t.description,
           categoryId: t.categoryId ?? '',
+          payments: t.paymentMethodId ? [{ paymentMethodId: t.paymentMethodId, amountMinor: t.amountMinor }] : undefined,
           paidByStakeholderId: t.partyStakeholderId,
           vendor: t.vendorOrSource,
           notes: t.notes,

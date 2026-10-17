@@ -43,7 +43,7 @@ export class ExportService {
 
   /** Active payment methods, one export column each (revenue only). */
   async paymentMethodsFor(entity: ImportEntity): Promise<{ id: string; name: string }[]> {
-    if (entity !== 'revenue') return [];
+    if (entity !== 'revenue' && entity !== 'expenses') return [];
     const rows = await this.prisma.paymentMethod.findMany({ where: { archived: false }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
     return rows.map((m) => ({ id: m.id, name: m.name }));
   }
@@ -86,7 +86,7 @@ export class ExportService {
       case 'expenses': {
         const rows = await this.prisma.expense.findMany({
           where: dated,
-          include: { category: { select: { name: true } }, paidBy: { select: { name: true } } },
+          include: { category: { select: { name: true } }, paidBy: { select: { name: true } }, payments: true },
           orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         });
         return {
@@ -97,6 +97,10 @@ export class ExportService {
             e.category.name,
             e.paidBy?.name ?? '',
             ...this.cfCells(parseCustomFields(e.customFields), defs),
+            ...methods.map((m) => {
+              const p = e.payments.find((x) => x.paymentMethodId === m.id);
+              return p ? this.money(p.amountMinor) : '';
+            }),
             this.money(e.amountMinor),
             e.vendor ?? '',
             e.notes ?? '',
@@ -165,7 +169,10 @@ export class ExportService {
       }
     });
     switch (entity) {
-      case 'expenses': return [today, 'Cloud hosting – October', 'Hosting & infrastructure', '', ...cf, this.money(125_000), 'AWS', 'Paid from the company account'];
+      case 'expenses': {
+        const perMethod = methods.map((_, i) => (i === 0 ? this.money(125_000) : ''));
+        return [today, 'Cloud hosting – October', 'Hosting & infrastructure', '', ...cf, ...perMethod, this.money(125_000), 'AWS', 'Paid from the company account'];
+      }
       case 'revenue': {
         const perMethod = methods.map((_, i) => (i === 0 ? this.money(2_000_000) : i === 1 ? this.money(500_000) : ''));
         return [today, 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', ...cf, ...perMethod, this.money(2_500_000), ''];

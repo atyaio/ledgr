@@ -22,11 +22,13 @@ import type { Prisma } from '../../generated/prisma/client';
 import { CategoriesService, categoryRef } from '../categories/categories.service';
 import { CustomFieldsService } from '../custom-fields/custom-fields.service';
 import { StakeholdersService, stakeholderRef } from '../stakeholders/stakeholders.service';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 
 const EXPENSE_INCLUDE = {
   category: { select: { id: true, name: true, color: true } },
   paidBy: { select: { id: true, name: true, color: true } },
   splits: { include: { stakeholder: { select: { name: true } } }, orderBy: { amountMinor: 'desc' } },
+  payments: { include: { paymentMethod: { select: { name: true, color: true, sortOrder: true } } } },
 } satisfies Prisma.ExpenseInclude;
 
 type ExpenseRow = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
@@ -44,6 +46,9 @@ export function toExpenseDto(r: ExpenseRow): Expense {
     vendor: r.vendor,
     notes: r.notes,
     splitMode: r.splitMode as SplitMode,
+    payments: [...r.payments]
+      .sort((a, b) => a.paymentMethod.sortOrder - b.paymentMethod.sortOrder || a.paymentMethod.name.localeCompare(b.paymentMethod.name))
+      .map((p) => ({ paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: p.amountMinor })),
     splits: r.splits.map((s) => ({
       id: s.id,
       expenseId: s.expenseId,
@@ -77,6 +82,7 @@ export class ExpensesService {
     private readonly categories: CategoriesService,
     private readonly stakeholders: StakeholdersService,
     private readonly customFields: CustomFieldsService,
+    private readonly paymentMethods: PaymentMethodsService,
   ) {}
 
   // ─── Queries ────────────────────────────────────────────────────────────────
@@ -87,6 +93,7 @@ export class ExpensesService {
     if (date) and.push({ date });
     if (q.categoryId) and.push({ categoryId: q.categoryId });
     if (q.stakeholderId) and.push({ OR: [{ paidByStakeholderId: q.stakeholderId }, { splits: { some: { stakeholderId: q.stakeholderId } } }] });
+    if (q.paymentMethodId) and.push({ payments: { some: { paymentMethodId: q.paymentMethodId, amountMinor: { gt: 0 } } } });
     if (q.q) and.push({ OR: [{ description: { contains: q.q } }, { vendor: { contains: q.q } }, { notes: { contains: q.q } }] });
     return and.length ? { AND: and } : {};
   }
@@ -150,11 +157,13 @@ export class ExpensesService {
     const db = opts.db ?? this.prisma;
     await this.validateRefs(input, db);
     const customFields = await this.customFields.normalize('expense', input.customFields, db);
-    const splits = await this.computeSplits(input.amountMinor, input.splitMode, input.customSplits, db);
+    const { total, payments } = await this.paymentMethods.resolveAmounts(input, db);
+    const splits = await this.computeSplits(total, input.splitMode, input.customSplits, db);
     const row = await db.expense.create({
       data: {
         date: input.date,
-        amountMinor: input.amountMinor,
+        amountMinor: total,
+        payments: { create: payments },
         description: input.description,
         categoryId: input.categoryId,
         paidByStakeholderId: input.paidByStakeholderId ?? null,
@@ -175,17 +184,30 @@ export class ExpensesService {
 
   async update(id: string, input: UpdateExpenseInput, actor: CurrentUser): Promise<Expense> {
     const before = await this.get(id);
+    // Amount / payments: explicit payments replace everything; a bare amount change is only
+    // unambiguous when the entry has at most one payment method.
+    let replacePayments: { paymentMethodId: string; amountMinor: number }[] | undefined;
+    let amountMinor: number | undefined;
+    if (input.payments !== undefined) {
+      const r = await this.paymentMethods.resolveAmounts({ payments: input.payments, amountMinor: input.amountMinor ?? before.amountMinor });
+      amountMinor = r.total;
+      replacePayments = r.payments;
+    } else if (input.amountMinor !== undefined && input.amountMinor !== before.amountMinor) {
+      if (before.payments.length > 1) throw badRequest('AMOUNT_WITH_SPLITS', 'This entry is split across payment methods. Edit the amount per method instead.');
+      amountMinor = input.amountMinor;
+      replacePayments = before.payments.length === 1 ? [{ paymentMethodId: before.payments[0].paymentMethodId, amountMinor: input.amountMinor }] : undefined;
+    }
     const next = {
       categoryId: input.categoryId ?? before.categoryId,
       paidByStakeholderId: input.paidByStakeholderId === undefined ? before.paidByStakeholderId : input.paidByStakeholderId,
-      amountMinor: input.amountMinor ?? before.amountMinor,
+      amountMinor: amountMinor ?? before.amountMinor,
       splitMode: input.splitMode ?? before.splitMode,
     };
     await this.validateRefs(next, this.prisma);
     const customFields =
       input.customFields !== undefined ? await this.customFields.normalize('expense', { ...before.customFields, ...input.customFields }) : undefined;
 
-    const resnapshot = input.amountMinor !== undefined || input.splitMode !== undefined || input.customSplits !== undefined;
+    const resnapshot = amountMinor !== undefined || input.splitMode !== undefined || input.customSplits !== undefined;
     let splits: SplitResult[] | null = null;
     if (resnapshot) {
       const custom = input.customSplits ?? (next.splitMode === 'custom' ? before.splits.map((s) => ({ stakeholderId: s.stakeholderId, sharePercent: s.sharePercent })) : undefined);
@@ -194,11 +216,15 @@ export class ExpensesService {
 
     const row = await this.prisma.$transaction(async (tx) => {
       if (splits) await tx.expenseSplit.deleteMany({ where: { expenseId: id } });
+      if (replacePayments) {
+        await tx.expensePayment.deleteMany({ where: { expenseId: id } });
+        if (replacePayments.length) await tx.expensePayment.createMany({ data: replacePayments.map((p) => ({ expenseId: id, ...p })) });
+      }
       return tx.expense.update({
         where: { id },
         data: {
           ...(input.date !== undefined ? { date: input.date } : {}),
-          ...(input.amountMinor !== undefined ? { amountMinor: input.amountMinor } : {}),
+          ...(amountMinor !== undefined ? { amountMinor } : {}),
           ...(input.description !== undefined ? { description: input.description } : {}),
           ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
           ...(input.paidByStakeholderId !== undefined ? { paidByStakeholderId: input.paidByStakeholderId } : {}),
@@ -208,6 +234,31 @@ export class ExpensesService {
           ...(customFields !== undefined ? { customFields: JSON.stringify(customFields) } : {}),
           ...(splits ? { splits: { create: splits.map((s) => ({ stakeholderId: s.stakeholderId, sharePercent: s.sharePercent, amountMinor: s.amountMinor })) } } : {}),
         },
+        include: EXPENSE_INCLUDE,
+      });
+    }, INTERACTIVE_TX);
+    const after = toExpenseDto(row);
+    await this.audit.log({ actor, action: 'update', entity: 'expense', entityId: id, before, after });
+    return after;
+  }
+
+  /** Set (or clear with 0) the amount paid through one method; total and splits follow. */
+  async setPayment(id: string, paymentMethodId: string, amountMinor: number, actor: CurrentUser): Promise<Expense> {
+    const before = await this.get(id);
+    await this.paymentMethods.get(paymentMethodId);
+    const others = before.payments.filter((p) => p.paymentMethodId !== paymentMethodId);
+    const next = amountMinor > 0 ? [...others, { paymentMethodId, amountMinor }] : others;
+    const total = next.length ? next.reduce((a, p) => a + p.amountMinor, 0) : before.amountMinor;
+    if (total <= 0) throw badRequest('AMOUNT_REQUIRED', 'An expense needs at least one amount');
+    const custom = before.splitMode === 'custom' ? before.splits.map((s) => ({ stakeholderId: s.stakeholderId, sharePercent: s.sharePercent })) : undefined;
+    const splits = total !== before.amountMinor ? await this.computeSplits(total, before.splitMode, custom) : null;
+    const row = await this.prisma.$transaction(async (tx) => {
+      await tx.expensePayment.deleteMany({ where: { expenseId: id } });
+      if (next.length) await tx.expensePayment.createMany({ data: next.map((p) => ({ expenseId: id, paymentMethodId: p.paymentMethodId, amountMinor: p.amountMinor })) });
+      if (splits) await tx.expenseSplit.deleteMany({ where: { expenseId: id } });
+      return tx.expense.update({
+        where: { id },
+        data: { amountMinor: total, ...(splits ? { splits: { create: splits.map((s) => ({ stakeholderId: s.stakeholderId, sharePercent: s.sharePercent, amountMinor: s.amountMinor })) } } : {}) },
         include: EXPENSE_INCLUDE,
       });
     }, INTERACTIVE_TX);

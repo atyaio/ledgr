@@ -200,10 +200,13 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
         const profile = pick(weighted);
         const paidBy = chance(0.4) ? null : pick(people).id;
         const useCustom = chance(0.08);
+        const expenseAmount = money(between(profile.min, profile.max) * growth);
+        const expenseMethod = chance(0.5) ? methods[1] : chance(0.7) ? methods[2] : methods[0];
         await expenses.create(
           {
             date: dayIn(),
-            amountMinor: money(between(profile.min, profile.max) * growth),
+            amountMinor: expenseAmount,
+            payments: [{ paymentMethodId: expenseMethod.id, amountMinor: expenseAmount }],
             description: `${pick(profile.descriptions)} – ${pick(profile.vendors)}`,
             categoryId: expenseCats.get(profile.category)!.id,
             paidByStakeholderId: paidBy,

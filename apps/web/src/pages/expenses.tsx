@@ -1,10 +1,11 @@
 import { clsx } from 'clsx';
 import { MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, CheckSquare, Square } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import type { CustomFieldDefinition, Expense } from '@ledgr/shared';
+import type { CustomFieldDefinition, Expense, PaymentMethod } from '@ledgr/shared';
+import { PaymentAmountPopup, type PaymentTarget } from '@/components/forms/payment-amount-popup';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
-import { useCategories, useCustomFields, useExpenseMutations, useExpenses, useStakeholders } from '@/lib/queries';
+import { useCategories, useCustomFields, useExpenseMutations, useExpenses, usePaymentMethods, useStakeholders } from '@/lib/queries';
 import { downloadFile } from '@/lib/api';
 import { useIsMobile } from '@/lib/media';
 import { LedgerToolbar, useLedgerParams } from '@/components/ledger-toolbar';
@@ -31,9 +32,12 @@ export function ExpensesPage() {
   const cats = useCategories('expense', true);
   const sh = useStakeholders();
   const cf = useCustomFields('expense');
+  const pm = usePaymentMethods(true);
+  const methods: PaymentMethod[] = useMemo(() => (pm.data?.items ?? []).filter((m) => !m.archived), [pm.data]);
+  const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
   const params = useMemo(
-    () => ({ from: range.from, to: range.to, q: p.q, categoryId: p.categoryId, stakeholderId: p.stakeholderId, sort: p.sort, order: p.order, page: p.page, pageSize: PAGE }),
-    [range, p.q, p.categoryId, p.stakeholderId, p.sort, p.order, p.page],
+    () => ({ from: range.from, to: range.to, q: p.q, categoryId: p.categoryId, stakeholderId: p.stakeholderId, paymentMethodId: p.paymentMethodId, sort: p.sort, order: p.order, page: p.page, pageSize: PAGE }),
+    [range, p.q, p.categoryId, p.stakeholderId, p.paymentMethodId, p.sort, p.order, p.page],
   );
   const q = useExpenses(params);
   const { remove, bulkDelete, recompute, recomputeRange } = useExpenseMutations();
@@ -91,7 +95,7 @@ export function ExpensesPage() {
         }
       />
       <div className="mb-3">
-        <LedgerToolbar categories={cats.data?.items.filter((c) => !c.archived) ?? []} stakeholders={sh.data?.items ?? []} stakeholderLabel="Paid by" onExport={exportCsv} />
+        <LedgerToolbar categories={cats.data?.items.filter((c) => !c.archived) ?? []} stakeholders={sh.data?.items ?? []} paymentMethods={methods} stakeholderLabel="Paid by" onExport={exportCsv} />
       </div>
       {selecting && items.length > 0 && (
         <div className="mb-3 flex items-center justify-between gap-2 card px-4 py-2 fade-up">
@@ -124,7 +128,7 @@ export function ExpensesPage() {
                       )}
                       <span className="flex-1 min-w-0">
                         <span className="block text-[15px] font-medium truncate">{e.description}</span>
-                        <span className="block text-[12.5px] text-ink-3 truncate">{e.category?.name}{e.paidBy ? ` · ${e.paidBy.name}` : ' · Company'}{e.splitMode === 'custom' ? ' · custom split' : ''}</span>
+                        <span className="block text-[12.5px] text-ink-3 truncate">{e.category?.name}{e.payments.filter((p) => p.amountMinor > 0).length > 1 ? ` · ${e.payments.filter((p) => p.amountMinor > 0).map((p) => `${p.name} ${money(p.amountMinor, { compact: true })}`).join(' + ')}` : e.payments[0] ? ` · ${e.payments[0].name}` : ''}{e.paidBy ? ` · ${e.paidBy.name}` : ' · Company'}{e.splitMode === 'custom' ? ' · custom split' : ''}</span>
                       </span>
                       <Money minor={e.amountMinor} className="text-[15px] font-semibold shrink-0" />
                     </button>
@@ -146,13 +150,14 @@ export function ExpensesPage() {
                 <Th>Category</Th>
                 <Th>Paid by</Th>
                 {defs.map((d) => <Th key={d.id} align={d.type === 'money' || d.type === 'number' ? 'right' : 'left'}>{d.label}</Th>)}
-                <Th align="right" sortable sorted={sorted('amountMinor')} onSort={() => sortBy('amountMinor')} className="w-36">Amount</Th>
+                {methods.map((m) => <Th key={m.id} align="right"><span className="inline-flex items-center gap-1.5"><Swatch color={m.color} />{m.name}</span></Th>)}
+                <Th align="right" sortable sorted={sorted('amountMinor')} onSort={() => sortBy('amountMinor')} className="w-36">{methods.length ? 'Total' : 'Amount'}</Th>
                 <Th className="w-12" />
               </tr>
             </thead>
             <tbody>
-              {q.isPending && <EmptyRow colSpan={8 + defs.length}>Loading…</EmptyRow>}
-              {!q.isPending && !items.length && <EmptyRow colSpan={8 + defs.length}>No expenses match. Try a wider period or clear filters.</EmptyRow>}
+              {q.isPending && <EmptyRow colSpan={8 + defs.length + methods.length}>Loading…</EmptyRow>}
+              {!q.isPending && !items.length && <EmptyRow colSpan={8 + defs.length + methods.length}>No expenses match. Try a wider period or clear filters.</EmptyRow>}
               {items.map((e) => (
                 <Tr key={e.id} selected={selected.has(e.id)} className="cursor-pointer" onClick={() => (selecting ? toggle(e.id) : setDetail(e))}>
                   {selecting && <Td onClick={(ev) => ev.stopPropagation()}><Checkbox checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label="Select" /></Td>}
@@ -164,6 +169,18 @@ export function ExpensesPage() {
                   <Td>{e.category && <Chip color={e.category.color}>{e.category.name}</Chip>}</Td>
                   <Td>{e.paidBy ? <span className="inline-flex items-center gap-2"><Avatar name={e.paidBy.name} color={e.paidBy.color} size={22} /><span className="truncate">{e.paidBy.name}</span></span> : <span className="text-ink-3">Company</span>}</Td>
                   {defs.map((d) => <Td key={d.id} align={d.type === 'money' || d.type === 'number' ? 'right' : 'left'}><CustomCell def={d} value={e.customFields?.[d.key]} /></Td>)}
+                  {methods.map((m) => {
+                    const pay = e.payments.find((x) => x.paymentMethodId === m.id);
+                    return (
+                      <Td key={m.id} align="right" onClick={(ev) => ev.stopPropagation()}>
+                        {pay && pay.amountMinor > 0 ? (
+                          <button type="button" className="num hover:text-accent" title={`Edit ${m.name} amount`} onClick={() => setPayTarget({ kind: 'expense', entry: e, method: m })}>{money(pay.amountMinor)}</button>
+                        ) : (
+                          <button type="button" className="inline-flex items-center gap-1 text-[12.5px] font-medium text-accent/80 hover:text-accent whitespace-nowrap" onClick={() => setPayTarget({ kind: 'expense', entry: e, method: m })}><Plus className="size-3.5" />Add {m.name}</button>
+                        )}
+                      </Td>
+                    );
+                  })}
                   <Td align="right"><Money minor={e.amountMinor} className="font-semibold" /></Td>
                   <Td onClick={(ev) => ev.stopPropagation()}>
                     <Menu trigger={() => <button type="button" className="size-8 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-card-hover" aria-label="Actions"><MoreHorizontal className="size-4" /></button>}>
@@ -187,6 +204,7 @@ export function ExpensesPage() {
 
       <ExpenseDetail expense={detail} onClose={() => setDetail(null)} onEdit={() => { setEditing(detail); setDetail(null); }} onDelete={() => setConfirm(detail)} onRecompute={() => detail && onRecompute(detail)} defs={defs} />
       <ExpenseForm open={editing !== undefined} onClose={() => setEditing(undefined)} expense={editing ?? null} />
+      <PaymentAmountPopup target={payTarget} onClose={() => setPayTarget(null)} />
       <ConfirmDialog open={!!confirm} onClose={() => setConfirm(null)} onConfirm={onDelete} loading={remove.isPending} title="Delete this expense?" description={confirm ? `${confirm.description} · ${money(confirm.amountMinor)} on ${date(confirm.date)}.` : ''} />
       <ConfirmDialog open={bulkConfirm} onClose={() => setBulkConfirm(false)} onConfirm={onBulkDelete} loading={bulkDelete.isPending} title={`Delete ${selected.size} expenses?`} description="This cannot be undone. Export first if you want a copy." />
     </>
@@ -209,6 +227,7 @@ function ExpenseDetail({ expense, onClose, onEdit, onDelete, onRecompute, defs }
         <div className="space-y-4">
           <div className="num text-[32px] font-semibold tracking-tight">{money(e.amountMinor)}</div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[14px]">
+            {e.payments.filter((p) => p.amountMinor > 0).map((p) => <span key={p.paymentMethodId} className="contents"><dt className="text-ink-3">{p.name}</dt><dd className="num">{money(p.amountMinor)}</dd></span>)}
             <dt className="text-ink-3">Paid by</dt><dd className="font-medium">{e.paidBy?.name ?? 'Company account'}</dd>
             {e.vendor && <><dt className="text-ink-3">Vendor</dt><dd>{e.vendor}</dd></>}
             {defs.map((d) => <span key={d.id} className="contents"><dt className="text-ink-3">{d.label}</dt><dd><CustomCell def={d} value={e.customFields?.[d.key]} /></dd></span>)}

@@ -65,7 +65,8 @@ JSON text (`string` in Prisma), validated against the project's
 |---|---|
 | `Stakeholder` | `name, email?, sharePercent (Float, 0–100), active, joinedAt?, notes?, color, customFields` |
 | `Category` | `name, kind ('expense'|'revenue'), color, monthlyBudgetMinor? (expense only), archived, sortOrder` |
-| `Expense` | `date, amountMinor, description, categoryId, paidByStakeholderId? (null = paid from company pool), vendor?, notes?, splitMode ('ownership'|'custom'), recurringRuleId?, customFields` |
+| `Expense` | `date, amountMinor (total), description, categoryId, paidByStakeholderId? (null = paid from company pool), vendor?, notes?, splitMode ('ownership'|'custom'), recurringRuleId?, customFields` |
+| `ExpensePayment` | amount paid through one method: `expenseId, paymentMethodId, amountMinor` (unique per pair); same rules as `RevenuePayment`. Changing the total re-snapshots the stakeholder split. |
 | `ExpenseSplit` | snapshot of how an expense is divided: `expenseId, stakeholderId, sharePercent, amountMinor`. Written for every expense; sum of `amountMinor` == expense amount (largest-remainder rounding). |
 | `PaymentMethod` | how revenue is received (Cash, Visa, online…): `name (unique), color, isDefault (one), archived, sortOrder` |
 | `Revenue` | `date, amountMinor (total), description, categoryId?, source?, receivedByStakeholderId? (null = company pool), notes?, recurringRuleId?, customFields` |
@@ -112,7 +113,7 @@ sort, order, page, pageSize (default 50, max 500)` → `{ items, total, page, pa
 | stakeholders | `GET/POST /stakeholders`, `GET/PATCH/DELETE /stakeholders/:id`, `GET /stakeholders/balances?from&to`, `GET /stakeholders/distribution?from&to` (revenue/expense/profit share per stakeholder) |
 | payment methods | `GET /payment-methods?includeArchived`, `POST`, `PATCH/:id`, `DELETE/:id` (409 when used), `POST /payment-methods/reorder` |
 | categories | `GET/POST /categories?kind`, `PATCH/DELETE /categories/:id`, `GET /categories/budgets?month=YYYY-MM` (budget vs actual) |
-| expenses | `GET/POST /expenses`, `GET/PATCH/DELETE /expenses/:id`, `POST /expenses/:id/recompute-split`, `POST /expenses/recompute-splits` (range), `POST /expenses/bulk-delete` |
+| expenses | `GET/POST /expenses` (filter `paymentMethodId`), `PUT /expenses/:id/payments/:methodId { amountMinor }`, `GET/PATCH/DELETE /expenses/:id`, `POST /expenses/:id/recompute-split`, `POST /expenses/recompute-splits` (range), `POST /expenses/bulk-delete` |
 | revenue | `GET/POST /revenue` (filter `paymentMethodId`), `GET/PATCH/DELETE /revenue/:id`, `PUT /revenue/:id/payments/:methodId { amountMinor }` (set one method's amount, 0 clears; total follows), `POST /revenue/bulk-delete` |
 | settlements | `GET/POST /settlements`, `PATCH/DELETE /settlements/:id`, `GET /settlements/suggest?from&to` |
 | custom fields | `GET /custom-fields?entity`, `POST /custom-fields`, `PATCH/DELETE /custom-fields/:id`, `POST /custom-fields/reorder` |

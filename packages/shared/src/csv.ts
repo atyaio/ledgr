@@ -46,7 +46,8 @@ export function importTargets(
         { key: 'category', label: 'Category', required: true },
         { key: 'paidBy', label: 'Paid by', required: false, description: 'Stakeholder name; blank = company account' },
         ...cf,
-        { key: 'amount', label: 'Amount', required: true },
+        ...pm,
+        { key: 'amount', label: pm.length ? 'Total' : 'Amount', required: pm.length === 0, description: pm.length ? 'Blank = sum of the payment columns' : undefined },
         { key: 'vendor', label: 'Vendor', required: false },
         { key: 'notes', label: 'Notes', required: false },
       ];

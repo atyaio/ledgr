@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
+  setMethodPaymentSchema,
   bulkIdsSchema,
   createExpenseSchema,
   listQuery,
@@ -44,6 +45,11 @@ export class ExpensesController {
   @Get(':id')
   get(@Param('id') id: string) {
     return this.service.get(id);
+  }
+
+  @Put(':id/payments/:methodId')
+  setPayment(@Param('id') id: string, @Param('methodId') methodId: string, @Body(zod(setMethodPaymentSchema)) body: { amountMinor: number }, @User() user: CurrentUser) {
+    return this.service.setPayment(id, methodId, body.amountMinor, user);
   }
 
   @Patch(':id')

@@ -27,7 +27,7 @@ export function PaymentsPage() {
 
   return (
     <>
-      <PageHeader title="Payment methods" subtitle="How revenue comes in: cash, cards, online. Shown on every revenue entry, in analytics and in exports." actions={<Button variant="primary" size="sm" className="rounded-full" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>New method</Button>} />
+      <PageHeader title="Payment methods" subtitle="Cash, cards, online… Each expense and revenue row can hold an amount per method. Shown in tables, analytics and exports." actions={<Button variant="primary" size="sm" className="rounded-full" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>New method</Button>} />
       <div className="flex items-center justify-end mb-4">
         <Checkbox label="Archived" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
       </div>

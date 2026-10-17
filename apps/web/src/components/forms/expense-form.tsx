@@ -1,6 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { todayISO, type CreateExpenseInput, type CustomFields, type Expense, type SplitMode } from '@ledgr/shared';
-import { useCategories, useExpenseMutations, useStakeholders } from '@/lib/queries';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { todayISO, type CreateExpenseInput, type CustomFields, type Expense, type PaymentMethod, type SplitMode } from '@ledgr/shared';
+import { useCategories, useExpenseMutations, usePaymentMethods, useStakeholders } from '@/lib/queries';
+import { useProject } from '@/lib/project';
+import { Swatch } from '@/components/ui/badge';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,11 +14,23 @@ import { ApiRequestError } from '@/lib/api';
 
 export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSaved }: { open: boolean; onClose: () => void; expense?: Expense | null; defaults?: Partial<CreateExpenseInput>; switcher?: ReactNode; onSaved?: () => void }) {
   const toast = useToast();
+  const { money } = useProject();
   const { create, update } = useExpenseMutations();
   const cats = useCategories('expense');
   const sh = useStakeholders();
+  const pm = usePaymentMethods(true);
   const [date, setDate] = useState(todayISO());
-  const [amount, setAmount] = useState<number | null>(null);
+  const [amount, setAmount] = useState<number | null>(null); // used when there are no payment methods
+  const [amounts, setAmounts] = useState<Record<string, number | null>>({});
+  const [showOthers, setShowOthers] = useState(false);
+  const methods: PaymentMethod[] = useMemo(() => {
+    const all = pm.data?.items ?? [];
+    const used = new Set(expense?.payments.map((p) => p.paymentMethodId) ?? []);
+    return all.filter((m) => !m.archived || used.has(m.id));
+  }, [pm.data, expense]);
+  const primary = useMemo(() => methods.find((m) => m.isDefault) ?? methods[0], [methods]);
+  const others = useMemo(() => methods.filter((m) => m.id !== primary?.id), [methods, primary]);
+  const hasMethods = methods.length > 0;
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [paidBy, setPaidBy] = useState('');
@@ -33,7 +47,11 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
     setCfErrors({});
     if (expense) {
       setDate(expense.date);
-      setAmount(expense.amountMinor);
+      setAmount(expense.payments.length === 0 ? expense.amountMinor : null);
+      const map: Record<string, number | null> = {};
+      for (const p of expense.payments) map[p.paymentMethodId] = p.amountMinor;
+      setAmounts(map);
+      setShowOthers(expense.payments.filter((p) => p.amountMinor > 0).length > 1);
       setDescription(expense.description);
       setCategoryId(expense.categoryId);
       setPaidBy(expense.paidByStakeholderId ?? '');
@@ -46,6 +64,8 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
     } else {
       setDate(defaults?.date ?? todayISO());
       setAmount(defaults?.amountMinor ?? null);
+      setAmounts(defaults?.amountMinor && primary ? { [primary.id]: defaults.amountMinor } : {});
+      setShowOthers(false);
       setDescription(defaults?.description ?? '');
       setCategoryId(defaults?.categoryId ?? '');
       setPaidBy(defaults?.paidByStakeholderId ?? '');
@@ -65,13 +85,16 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
     }
   }, [cats.data, categoryId, expense]);
 
+  const total = hasMethods ? methods.reduce((a, m) => a + (amounts[m.id] ?? 0), 0) : (amount ?? 0);
   const busy = create.isPending || update.isPending;
-  const valid = !!date && amount !== null && amount > 0 && description.trim().length > 0 && !!categoryId;
+  const valid = !!date && total > 0 && description.trim().length > 0 && !!categoryId;
 
   const submit = async () => {
+    const payments = hasMethods ? methods.map((m) => ({ paymentMethodId: m.id, amountMinor: amounts[m.id] ?? 0 })).filter((p) => p.amountMinor > 0) : undefined;
     const body: CreateExpenseInput = {
       date,
-      amountMinor: amount!,
+      amountMinor: total,
+      payments,
       description: description.trim(),
       categoryId,
       paidByStakeholderId: paidBy || null,
@@ -108,7 +131,34 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
     >
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         {switcher && !expense && <div>{switcher}</div>}
-        <Field label="Amount" required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!expense} /></Field>
+        {hasMethods && primary ? (
+          <>
+            <Field label={<span className="inline-flex items-center gap-1.5"><Swatch color={primary.color} />{primary.name} amount</span>} required hint={primary.isDefault ? 'default method' : undefined}>
+              <MoneyInput large value={amounts[primary.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [primary.id]: v }))} autoFocus={!expense} />
+            </Field>
+            {others.length > 0 && !showOthers && (
+              <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setShowOthers(true)}>
+                + Add {others.map((m) => m.name).join(' / ')} amounts
+              </button>
+            )}
+            {others.length > 0 && showOthers && (
+              <div className="rounded-[14px] border border-line divide-y divide-line">
+                {others.map((m) => (
+                  <label key={m.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                    <span className="inline-flex items-center gap-2 w-32 shrink-0 text-[14px]"><Swatch color={m.color} />{m.name}</span>
+                    <MoneyInput value={amounts[m.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [m.id]: v }))} placeholder="0.00" className="h-10" />
+                  </label>
+                ))}
+                <div className="flex items-center justify-between px-3.5 h-10 text-[13px]">
+                  <span className="text-ink-3">Total</span>
+                  <span className="num font-semibold">{money(total)}</span>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <Field label="Amount" required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!expense} /></Field>
+        )}
         <Field label="What for" required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Hosting, payroll, flight tickets" /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Category" required>
@@ -125,7 +175,7 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
             {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
         </Field>
-        <SplitEditor stakeholders={sh.data?.items ?? []} amountMinor={amount} mode={splitMode} onMode={setSplitMode} splits={splits} onSplits={setSplits} />
+        <SplitEditor stakeholders={sh.data?.items ?? []} amountMinor={total || null} mode={splitMode} onMode={setSplitMode} splits={splits} onSplits={setSplits} />
         <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setMoreOpen((o) => !o)}>
           {moreOpen ? 'Hide' : 'Add'} vendor & notes
         </button>

@@ -54,6 +54,7 @@ export class AnalyticsService {
           categoryId: true,
           paidByStakeholderId: true,
           category: { select: { name: true, color: true } },
+          payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, color: true } } } },
         },
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       }),
@@ -116,25 +117,30 @@ export class AnalyticsService {
     };
     const expensesByCategory = groupByCategory(expenses, expenseMinor).map((c) => ({ ...c, categoryId: c.categoryId ?? '' }));
     const revenueByCategory = groupByCategory(revenue, revenueMinor);
-    const byMethod = new Map<string, { paymentMethodId: string | null; name: string; color: string; amountMinor: number; count: number }>();
-    for (const r of revenue) {
-      let attributed = 0;
-      for (const p of r.payments) {
-        const cur = byMethod.get(p.paymentMethodId) ?? { paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: 0, count: 0 };
-        cur.amountMinor += p.amountMinor;
-        cur.count += 1;
-        attributed += p.amountMinor;
-        byMethod.set(p.paymentMethodId, cur);
+    type MethodRow = { amountMinor: number; payments: { paymentMethodId: string; amountMinor: number; paymentMethod: { name: string; color: string } }[] };
+    const byPaymentMethod = (rows: MethodRow[], total: number) => {
+      const map = new Map<string, { paymentMethodId: string | null; name: string; color: string; amountMinor: number; count: number }>();
+      for (const r of rows) {
+        let attributed = 0;
+        for (const p of r.payments) {
+          const cur = map.get(p.paymentMethodId) ?? { paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: 0, count: 0 };
+          cur.amountMinor += p.amountMinor;
+          cur.count += 1;
+          attributed += p.amountMinor;
+          map.set(p.paymentMethodId, cur);
+        }
+        const rest = r.amountMinor - attributed;
+        if (rest > 0) {
+          const cur = map.get('') ?? { paymentMethodId: null, name: 'Unspecified', color: UNCATEGORISED.color, amountMinor: 0, count: 0 };
+          cur.amountMinor += rest;
+          cur.count += 1;
+          map.set('', cur);
+        }
       }
-      const rest = r.amountMinor - attributed;
-      if (rest > 0) {
-        const cur = byMethod.get('') ?? { paymentMethodId: null, name: 'Unspecified', color: UNCATEGORISED.color, amountMinor: 0, count: 0 };
-        cur.amountMinor += rest;
-        cur.count += 1;
-        byMethod.set('', cur);
-      }
-    }
-    const revenueByPaymentMethod = [...byMethod.values()].sort((a, b) => b.amountMinor - a.amountMinor).map((m) => ({ ...m, pct: pct(m.amountMinor, revenueMinor) }));
+      return [...map.values()].sort((a, b) => b.amountMinor - a.amountMinor).map((m) => ({ ...m, pct: pct(m.amountMinor, total) }));
+    };
+    const revenueByPaymentMethod = byPaymentMethod(revenue, revenueMinor);
+    const expensesByPaymentMethod = byPaymentMethod(expenses, expenseMinor);
 
     // ─── Top expenses ──────────────────────────────────────────────────────────
     const topExpenses = [...expenses]
@@ -183,6 +189,7 @@ export class AnalyticsService {
       },
       series,
       expensesByCategory,
+      expensesByPaymentMethod,
       revenueByCategory,
       revenueByPaymentMethod,
       topExpenses,

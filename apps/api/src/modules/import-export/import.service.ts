@@ -358,10 +358,15 @@ class ImportContext {
   async expenses(): Promise<ImportCommitResponse> {
     const prepared = await this.prepare(async (row, line) => {
       const date = this.date(row, 'date', true) as string;
-      const amountMinor = this.money(row, 'amount');
+      const payments = this.payments(row);
+      const paymentsTotal = payments.reduce((a, p) => a + p.amountMinor, 0);
+      const amountMinor = this.moneyOpt(row, 'amount') ?? (paymentsTotal > 0 ? paymentsTotal : undefined);
+      if (amountMinor === undefined) throw new RowFail('Amount is missing (fill the total or a payment method column)');
+      if (payments.length && paymentsTotal !== amountMinor) throw new RowFail(`Payment columns add up to ${paymentsTotal / 100} but the total says ${amountMinor / 100}`);
       const input = this.validate(createExpenseSchema, {
         date,
         amountMinor,
+        payments: payments.length ? payments : undefined,
         description: this.cell(row, 'description'),
         categoryId: await this.category(row, 'expense', true),
         paidByStakeholderId: await this.stakeholder(row, 'paidBy', false),

@@ -396,6 +396,33 @@ describe('ledgr API (e2e)', () => {
     const walk = (await http().get('/api/revenue?q=Walk-in').expect(200)).body.items[0];
     await http().delete(`/api/revenue/${walk.id}`).expect(204);
     await http().delete(`/api/payment-methods/${cash.id}`).expect(204);
+    await http().delete(`/api/payment-methods/${visa.id}`).expect(204);
+    const instapay = ((await http().get('/api/payment-methods').expect(200)).body as { id: string; name: string }[]).find((m) => m.name === 'Instapay');
+    if (instapay) await http().delete(`/api/payment-methods/${instapay.id}`).expect(204);
+  });
+
+  it('expense payment methods: default, add later, splits follow, filter, analytics, export', async () => {
+    const cash = (await http().post('/api/payment-methods').send({ name: 'Petty cash', isDefault: true }).expect(201)).body;
+    const card = (await http().post('/api/payment-methods').send({ name: 'Company card' }).expect(201)).body;
+    const cats = (await http().get('/api/categories?kind=expense').expect(200)).body as { id: string }[];
+    const e = (await http().post('/api/expenses').send({ date: '2026-04-02', amountMinor: 9000, description: 'Office snacks', categoryId: cats[0].id }).expect(201)).body;
+    expect(e.payments).toEqual([expect.objectContaining({ paymentMethodId: cash.id, amountMinor: 9000 })]);
+    const e2 = (await http().put(`/api/expenses/${e.id}/payments/${card.id}`).send({ amountMinor: 1000 }).expect(200)).body;
+    expect(e2.amountMinor).toBe(10000);
+    expect(e2.splits.reduce((a: number, s: { amountMinor: number }) => a + s.amountMinor, 0)).toBe(10000); // ownership split re-snapshotted
+    await http().patch(`/api/expenses/${e.id}`).send({ amountMinor: 5 }).expect(400);
+    const filtered = (await http().get(`/api/expenses?paymentMethodId=${card.id}`).expect(200)).body;
+    expect(filtered.items.map((x: { id: string }) => x.id)).toEqual([e.id]);
+    const o = (await http().get('/api/analytics/overview?from=2026-04-01&to=2026-04-30').expect(200)).body;
+    expect(o.expensesByPaymentMethod.find((m: { paymentMethodId: string | null }) => m.paymentMethodId === card.id)).toMatchObject({ amountMinor: 1000, count: 1 });
+    const csv = (await http().get('/api/export/expenses.csv?from=2026-04-01&to=2026-04-30').expect(200)).text;
+    const [header, first] = csv.split(/\r?\n/);
+    expect(header.split(',')).toEqual(expect.arrayContaining(['Petty cash', 'Company card', 'Total']));
+    expect(first).toContain('90.00');
+    await http().delete(`/api/payment-methods/${card.id}`).expect(409);
+    await http().delete(`/api/expenses/${e.id}`).expect(204);
+    await http().delete(`/api/payment-methods/${card.id}`).expect(204);
+    await http().delete(`/api/payment-methods/${cash.id}`).expect(204);
   });
 
   it('CSV export → import round-trip', async () => {
