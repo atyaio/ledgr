@@ -130,7 +130,7 @@ export function ExpensesPage() {
                         <span className="inline-flex items-center justify-center size-10 rounded-[12px] shrink-0" style={{ background: `${e.category?.color ?? '#999'}1f` }}><Swatch color={e.category?.color ?? '#999'} size={10} /></span>
                       )}
                       <span className="flex-1 min-w-0">
-                        <span className="block text-[15px] font-medium truncate">{e.description}</span>
+                        <span dir="auto" className="block text-[15px] font-medium truncate">{e.description}</span>
                         <span className="block text-[12.5px] text-ink-3 truncate">{e.category ? name(e.category) : ''}{e.payments.filter((p) => p.amountMinor > 0).length > 1 ? ` · ${e.payments.filter((p) => p.amountMinor > 0).map((p) => `${payName(p)} ${money(p.amountMinor, { compact: true })}`).join(' + ')}` : e.payments[0] ? ` · ${payName(e.payments[0])}` : ''}{e.paidBy ? ` · ${name(e.paidBy)}` : ` · ${t('Company')}`}{e.splitMode === 'custom' ? ` · ${t('custom split')}` : ''}</span>
                       </span>
                       <Money minor={e.amountMinor} className="text-[15px] font-semibold shrink-0" />
@@ -166,7 +166,7 @@ export function ExpensesPage() {
                   {selecting && <Td onClick={(ev) => ev.stopPropagation()}><Checkbox checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label={t('Select')} /></Td>}
                   <Td className="num text-ink-2 whitespace-nowrap">{date(e.date)}</Td>
                   <Td>
-                    <div className="font-medium truncate max-w-[380px]">{e.description}</div>
+                    <div dir="auto" className="font-medium truncate max-w-[380px]">{e.description}</div>
                     {(e.vendor || e.recurringRuleId || e.splitMode === 'custom') && <div className="text-[12px] text-ink-3 truncate">{[e.vendor, e.recurringRuleId && t('recurring'), e.splitMode === 'custom' && t('custom split')].filter(Boolean).join(' · ')}</div>}
                   </Td>
                   <Td>{e.category && <Chip color={e.category.color}>{name(e.category)}</Chip>}</Td>

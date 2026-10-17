@@ -118,7 +118,7 @@ export function RevenuePage() {
                         <span className="inline-flex items-center justify-center size-10 rounded-[12px] shrink-0" style={{ background: `${r.category?.color ?? 'var(--s-revenue)'}1f` }}><Swatch color={r.category?.color ?? 'var(--s-revenue)'} size={10} /></span>
                       )}
                       <span className="flex-1 min-w-0">
-                        <span className="block text-[15px] font-medium truncate">{r.description}</span>
+                        <span dir="auto" className="block text-[15px] font-medium truncate">{r.description}</span>
                         <span className="block text-[12.5px] text-ink-3 truncate">{r.payments.filter((p) => p.amountMinor > 0).length ? r.payments.filter((p) => p.amountMinor > 0).map((p) => `${payName(p)} ${money(p.amountMinor, { compact: true })}`).join(' · ') : (r.category ? name(r.category) : t('Uncategorised'))}{r.receivedBy ? ` · ${name(r.receivedBy)}` : ''}</span>
                       </span>
                       <Money minor={r.amountMinor} tone="revenue" className="text-[15px] font-semibold shrink-0" />
@@ -154,7 +154,7 @@ export function RevenuePage() {
                 <Tr key={r.id} selected={selected.has(r.id)} className="cursor-pointer" onClick={() => (selecting ? toggle(r.id) : setDetail(r))}>
                   {selecting && <Td onClick={(ev) => ev.stopPropagation()}><Checkbox checked={selected.has(r.id)} onChange={() => toggle(r.id)} aria-label={t('Select')} /></Td>}
                   <Td className="num text-ink-2 whitespace-nowrap">{date(r.date)}</Td>
-                  <Td><div className="font-medium truncate max-w-[380px]">{r.description}</div>{r.recurringRuleId && <div className="text-[12px] text-ink-3">{t('recurring')}</div>}</Td>
+                  <Td><div dir="auto" className="font-medium truncate max-w-[380px]">{r.description}</div>{r.recurringRuleId && <div className="text-[12px] text-ink-3">{t('recurring')}</div>}</Td>
                   <Td>{r.category ? <Chip color={r.category.color}>{name(r.category)}</Chip> : <span className="text-ink-4">—</span>}</Td>
                   <Td className="text-ink-2">{r.source ?? <span className="text-ink-4">—</span>}</Td>
                   <Td>{r.receivedBy ? <span className="inline-flex items-center gap-2"><Avatar name={name(r.receivedBy)} color={r.receivedBy.color} size={22} />{name(r.receivedBy)}</span> : <span className="text-ink-3">{t('Company')}</span>}</Td>

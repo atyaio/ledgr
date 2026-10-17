@@ -176,7 +176,7 @@ function TopExpenses({ o }: { o: AnalyticsOverview }) {
         <li key={e.id} className="px-4 md:px-5 py-3 flex items-center gap-3">
           <span className="inline-flex items-center justify-center size-9 rounded-[12px] shrink-0" style={{ background: `${e.categoryColor}1f` }}><Swatch color={e.categoryColor} size={10} /></span>
           <div className="flex-1 min-w-0">
-            <div className="text-[14.5px] font-medium truncate">{e.description}</div>
+            <div dir="auto" className="text-[14.5px] font-medium truncate">{e.description}</div>
             <div className="text-[12.5px] text-ink-3 truncate">{name({ name: e.categoryName, nameAr: e.categoryNameAr })} · {date(e.date)}</div>
           </div>
           <Money minor={e.amountMinor} className="text-[15px] font-semibold shrink-0" />

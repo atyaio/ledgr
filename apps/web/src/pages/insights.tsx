@@ -134,7 +134,7 @@ function Body({ d, ledger, filtered }: { d: InsightsResponse; ledger: InsightsLe
             {(showRev ? d.topRevenue : d.topExpenses).slice(0, 8).map((e) => (
               <li key={e.id} className="px-4 md:px-5 py-2.5 flex items-center gap-3">
                 <Swatch color={e.groupColor} size={9} />
-                <div className="flex-1 min-w-0"><div className="text-[14px] font-medium truncate">{e.description}</div><div className="text-[12px] text-ink-3">{e.groupNameAr && lang === 'ar' ? e.groupNameAr : tr(e.groupName)} · {date(e.date)}</div></div>
+                <div className="flex-1 min-w-0"><div dir="auto" className="text-[14px] font-medium truncate">{e.description}</div><div className="text-[12px] text-ink-3">{e.groupNameAr && lang === 'ar' ? e.groupNameAr : tr(e.groupName)} · {date(e.date)}</div></div>
                 <Money minor={e.amountMinor} className="font-semibold" />
               </li>
             ))}
