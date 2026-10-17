@@ -38,11 +38,22 @@ export function runMigrations(dbPath: string, dir: string = migrationsDir()): Mi
     for (const name of names) {
       if (done.has(name)) continue;
       const sql = fs.readFileSync(path.join(dir, name, 'migration.sql'), 'utf8');
-      const tx = db.transaction(() => {
-        db.exec(sql);
-        db.prepare(`INSERT INTO "_ledgr_migrations" (name, appliedAt) VALUES (?, ?)`).run(name, new Date().toISOString());
-      });
-      tx();
+      // Prisma rebuilds SQLite tables (create new → copy → drop old → rename). With foreign keys
+      // enforced, dropping the old table fires ON DELETE actions on referencing rows (e.g. revenue
+      // losing its category). PRAGMA foreign_keys is a no-op inside a transaction, so it must be
+      // switched off here, before the transaction, and the result verified afterwards.
+      db.pragma('foreign_keys = OFF');
+      try {
+        const tx = db.transaction(() => {
+          db.exec(sql);
+          const violations = db.pragma('foreign_key_check') as unknown[];
+          if (violations.length) throw new Error(`Migration ${name} left ${violations.length} foreign key violation(s)`);
+          db.prepare(`INSERT INTO "_ledgr_migrations" (name, appliedAt) VALUES (?, ?)`).run(name, new Date().toISOString());
+        });
+        tx();
+      } finally {
+        db.pragma('foreign_keys = ON');
+      }
       applied.push(name);
     }
     return { applied, pending: 0 };
