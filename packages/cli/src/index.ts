@@ -12,14 +12,14 @@ program
   .version('0.1.0');
 
 program
-  .command('init')
-  .description('Create ./.ledgr (config + SQLite) for this project, interactively')
-  .option('-d, --dir <dir>', 'where to create the .ledgr folder', process.cwd())
+  .command('init [folder]')
+  .description('Set up a project: creates <folder>/.ledgr (config + SQLite). Defaults to the current folder.')
+  .option('-d, --dir <dir>', 'alias for the folder argument', process.cwd())
   .option('-y, --yes', 'accept defaults without prompting')
   .option('--name <name>', 'project name')
   .option('--currency <code>', 'ISO currency, e.g. EGP')
   .option('--no-auth', 'skip Supabase auth (local only)')
-  .action(initCommand);
+  .action((folder: string | undefined, opts) => initCommand({ ...opts, dir: folder ?? opts.dir }));
 
 program
   .command('start')

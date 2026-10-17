@@ -25,6 +25,12 @@ export async function initCommand(opts: Opts) {
   const projectDir = path.resolve(opts.dir);
   const paths = api.resolvePaths(path.join(projectDir, '.ledgr'));
   p.intro(pc.bgYellow(pc.black(' ledgr ')) + pc.dim(' init'));
+  if (!fs.existsSync(projectDir)) {
+    fs.mkdirSync(projectDir, { recursive: true });
+    p.log.info(`Created folder ${pc.cyan(path.relative(process.cwd(), projectDir) || '.')}`);
+  } else if (projectDir !== process.cwd()) {
+    p.log.info(`Setting up ${pc.cyan(path.relative(process.cwd(), projectDir))}`);
+  }
 
   if (fs.existsSync(paths.configPath)) {
     p.log.warn(`A ledgr project already exists at ${pc.cyan(paths.dir)}`);

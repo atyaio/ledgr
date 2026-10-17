@@ -4,7 +4,8 @@ A self-contained finance dashboard you run inside any project folder.
 
 ```bash
 cd ~/work/my-startup
-npx ledgr init          # asks: name, currency, Supabase auth, stakeholders, categories, custom columns
+npx ledgr init          # sets up THIS folder: asks name, currency, Supabase auth, partners, categories, custom columns
+npx ledgr init axial    # …or creates ./axial/ as a standalone project folder
 npx ledgr start --open  # API + dashboard on http://127.0.0.1:4848, data in ./.ledgr/data.db
 ```
 
