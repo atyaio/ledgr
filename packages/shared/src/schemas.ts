@@ -90,6 +90,7 @@ export const createCategorySchema = z.object({
   kind: z.enum(CATEGORY_KINDS),
   color: hexColor.optional(),
   monthlyBudgetMinor: minorAmount.min(0).nullable().optional(),
+  isDefault: z.boolean().optional(),
   archived: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
 });

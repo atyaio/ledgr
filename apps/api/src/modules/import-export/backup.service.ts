@@ -142,6 +142,7 @@ export class BackupService {
             kind: c.kind,
             color: c.color,
             monthlyBudgetMinor: c.monthlyBudgetMinor,
+            isDefault: c.isDefault ?? false,
             archived: c.archived,
             sortOrder: c.sortOrder,
             createdAt: d(c.createdAt),

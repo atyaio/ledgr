@@ -25,6 +25,7 @@ export function toCategoryDto(r: Row): Category {
     kind: r.kind as CategoryKind,
     color: r.color,
     monthlyBudgetMinor: r.monthlyBudgetMinor,
+    isDefault: r.isDefault,
     archived: r.archived,
     sortOrder: r.sortOrder,
     createdAt: toIso(r.createdAt),
@@ -75,12 +76,14 @@ export class CategoriesService {
     if (existing) throw conflict('DUPLICATE', `A ${input.kind} category named "${existing.name}" already exists`);
     if (input.kind === 'revenue' && input.monthlyBudgetMinor) throw badRequest('BUDGET_EXPENSE_ONLY', 'Budgets apply to expense categories only');
     const count = await db.category.count({ where: { kind: input.kind } });
+    if (input.isDefault) await db.category.updateMany({ where: { kind: input.kind, isDefault: true }, data: { isDefault: false } });
     const row = await db.category.create({
       data: {
         name: input.name,
         kind: input.kind,
         color: input.color ?? pickColor(count),
         monthlyBudgetMinor: input.monthlyBudgetMinor ?? null,
+        isDefault: input.isDefault ?? false,
         archived: input.archived ?? false,
         sortOrder: input.sortOrder ?? count,
       },
@@ -97,12 +100,17 @@ export class CategoriesService {
       if (dup) throw conflict('DUPLICATE', `A ${before.kind} category named "${dup.name}" already exists`);
     }
     if (before.kind === 'revenue' && input.monthlyBudgetMinor) throw badRequest('BUDGET_EXPENSE_ONLY', 'Budgets apply to expense categories only');
+    // Only one default per kind; archiving the default clears it.
+    if (input.isDefault) await this.prisma.category.updateMany({ where: { kind: before.kind, isDefault: true, id: { not: id } }, data: { isDefault: false } });
+    const clearDefault = input.archived === true;
     const row = await this.prisma.category.update({
       where: { id },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
         ...(input.monthlyBudgetMinor !== undefined ? { monthlyBudgetMinor: input.monthlyBudgetMinor } : {}),
+        ...(input.isDefault !== undefined ? { isDefault: input.isDefault } : {}),
+        ...(clearDefault ? { isDefault: false } : {}),
         ...(input.archived !== undefined ? { archived: input.archived } : {}),
         ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
       },

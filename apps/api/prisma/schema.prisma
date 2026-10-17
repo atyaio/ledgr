@@ -35,6 +35,7 @@ model Category {
   kind               String // expense | revenue
   color              String   @default("#5B8DEF")
   monthlyBudgetMinor Int?
+  isDefault          Boolean  @default(false)
   archived           Boolean  @default(false)
   sortOrder          Int      @default(0)
   createdAt          DateTime @default(now())

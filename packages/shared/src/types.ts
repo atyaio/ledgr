@@ -94,6 +94,8 @@ export interface Category {
   kind: CategoryKind;
   color: string;
   monthlyBudgetMinor: number | null;
+  /** Preselected in the new-entry form; at most one per kind. */
+  isDefault: boolean;
   archived: boolean;
   sortOrder: number;
   createdAt: string;

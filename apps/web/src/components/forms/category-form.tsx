@@ -15,17 +15,19 @@ export function CategoryForm({ open, onClose, category, kind }: { open: boolean;
   const [color, setColor] = useState<string>(CATEGORICAL_PALETTE[0]);
   const [budget, setBudget] = useState<number | null>(null);
   const [archived, setArchived] = useState(false);
+  const [isDefault, setIsDefault] = useState(false);
   useEffect(() => {
     if (!open) return;
     setName(category?.name ?? '');
     setColor(category?.color ?? CATEGORICAL_PALETTE[Math.floor(Math.random() * 7)]);
     setBudget(category?.monthlyBudgetMinor ?? null);
     setArchived(category?.archived ?? false);
+    setIsDefault(category?.isDefault ?? false);
   }, [open, category]);
   const valid = name.trim().length > 0;
   const busy = create.isPending || update.isPending;
   const submit = async () => {
-    const body: CreateCategoryInput = { name: name.trim(), kind, color, monthlyBudgetMinor: kind === 'expense' ? budget : null, archived };
+    const body: CreateCategoryInput = { name: name.trim(), kind, color, monthlyBudgetMinor: kind === 'expense' ? budget : null, archived, isDefault };
     try {
       if (category) await update.mutateAsync({ id: category.id, ...body });
       else await create.mutateAsync(body);
@@ -41,6 +43,7 @@ export function CategoryForm({ open, onClose, category, kind }: { open: boolean;
         <Field label="Name" required><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
         <ColorPicker value={color} onChange={setColor} />
         {kind === 'expense' && <Field label="Monthly budget" hint="optional"><MoneyInput value={budget} onChange={setBudget} /></Field>}
+        <Toggle checked={isDefault} onChange={setIsDefault} label="Default for new entries" description={`Preselected when adding ${kind === 'expense' ? 'an expense' : 'revenue'}. Only one ${kind} category can be the default.`} />
         {category && <Toggle checked={!archived} onChange={(v) => setArchived(!v)} label="Active" description={archived ? 'Archived: hidden from forms, history kept' : 'Shown in forms and filters'} />}
       </form>
     </Modal>

@@ -59,7 +59,10 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
   }, [open, expense, defaults]);
 
   useEffect(() => {
-    if (!categoryId && cats.data?.items.length && !expense) setCategoryId(cats.data.items.find((c) => !c.archived)?.id ?? '');
+    if (!categoryId && cats.data?.items.length && !expense) {
+      const live = cats.data.items.filter((c) => !c.archived);
+      setCategoryId((live.find((c) => c.isDefault) ?? live[0])?.id ?? '');
+    }
   }, [cats.data, categoryId, expense]);
 
   const busy = create.isPending || update.isPending;

@@ -56,6 +56,12 @@ export function RecurringForm({ open, onClose, rule }: { open: boolean; onClose:
     setCustom(rule?.template.customFields ?? {});
   }, [open, rule]);
 
+  useEffect(() => {
+    if (!open || rule || categoryId) return;
+    const def = cats.data?.items.find((c) => c.isDefault && !c.archived);
+    if (def) setCategoryId(def.id);
+  }, [open, rule, categoryId, cats.data]);
+
   const valid = name.trim() && description.trim() && amount !== null && amount > 0 && !!startDate && (kind === 'revenue' || !!categoryId) && interval >= 1;
   const busy = create.isPending || update.isPending;
   const submit = async () => {

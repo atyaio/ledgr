@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { Category, CategoryKind } from '@ledgr/shared';
 import { useProject } from '@/lib/project';
@@ -46,7 +46,7 @@ export function CategoriesPage() {
                   <ListRow
                     className="flex-1"
                     leading={<Tile color={c.color}><Swatch color={c.color} size={12} /></Tile>}
-                    title={<span className="inline-flex items-center gap-2">{c.name}{c.archived && <Badge>archived</Badge>}</span>}
+                    title={<span className="inline-flex items-center gap-2">{c.name}{c.isDefault && <Badge tone="accent">default</Badge>}{c.archived && <Badge>archived</Badge>}</span>}
                     subtitle={kind === 'expense' ? (c.monthlyBudgetMinor ? `Budget ${money(c.monthlyBudgetMinor)} / month` : 'No budget') : undefined}
                     onClick={() => setEditing(c)}
                   />
@@ -55,6 +55,7 @@ export function CategoriesPage() {
                       {(close) => (
                         <>
                           <MenuItem icon={<Pencil />} onClick={() => { close(); setEditing(c); }}>Edit</MenuItem>
+                          {!c.archived && <MenuItem icon={<Star />} onClick={async () => { close(); try { await update.mutateAsync({ id: c.id, isDefault: !c.isDefault }); } catch (e) { toast.error('Failed', errorMessage(e)); } }}>{c.isDefault ? 'Remove as default' : 'Make default'}</MenuItem>}
                           <MenuItem icon={c.archived ? <ArchiveRestore /> : <Archive />} onClick={async () => { close(); try { await update.mutateAsync({ id: c.id, archived: !c.archived }); } catch (e) { toast.error('Failed', errorMessage(e)); } }}>{c.archived ? 'Restore' : 'Archive'}</MenuItem>
                           <MenuSeparator />
                           <MenuItem icon={<Trash2 />} danger onClick={() => { close(); setConfirm(c); }}>Delete</MenuItem>

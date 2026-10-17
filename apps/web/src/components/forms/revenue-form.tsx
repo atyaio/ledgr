@@ -39,6 +39,12 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
     setMoreOpen(!!(revenue?.source || revenue?.notes));
   }, [open, revenue]);
 
+  useEffect(() => {
+    if (!open || revenue || categoryId) return;
+    const def = cats.data?.items.find((c) => c.isDefault && !c.archived);
+    if (def) setCategoryId(def.id);
+  }, [open, revenue, categoryId, cats.data]);
+
   const busy = create.isPending || update.isPending;
   const valid = !!date && amount !== null && amount > 0 && description.trim().length > 0;
 
