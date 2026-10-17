@@ -1,4 +1,5 @@
-import { Download, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Menu, MenuItem } from '@/components/ui/menu';
 import { useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { clsx } from 'clsx';
@@ -39,7 +40,8 @@ export function LedgerToolbar({
   categories: { id: string; name: string }[];
   stakeholders: { id: string; name: string }[];
   stakeholderLabel?: string;
-  onExport?: () => void;
+  /** Called with the format the user picked. */
+  onExport?: (format: 'xlsx' | 'csv') => void;
   extra?: ReactNode;
 }) {
   const p = useLedgerParams();
@@ -68,9 +70,14 @@ export function LedgerToolbar({
         <div className="flex-1 hidden md:block" />
         {extra}
         {onExport && (
-          <Button size="sm" variant="secondary" className="rounded-full max-md:hidden" icon={<Download className="size-4" />} onClick={onExport}>
-            Export CSV
-          </Button>
+          <Menu align="right" className="max-md:hidden" trigger={() => <Button size="sm" variant="secondary" className="rounded-full" icon={<Download className="size-4" />}>Export</Button>}>
+            {(close) => (
+              <>
+                <MenuItem icon={<FileSpreadsheet />} onClick={() => { close(); onExport('xlsx'); }}>Excel (.xlsx), with dropdowns</MenuItem>
+                <MenuItem icon={<FileText />} onClick={() => { close(); onExport('csv'); }}>CSV</MenuItem>
+              </>
+            )}
+          </Menu>
         )}
       </div>
       {open && (
@@ -93,9 +100,10 @@ export function LedgerToolbar({
             </Button>
           )}
           {onExport && (
-            <Button size="xs" variant="ghost" className="md:hidden" icon={<Download className="size-3.5" />} onClick={onExport}>
-              Export CSV
-            </Button>
+            <>
+              <Button size="xs" variant="ghost" className="md:hidden" icon={<Download className="size-3.5" />} onClick={() => onExport('xlsx')}>Excel</Button>
+              <Button size="xs" variant="ghost" className="md:hidden" onClick={() => onExport('csv')}>CSV</Button>
+            </>
           )}
         </div>
       )}

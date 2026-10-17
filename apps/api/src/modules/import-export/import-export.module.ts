@@ -9,11 +9,12 @@ import { BackupService } from './backup.service';
 import { ExportService } from './export.service';
 import { ImportExportController } from './import-export.controller';
 import { ImportService } from './import.service';
+import { XlsxService } from './xlsx.service';
 
 @Module({
   imports: [CustomFieldsModule, CategoriesModule, StakeholdersModule, ExpensesModule, RevenueModule, SettlementsModule],
   controllers: [ImportExportController],
-  providers: [ExportService, ImportService, BackupService],
-  exports: [ExportService, ImportService, BackupService],
+  providers: [ExportService, ImportService, BackupService, XlsxService],
+  exports: [ExportService, ImportService, BackupService, XlsxService],
 })
 export class ImportExportModule {}

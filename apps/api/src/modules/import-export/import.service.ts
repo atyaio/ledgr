@@ -22,6 +22,7 @@ import {
   type Stakeholder,
 } from '@ledgr/shared';
 import Papa from 'papaparse';
+import ExcelJS from 'exceljs';
 import { ZodError, type ZodType } from 'zod';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
@@ -74,7 +75,45 @@ export class ImportService {
 
   // ─── Parsing ────────────────────────────────────────────────────────────────
 
-  parse(buffer: Buffer): ParsedCsv {
+  async parse(buffer: Buffer, filename = ''): Promise<ParsedCsv> {
+    if (/\.xlsx?$/i.test(filename) || isZip(buffer)) return this.parseXlsx(buffer);
+    return this.parseCsv(buffer);
+  }
+
+  /** First worksheet of an Excel file → the same {headers, rows} shape as CSV. Dates become YYYY-MM-DD. */
+  async parseXlsx(buffer: Buffer): Promise<ParsedCsv> {
+    const wb = new ExcelJS.Workbook();
+    try {
+      await wb.xlsx.load(buffer as unknown as Parameters<typeof wb.xlsx.load>[0]);
+    } catch {
+      throw badRequest('XLSX_PARSE', 'Could not read this Excel file');
+    }
+    const ws = wb.worksheets.find((w) => w.state === 'visible') ?? wb.worksheets[0];
+    if (!ws) throw badRequest('EMPTY_XLSX', 'The workbook has no sheets');
+    const headerRow = ws.getRow(1);
+    const headers: string[] = [];
+    headerRow.eachCell({ includeEmpty: false }, (cell, col) => {
+      headers[col - 1] = cellText(cell.value).trim();
+    });
+    const clean = headers.map((h) => h ?? '');
+    if (!clean.some((h) => h.length > 0)) throw badRequest('EMPTY_XLSX', 'The file has no header row');
+    const rows: Row[] = [];
+    ws.eachRow({ includeEmpty: false }, (row, n) => {
+      if (n === 1) return;
+      const r: Row = {};
+      let any = false;
+      clean.forEach((h, i) => {
+        if (!h) return;
+        const v = cellText(row.getCell(i + 1).value);
+        if (v !== '') any = true;
+        r[h] = v;
+      });
+      if (any) rows.push(r);
+    });
+    return { headers: clean.filter((h) => h.length > 0), rows };
+  }
+
+  parseCsv(buffer: Buffer): ParsedCsv {
     const text = buffer.toString('utf8').replace(/^﻿/, '');
     const result = Papa.parse<Row>(text, { header: true, skipEmptyLines: 'greedy', transformHeader: (h) => h.trim() });
     const headers = (result.meta.fields ?? []).filter((h) => h.length > 0);
@@ -84,8 +123,8 @@ export class ImportService {
     return { headers, rows: result.data };
   }
 
-  async preview(entity: ImportEntity, buffer: Buffer): Promise<ImportPreviewResponse> {
-    const { headers, rows } = this.parse(buffer);
+  async preview(entity: ImportEntity, buffer: Buffer, filename = ''): Promise<ImportPreviewResponse> {
+    const { headers, rows } = await this.parse(buffer, filename);
     const defs = await this.exporter.definitionsFor(entity);
     const targets = importTargets(entity, defs);
     const suggestedMapping = suggestMapping(headers, targets);
@@ -103,8 +142,8 @@ export class ImportService {
 
   // ─── Commit ─────────────────────────────────────────────────────────────────
 
-  async commit(entity: ImportEntity, buffer: Buffer, input: ImportCommitInput, actor: CurrentUser): Promise<ImportCommitResponse> {
-    const { headers, rows } = this.parse(buffer);
+  async commit(entity: ImportEntity, buffer: Buffer, input: ImportCommitInput, actor: CurrentUser, filename = ''): Promise<ImportCommitResponse> {
+    const { headers, rows } = await this.parse(buffer, filename);
     const defs = await this.exporter.definitionsFor(entity);
     const targets = importTargets(entity, defs);
     const mapping = input.mapping;
@@ -415,4 +454,24 @@ function messageOf(e: unknown): string {
     return details ? `${r.message ?? e.message}: ${details}` : r.message ?? e.message;
   }
   return e instanceof Error ? e.message : String(e);
+}
+
+function isZip(buf: Buffer): boolean {
+  return buf.length > 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+}
+
+/** Render any exceljs cell value as the text the CSV path would have seen. */
+function cellText(v: ExcelJS.CellValue): string {
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date) return `${v.getUTCFullYear()}-${String(v.getUTCMonth() + 1).padStart(2, '0')}-${String(v.getUTCDate()).padStart(2, '0')}`;
+  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Math.round(v * 1e6) / 1e6);
+  if (typeof v === 'boolean') return v ? 'yes' : 'no';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') {
+    if ('richText' in v && Array.isArray(v.richText)) return v.richText.map((t) => t.text).join('');
+    if ('result' in v) return cellText(v.result as ExcelJS.CellValue);
+    if ('text' in v && typeof v.text === 'string') return v.text;
+    if ('hyperlink' in v && typeof v.hyperlink === 'string') return v.hyperlink;
+  }
+  return String(v);
 }

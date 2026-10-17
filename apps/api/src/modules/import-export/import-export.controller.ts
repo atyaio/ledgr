@@ -9,6 +9,7 @@ import { zod } from '../../common/zod.pipe';
 import { BackupService } from './backup.service';
 import { ExportService } from './export.service';
 import { ImportService } from './import.service';
+import { XlsxService } from './xlsx.service';
 
 const MAX_UPLOAD = 20 * 1024 * 1024;
 const upload = () => UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD, files: 1 } }));
@@ -17,6 +18,12 @@ function sendCsv(res: Response, filename: string, csv: string): void {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(csv);
+}
+
+function sendXlsx(res: Response, filename: string, buf: Buffer): void {
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buf);
 }
 
 function parseJsonField(raw: unknown, name: string): unknown {
@@ -35,6 +42,7 @@ export class ImportExportController {
     private readonly exporter: ExportService,
     private readonly importer: ImportService,
     private readonly backup: BackupService,
+    private readonly xlsx: XlsxService,
   ) {}
 
   // ─── Export ─────────────────────────────────────────────────────────────────
@@ -52,6 +60,16 @@ export class ImportExportController {
     sendCsv(res, `ledgr-${entity}-template.csv`, await this.exporter.templateCsv(entity));
   }
 
+  @Get('export/template/:entity.xlsx')
+  async exportTemplateXlsx(@Param('entity', zod(importEntitySchema)) entity: ImportEntity, @Res() res: Response) {
+    sendXlsx(res, `ledgr-${entity}-template.xlsx`, await this.xlsx.template(entity));
+  }
+
+  @Get('export/:entity.xlsx')
+  async exportXlsx(@Param('entity', zod(importEntitySchema)) entity: ImportEntity, @Query(zod(rangeQuery)) q: RangeQuery, @Res() res: Response) {
+    sendXlsx(res, this.exporter.filename(entity, q, 'xlsx'), await this.xlsx.workbook(entity, q));
+  }
+
   @Get('export/:entity.csv')
   async exportCsv(@Param('entity', zod(importEntitySchema)) entity: ImportEntity, @Query(zod(rangeQuery)) q: RangeQuery, @Res() res: Response) {
     sendCsv(res, this.exporter.filename(entity, q), await this.exporter.csv(entity, q));
@@ -67,8 +85,8 @@ export class ImportExportController {
   @Post('import/:entity/preview')
   @upload()
   preview(@Param('entity', zod(importEntitySchema)) entity: ImportEntity, @UploadedFile() file?: Express.Multer.File) {
-    if (!file) throw badRequest('FILE_REQUIRED', 'Upload a CSV file in the "file" field');
-    return this.importer.preview(entity, file.buffer);
+    if (!file) throw badRequest('FILE_REQUIRED', 'Upload a CSV or Excel file in the "file" field');
+    return this.importer.preview(entity, file.buffer, file.originalname);
   }
 
   @Post('import/:entity/commit')
@@ -79,11 +97,11 @@ export class ImportExportController {
     @User() user: CurrentUser,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    if (!file) throw badRequest('FILE_REQUIRED', 'Upload a CSV file in the "file" field');
+    if (!file) throw badRequest('FILE_REQUIRED', 'Upload a CSV or Excel file in the "file" field');
     const input: ImportCommitInput = importCommitSchema.parse({
       mapping: parseJsonField(body.mapping, 'mapping') ?? {},
       options: parseJsonField(body.options, 'options'),
     });
-    return this.importer.commit(entity, file.buffer, input, user);
+    return this.importer.commit(entity, file.buffer, input, user, file.originalname);
   }
 }

@@ -51,7 +51,7 @@ export function RevenuePage() {
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const sortBy = (key: string) => p.set({ sort: key, order: p.sort === key && p.order === 'desc' ? 'asc' : 'desc' });
   const sorted = (key: string) => (p.sort === key ? p.order : null);
-  const exportCsv = () => downloadFile('/export/revenue.csv', 'revenue.csv', { from: range.from, to: range.to }).catch((e) => toast.error('Export failed', errorMessage(e)));
+  const exportCsv = (format: 'xlsx' | 'csv' = 'xlsx') => downloadFile(`/export/revenue.${format}`, `revenue.${format}`, { from: range.from, to: range.to }).catch((e) => toast.error('Export failed', errorMessage(e)));
   const groups = useMemo(() => {
     const m = new Map<string, Revenue[]>();
     for (const e of items) m.set(e.date, [...(m.get(e.date) ?? []), e]);

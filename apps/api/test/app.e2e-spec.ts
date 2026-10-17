@@ -353,7 +353,7 @@ describe('ledgr API (e2e)', () => {
     const rowCount = lines.length - 1;
     const before = await http().get('/api/expenses?pageSize=500').expect(200);
     expect(rowCount).toBe(before.body.total);
-    expect(lines[0]).toBe('Date,Amount,Description,Category,Paid by,Vendor,Notes,Reimbursable,Invoice no.');
+    expect(lines[0]).toBe('Date,Description,Category,Paid by,Reimbursable,Invoice no.,Amount,Vendor,Notes');
 
     const preview = await http().post('/api/import/expenses/preview').attach('file', Buffer.from(csv), 'expenses.csv').expect(201);
     const p: ImportPreviewResponse = preview.body;
@@ -410,6 +410,28 @@ describe('ledgr API (e2e)', () => {
     expect(m.body.errors.map((e: { row: number }) => e.row)).toEqual([3, 4]);
     const figma = await http().get('/api/expenses?q=figma').expect(200);
     expect(figma.body.items[0]).toMatchObject({ date: '2026-04-05', amountMinor: 125_050, category: expect.objectContaining({ name: 'Design' }) });
+
+    // Excel export carries the same columns, dropdown validations, and imports back cleanly.
+    const x = await http().get('/api/export/expenses.xlsx?from=2026-01-01&to=2026-12-31').buffer().parse((res, cb) => { const chunks: Buffer[] = []; res.on('data', (c: Buffer) => chunks.push(c)); res.on('end', () => cb(null, Buffer.concat(chunks))); }).expect(200);
+    expect(x.headers['content-type']).toMatch(/spreadsheetml/);
+    const xbuf = x.body as Buffer;
+    expect(xbuf.subarray(0, 2).toString()).toBe('PK');
+    const current = (await http().get('/api/export/expenses.csv?from=2026-01-01&to=2026-12-31').expect(200)).text.split(/\r?\n/).filter((l) => l.length > 0).length - 1;
+    const xp = await http().post('/api/import/expenses/preview').attach('file', xbuf, 'expenses.xlsx').expect(201);
+    expect(xp.body.headers).toEqual(['Date', 'Description', 'Category', 'Paid by', 'Reimbursable', 'Invoice no.', 'Amount', 'Vendor', 'Notes']);
+    expect(xp.body.rowCount).toBe(current);
+    expect(xp.body.sampleRows[0][0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const xc = await http()
+      .post('/api/import/expenses/commit')
+      .attach('file', xbuf, 'expenses.xlsx')
+      .field('mapping', JSON.stringify(xp.body.suggestedMapping))
+      .field('options', JSON.stringify({ dateFormat: 'auto', createMissingCategories: false, createMissingStakeholders: false, skipDuplicates: true }))
+      .expect(201);
+    expect(xc.body.errors).toEqual([]);
+    expect(xc.body.inserted).toBe(0); // all already present → skipped
+    expect(xc.body.skipped).toBe(current);
+    const xt = await http().get('/api/export/template/expenses.xlsx').expect(200);
+    expect(xt.headers['content-type']).toMatch(/spreadsheetml/);
 
     const template = await http().get('/api/export/template/revenue.csv').expect(200);
     expect(template.text.split(/\r?\n/)).toHaveLength(2);

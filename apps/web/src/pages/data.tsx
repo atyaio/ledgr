@@ -92,7 +92,7 @@ export function DataPage() {
     <>
       <PageHeader title="Import & export" subtitle="Bulk-load from spreadsheets, export any ledger, back up the whole project." />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2" title="Import a CSV">
+        <Card className="xl:col-span-2" title="Import a spreadsheet">
           <div className="space-y-4">
             <Tabs value={entity} onChange={(e) => { setEntity(e); reset(); }} items={IMPORT_ENTITIES.map((e) => ({ id: e, label: LABELS[e] }))} />
             {!preview && (
@@ -104,12 +104,18 @@ export function DataPage() {
                 onClick={() => inputRef.current?.click()}
               >
                 <FileUp className="size-7 mx-auto text-ink-3 mb-2" />
-                <div className="text-[15px] font-medium">Choose a CSV file</div>
+                <div className="text-[15px] font-medium">Choose an Excel or CSV file</div>
                 <div className="text-[13px] text-ink-3 mt-1">Any column names: you map them next. Dates, money formats and category names are matched for you.</div>
-                <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); }} />
+                <input ref={inputRef} type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); }} />
               </div>
             )}
-            {!preview && <Button size="xs" variant="ghost" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/template/${entity}.csv`, `${entity}-template.csv`).catch((e) => toast.error('Failed', errorMessage(e)))}>Download a template</Button>}
+            {!preview && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button size="xs" variant="soft" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/template/${entity}.xlsx`, `${entity}-template.xlsx`).catch((e) => toast.error('Failed', errorMessage(e)))}>Excel template</Button>
+                <Button size="xs" variant="ghost" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/template/${entity}.csv`, `${entity}-template.csv`).catch((e) => toast.error('Failed', errorMessage(e)))}>CSV template</Button>
+                <span className="text-[12px] text-ink-3">The Excel template has dropdowns for categories, partners and choice fields.</span>
+              </div>
+            )}
             {busy && !preview && <div className="text-[13px] text-ink-3">Reading…</div>}
             {preview && (
               <div className="space-y-4">
@@ -161,14 +167,20 @@ export function DataPage() {
           </div>
         </Card>
         <div className="space-y-4">
-          <Card title="Export CSV" flush>
+          <Card title="Export" subtitle="Excel files keep the dropdowns, so they re-import without typos." flush>
             <ul className="divide-y divide-line">
-              {IMPORT_ENTITIES.map((e) => (
-                <li key={e} className="flex items-center justify-between px-4 md:px-5 h-13 text-[14px]">
-                  <span>{LABELS[e]}{(e === 'expenses' || e === 'revenue' || e === 'settlements') && <span className="block text-ink-3 num text-[12px]">{range.from} → {range.to}</span>}</span>
-                  <Button size="xs" variant="soft" className="rounded-full" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/${e}.csv`, `${e}.csv`, e === 'stakeholders' || e === 'categories' ? undefined : { from: range.from, to: range.to }).catch((err) => toast.error('Export failed', errorMessage(err)))}>CSV</Button>
-                </li>
-              ))}
+              {IMPORT_ENTITIES.map((e) => {
+                const params = e === 'stakeholders' || e === 'categories' ? undefined : { from: range.from, to: range.to };
+                return (
+                  <li key={e} className="flex items-center justify-between gap-2 px-4 md:px-5 h-13 text-[14px]">
+                    <span className="min-w-0">{LABELS[e]}{params && <span className="block text-ink-3 num text-[12px]">{range.from} → {range.to}</span>}</span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <Button size="xs" variant="soft" className="rounded-full" icon={<Download className="size-3.5" />} onClick={() => downloadFile(`/export/${e}.xlsx`, `${e}.xlsx`, params).catch((err) => toast.error('Export failed', errorMessage(err)))}>Excel</Button>
+                      <Button size="xs" variant="ghost" className="rounded-full" onClick={() => downloadFile(`/export/${e}.csv`, `${e}.csv`, params).catch((err) => toast.error('Export failed', errorMessage(err)))}>CSV</Button>
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </Card>
           <Card title="Backup & restore">

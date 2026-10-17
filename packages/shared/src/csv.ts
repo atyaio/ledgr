@@ -32,27 +32,28 @@ const SYNONYMS: Record<string, string[]> = {
 export function importTargets(entity: ImportEntity, customFields: { key: string; label: string; required: boolean }[] = []): ImportColumn[] {
   const cf = customFields.map<ImportColumn>((f) => ({ key: `cf:${f.key}`, label: f.label, required: f.required, description: 'Custom field' }));
   switch (entity) {
+    // Column order mirrors the dashboard tables: date, description, category, party, custom columns, amount, then extras.
     case 'expenses':
       return [
         { key: 'date', label: 'Date', required: true },
-        { key: 'amount', label: 'Amount', required: true },
         { key: 'description', label: 'Description', required: true },
         { key: 'category', label: 'Category', required: true },
-        { key: 'paidBy', label: 'Paid by', required: false, description: 'Stakeholder name; blank = company pool' },
+        { key: 'paidBy', label: 'Paid by', required: false, description: 'Stakeholder name; blank = company account' },
+        ...cf,
+        { key: 'amount', label: 'Amount', required: true },
         { key: 'vendor', label: 'Vendor', required: false },
         { key: 'notes', label: 'Notes', required: false },
-        ...cf,
       ];
     case 'revenue':
       return [
         { key: 'date', label: 'Date', required: true },
-        { key: 'amount', label: 'Amount', required: true },
         { key: 'description', label: 'Description', required: true },
         { key: 'category', label: 'Category', required: false },
         { key: 'source', label: 'Source', required: false },
-        { key: 'receivedBy', label: 'Received by', required: false, description: 'Stakeholder name; blank = company pool' },
-        { key: 'notes', label: 'Notes', required: false },
+        { key: 'receivedBy', label: 'Received by', required: false, description: 'Stakeholder name; blank = company account' },
         ...cf,
+        { key: 'amount', label: 'Amount', required: true },
+        { key: 'notes', label: 'Notes', required: false },
       ];
     case 'stakeholders':
       return [

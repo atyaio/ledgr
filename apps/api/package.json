@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "main": "dist/main.js",
   "types": "dist/main.d.ts",
-  "files": ["dist", "prisma/migrations", "prisma/schema.prisma"],
+  "files": [
+    "dist",
+    "prisma/migrations",
+    "prisma/schema.prisma"
+  ],
   "scripts": {
     "build": "pnpm prisma:generate && nest build",
     "dev": "pnpm prisma:generate && nest start --watch",
@@ -25,6 +29,7 @@
     "@prisma/client": "7.10.1",
     "@supabase/supabase-js": "^2.118.0",
     "better-sqlite3": "^12.6.0",
+    "exceljs": "^4.4.0",
     "papaparse": "^5.7.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
@@ -50,9 +55,19 @@
     "rootDir": "src",
     "testEnvironment": "node",
     "testRegex": ".*\\.spec\\.ts$",
-    "moduleFileExtensions": ["js", "json", "ts"],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
     "transform": {
-      "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/../tsconfig.json", "diagnostics": false }]
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "<rootDir>/../tsconfig.json",
+          "diagnostics": false
+        }
+      ]
     }
   }
 }

@@ -41,10 +41,10 @@ export class ExportService {
     return cfEntity ? this.customFields.definitions(cfEntity) : [];
   }
 
-  filename(entity: ImportEntity, range: RangeQuery): string {
+  filename(entity: ImportEntity, range: RangeQuery, ext: 'csv' | 'xlsx' = 'csv'): string {
     const from = range.from ?? 'all';
     const to = range.to ?? todayISO();
-    return `${this.ctx.config.slug}-${entity}-${from}_${to}.csv`;
+    return `${this.ctx.config.slug}-${entity}-${from}_${to}.${ext}`;
   }
 
   async csv(entity: ImportEntity, range: RangeQuery): Promise<string> {
@@ -82,13 +82,13 @@ export class ExportService {
           headers,
           rows: rows.map((e) => [
             e.date,
-            this.money(e.amountMinor),
             e.description,
             e.category.name,
             e.paidBy?.name ?? '',
+            ...this.cfCells(parseCustomFields(e.customFields), defs),
+            this.money(e.amountMinor),
             e.vendor ?? '',
             e.notes ?? '',
-            ...this.cfCells(parseCustomFields(e.customFields), defs),
           ]),
         };
       }
@@ -102,13 +102,13 @@ export class ExportService {
           headers,
           rows: rows.map((r) => [
             r.date,
-            this.money(r.amountMinor),
             r.description,
             r.category?.name ?? '',
             r.source ?? '',
             r.receivedBy?.name ?? '',
-            r.notes ?? '',
             ...this.cfCells(parseCustomFields(r.customFields), defs),
+            this.money(r.amountMinor),
+            r.notes ?? '',
           ]),
         };
       }
@@ -137,7 +137,7 @@ export class ExportService {
     }
   }
 
-  private exampleRow(entity: ImportEntity, defs: CustomFieldDefinition[]): string[] {
+  exampleRow(entity: ImportEntity, defs: CustomFieldDefinition[]): string[] {
     const today = todayISO();
     const cf = defs.map((d) => {
       switch (d.type) {
@@ -150,8 +150,8 @@ export class ExportService {
       }
     });
     switch (entity) {
-      case 'expenses': return [today, this.money(125_000), 'Cloud hosting – October', 'Hosting & infrastructure', '', 'AWS', 'Paid from the company account', ...cf];
-      case 'revenue': return [today, this.money(2_500_000), 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', '', ...cf];
+      case 'expenses': return [today, 'Cloud hosting – October', 'Hosting & infrastructure', '', ...cf, this.money(125_000), 'AWS', 'Paid from the company account'];
+      case 'revenue': return [today, 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', ...cf, this.money(2_500_000), ''];
       case 'stakeholders': return ['Jane Doe', '50', 'jane@example.com', today, '', ...cf];
       case 'categories': return ['Marketing', 'expense', '#E0A458', this.money(500_000)];
       case 'settlements': return [today, 'Jane Doe', '', this.money(30_000), 'Reimbursement for September'];

@@ -60,7 +60,7 @@ export function ExpensesPage() {
     try { await bulkDelete.mutateAsync([...selected]); toast.success(`${selected.size} expenses deleted`); setSelected(new Set()); setSelecting(false); setBulkConfirm(false); } catch (e) { toast.error('Delete failed', errorMessage(e)); }
   };
   const onRecompute = async (e: Expense) => { try { await recompute.mutateAsync(e.id); toast.success('Split recomputed'); } catch (err) { toast.error('Recompute failed', errorMessage(err)); } };
-  const exportCsv = () => downloadFile('/export/expenses.csv', 'expenses.csv', { from: range.from, to: range.to }).catch((e) => toast.error('Export failed', errorMessage(e)));
+  const exportCsv = (format: 'xlsx' | 'csv' = 'xlsx') => downloadFile(`/export/expenses.${format}`, `expenses.${format}`, { from: range.from, to: range.to }).catch((e) => toast.error('Export failed', errorMessage(e)));
 
   // Group by date for the mobile list
   const groups = useMemo(() => {
