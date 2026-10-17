@@ -17,7 +17,17 @@ export async function startCommand(opts: Opts) {
   if (!opts.apiOnly && !webDist) {
     console.error(pc.yellow('Dashboard build not found (@ledgr/web/dist). Serving the API only. Run `pnpm build` in the ledgr repo, or use --api-only to silence this.'));
   }
-  const { url, ctx } = await api.startApp({ dir, host: opts.host, port: opts.port ? Number(opts.port) : undefined, webDist: webDist ?? null });
+  let started;
+  try {
+    started = await api.startApp({ dir, host: opts.host, port: opts.port ? Number(opts.port) : undefined, webDist: webDist ?? null });
+  } catch (e) {
+    if (e instanceof Error && /EADDRINUSE/.test(e.message)) {
+      const port = opts.port ?? '4848';
+      throw new Error(`Port ${port} is already in use (another ledgr or app is running there). Stop it, or start on another port: ${pc.cyan(`ledgr start --port ${Number(port) + 1}`)}`);
+    }
+    throw e;
+  }
+  const { url, ctx } = started;
   if (ctx.config.auth.mode === 'none' && opts.host !== '127.0.0.1' && opts.host !== 'localhost') {
     console.error(pc.red(`WARNING: auth.mode is "none" and you are binding to ${opts.host}. Anyone who can reach this host can edit the ledger.`));
   }
