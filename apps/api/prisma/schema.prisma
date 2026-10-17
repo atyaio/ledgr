@@ -1,0 +1,177 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Stakeholder {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?
+  sharePercent Float    @default(0)
+  active       Boolean  @default(true)
+  joinedAt     String?
+  notes        String?
+  color        String   @default("#5B8DEF")
+  customFields String   @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  paidExpenses    Expense[]      @relation("PaidBy")
+  receivedRevenue Revenue[]      @relation("ReceivedBy")
+  splits          ExpenseSplit[]
+  settlementsFrom Settlement[]   @relation("SettlementFrom")
+  settlementsTo   Settlement[]   @relation("SettlementTo")
+}
+
+model Category {
+  id                 String   @id @default(cuid())
+  name               String
+  kind               String // expense | revenue
+  color              String   @default("#5B8DEF")
+  monthlyBudgetMinor Int?
+  archived           Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  expenses Expense[]
+  revenue  Revenue[]
+
+  @@unique([kind, name])
+}
+
+model Expense {
+  id                  String   @id @default(cuid())
+  date                String // YYYY-MM-DD
+  amountMinor         Int
+  description         String
+  categoryId          String
+  paidByStakeholderId String?
+  vendor              String?
+  notes               String?
+  splitMode           String   @default("ownership") // ownership | custom
+  recurringRuleId     String?
+  customFields        String   @default("{}")
+  importBatchId       String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  category      Category       @relation(fields: [categoryId], references: [id])
+  paidBy        Stakeholder?   @relation("PaidBy", fields: [paidByStakeholderId], references: [id], onDelete: SetNull)
+  recurringRule RecurringRule? @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
+  splits        ExpenseSplit[]
+
+  @@index([date])
+  @@index([categoryId])
+  @@index([paidByStakeholderId])
+}
+
+model ExpenseSplit {
+  id            String @id @default(cuid())
+  expenseId     String
+  stakeholderId String
+  sharePercent  Float
+  amountMinor   Int
+
+  expense     Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  stakeholder Stakeholder @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, stakeholderId])
+  @@index([stakeholderId])
+}
+
+model Revenue {
+  id                      String   @id @default(cuid())
+  date                    String
+  amountMinor             Int
+  description             String
+  categoryId              String?
+  source                  String?
+  receivedByStakeholderId String?
+  notes                   String?
+  recurringRuleId         String?
+  customFields            String   @default("{}")
+  importBatchId           String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  receivedBy    Stakeholder?   @relation("ReceivedBy", fields: [receivedByStakeholderId], references: [id], onDelete: SetNull)
+  recurringRule RecurringRule? @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([categoryId])
+}
+
+model Settlement {
+  id                String   @id @default(cuid())
+  date              String
+  fromStakeholderId String
+  toStakeholderId   String? // null = company pool
+  amountMinor       Int
+  note              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  from Stakeholder  @relation("SettlementFrom", fields: [fromStakeholderId], references: [id], onDelete: Cascade)
+  to   Stakeholder? @relation("SettlementTo", fields: [toStakeholderId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+}
+
+model CustomFieldDefinition {
+  id        String   @id @default(cuid())
+  entity    String // expense | revenue | stakeholder
+  key       String
+  label     String
+  type      String // text | number | money | date | boolean | select
+  options   String   @default("[]")
+  required  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([entity, key])
+}
+
+model RecurringRule {
+  id              String   @id @default(cuid())
+  kind            String // expense | revenue
+  name            String
+  frequency       String // daily | weekly | monthly | quarterly | yearly
+  interval        Int      @default(1)
+  startDate       String
+  endDate         String?
+  nextRunAt       String
+  active          Boolean  @default(true)
+  template        String // JSON RecurringTemplate
+  lastGeneratedAt String?
+  generatedCount  Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  expenses Expense[]
+  revenue  Revenue[]
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  at         DateTime @default(now())
+  actorId    String
+  actorEmail String
+  action     String
+  entity     String
+  entityId   String?
+  before     String?
+  after      String?
+
+  @@index([entity, entityId])
+  @@index([at])
+}

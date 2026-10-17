@@ -1,0 +1,27 @@
+{
+  "name": "ledgr",
+  "version": "0.1.0",
+  "description": "Self-contained finance dashboard for any project: expenses, revenue, stakeholders, splits, analytics.",
+  "type": "module",
+  "bin": { "ledgr": "./dist/index.js" },
+  "files": ["dist", "Dockerfile.template"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "@ledgr/api": "workspace:*",
+    "@ledgr/shared": "workspace:*",
+    "@ledgr/web": "workspace:*",
+    "commander": "^15.0.0",
+    "open": "^11.0.4",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsup": "^9.0.0",
+    "typescript": "~5.9.3"
+  }
+}

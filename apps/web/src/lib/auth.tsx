@@ -1,0 +1,124 @@
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { AuthConfigResponse, MeResponse } from '@ledgr/shared';
+import { ApiRequestError, api, configureApi } from './api';
+
+export type AuthStatus = 'loading' | 'signed-out' | 'not-admin' | 'ready' | 'error';
+
+interface AuthState {
+  status: AuthStatus;
+  mode: AuthConfigResponse['mode'] | null;
+  user: MeResponse | null;
+  error: string | null;
+  supabase: SupabaseClient | null;
+  signIn: (email: string, password: string) => Promise<string | null>;
+  sendMagicLink: (email: string) => Promise<string | null>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [config, setConfig] = useState<AuthConfigResponse | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<MeResponse | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('loading');
+  const [error, setError] = useState<string | null>(null);
+
+  const supabase = useMemo(() => {
+    if (!config || config.mode !== 'supabase' || !config.supabaseUrl || !config.supabaseAnonKey) return null;
+    return createClient(config.supabaseUrl, config.supabaseAnonKey, { auth: { storageKey: 'ledgr:auth' } });
+  }, [config]);
+
+  // 1. Load auth config
+  useEffect(() => {
+    api
+      .get<AuthConfigResponse>('/auth/config')
+      .then(setConfig)
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : 'Cannot reach the ledgr API');
+        setStatus('error');
+      });
+  }, []);
+
+  // 2. Wire the API token getter + listen to the session
+  useEffect(() => {
+    if (!config) return;
+    if (config.mode === 'none') {
+      configureApi({ getToken: () => null });
+      api
+        .get<MeResponse>('/me')
+        .then((me) => {
+          setUser(me);
+          setStatus('ready');
+        })
+        .catch(() => setStatus('error'));
+      return;
+    }
+    if (!supabase) return;
+    configureApi({
+      getToken: async () => (await supabase.auth.getSession()).data.session?.access_token ?? null,
+      onUnauthorized: () => setStatus('signed-out'),
+    });
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, [config, supabase]);
+
+  // 3. Resolve /me whenever the session changes
+  useEffect(() => {
+    if (!config || config.mode !== 'supabase') return;
+    if (!session) {
+      setUser(null);
+      setStatus('signed-out');
+      return;
+    }
+    setStatus('loading');
+    api
+      .get<MeResponse>('/me')
+      .then((me) => {
+        setUser(me);
+        setStatus('ready');
+      })
+      .catch((e: unknown) => {
+        if (e instanceof ApiRequestError && e.code === 'NOT_ADMIN') setStatus('not-admin');
+        else {
+          setError(e instanceof Error ? e.message : 'Sign-in failed');
+          setStatus('signed-out');
+        }
+      });
+  }, [config, session]);
+
+  const value = useMemo<AuthState>(
+    () => ({
+      status,
+      mode: config?.mode ?? null,
+      user,
+      error,
+      supabase,
+      signIn: async (email, password) => {
+        if (!supabase) return 'Auth is not configured';
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return error?.message ?? null;
+      },
+      sendMagicLink: async (email) => {
+        if (!supabase) return 'Auth is not configured';
+        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+        return error?.message ?? null;
+      },
+      signOut: async () => {
+        await supabase?.auth.signOut();
+        setSession(null);
+      },
+    }),
+    [status, config, user, error, supabase],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth outside AuthProvider');
+  return ctx;
+}
