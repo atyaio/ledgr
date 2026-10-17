@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { CustomFieldDefinition, Revenue } from '@ledgr/shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
-import { useCategories, useCustomFields, useRevenue, useRevenueMutations, useStakeholders } from '@/lib/queries';
+import { useCategories, useCustomFields, usePaymentMethods, useRevenue, useRevenueMutations, useStakeholders } from '@/lib/queries';
 import { downloadFile } from '@/lib/api';
 import { useIsMobile } from '@/lib/media';
 import { LedgerToolbar, useLedgerParams } from '@/components/ledger-toolbar';
@@ -31,9 +31,10 @@ export function RevenuePage() {
   const cats = useCategories('revenue', true);
   const sh = useStakeholders();
   const cf = useCustomFields('revenue');
+  const pm = usePaymentMethods(true);
   const params = useMemo(
-    () => ({ from: range.from, to: range.to, q: p.q, categoryId: p.categoryId, stakeholderId: p.stakeholderId, sort: p.sort, order: p.order, page: p.page, pageSize: PAGE }),
-    [range, p.q, p.categoryId, p.stakeholderId, p.sort, p.order, p.page],
+    () => ({ from: range.from, to: range.to, q: p.q, categoryId: p.categoryId, stakeholderId: p.stakeholderId, paymentMethodId: p.paymentMethodId, sort: p.sort, order: p.order, page: p.page, pageSize: PAGE }),
+    [range, p.q, p.categoryId, p.stakeholderId, p.paymentMethodId, p.sort, p.order, p.page],
   );
   const q = useRevenue(params);
   const { remove, bulkDelete } = useRevenueMutations();
@@ -79,7 +80,7 @@ export function RevenuePage() {
         }
       />
       <div className="mb-3">
-        <LedgerToolbar categories={cats.data?.items.filter((c) => !c.archived) ?? []} stakeholders={sh.data?.items ?? []} stakeholderLabel="Received by" onExport={exportCsv} />
+        <LedgerToolbar categories={cats.data?.items.filter((c) => !c.archived) ?? []} stakeholders={sh.data?.items ?? []} paymentMethods={pm.data?.items.filter((m) => !m.archived) ?? []} stakeholderLabel="Received by" onExport={exportCsv} />
       </div>
       {selecting && items.length > 0 && (
         <div className="mb-3 flex items-center justify-between gap-2 card px-4 py-2 fade-up">
@@ -112,7 +113,7 @@ export function RevenuePage() {
                       )}
                       <span className="flex-1 min-w-0">
                         <span className="block text-[15px] font-medium truncate">{r.description}</span>
-                        <span className="block text-[12.5px] text-ink-3 truncate">{r.category?.name ?? 'Uncategorised'}{r.source ? ` · ${r.source}` : ''}{r.receivedBy ? ` · ${r.receivedBy.name}` : ''}</span>
+                        <span className="block text-[12.5px] text-ink-3 truncate">{r.category?.name ?? 'Uncategorised'}{r.paymentMethod ? ` · ${r.paymentMethod.name}` : ''}{r.source ? ` · ${r.source}` : ''}{r.receivedBy ? ` · ${r.receivedBy.name}` : ''}</span>
                       </span>
                       <Money minor={r.amountMinor} tone="revenue" className="text-[15px] font-semibold shrink-0" />
                     </button>
@@ -133,6 +134,7 @@ export function RevenuePage() {
                 <Th sortable sorted={sorted('description')} onSort={() => sortBy('description')}>Description</Th>
                 <Th>Category</Th>
                 <Th>Source</Th>
+                <Th>Payment</Th>
                 <Th>Received by</Th>
                 {defs.map((d) => <Th key={d.id} align={d.type === 'money' || d.type === 'number' ? 'right' : 'left'}>{d.label}</Th>)}
                 <Th align="right" sortable sorted={sorted('amountMinor')} onSort={() => sortBy('amountMinor')} className="w-36">Amount</Th>
@@ -140,8 +142,8 @@ export function RevenuePage() {
               </tr>
             </thead>
             <tbody>
-              {q.isPending && <EmptyRow colSpan={8 + defs.length}>Loading…</EmptyRow>}
-              {!q.isPending && !items.length && <EmptyRow colSpan={8 + defs.length}>No revenue in this period.</EmptyRow>}
+              {q.isPending && <EmptyRow colSpan={9 + defs.length}>Loading…</EmptyRow>}
+              {!q.isPending && !items.length && <EmptyRow colSpan={9 + defs.length}>No revenue in this period.</EmptyRow>}
               {items.map((r) => (
                 <Tr key={r.id} selected={selected.has(r.id)} className="cursor-pointer" onClick={() => (selecting ? toggle(r.id) : setDetail(r))}>
                   {selecting && <Td onClick={(ev) => ev.stopPropagation()}><Checkbox checked={selected.has(r.id)} onChange={() => toggle(r.id)} aria-label="Select" /></Td>}
@@ -149,6 +151,7 @@ export function RevenuePage() {
                   <Td><div className="font-medium truncate max-w-[380px]">{r.description}</div>{r.recurringRuleId && <div className="text-[12px] text-ink-3">recurring</div>}</Td>
                   <Td>{r.category ? <Chip color={r.category.color}>{r.category.name}</Chip> : <span className="text-ink-4">—</span>}</Td>
                   <Td className="text-ink-2">{r.source ?? <span className="text-ink-4">—</span>}</Td>
+                  <Td>{r.paymentMethod ? <Chip color={r.paymentMethod.color}>{r.paymentMethod.name}</Chip> : <span className="text-ink-4">—</span>}</Td>
                   <Td>{r.receivedBy ? <span className="inline-flex items-center gap-2"><Avatar name={r.receivedBy.name} color={r.receivedBy.color} size={22} />{r.receivedBy.name}</span> : <span className="text-ink-3">Company</span>}</Td>
                   {defs.map((d) => <Td key={d.id} align={d.type === 'money' || d.type === 'number' ? 'right' : 'left'}><CustomCell def={d} value={r.customFields?.[d.key]} /></Td>)}
                   <Td align="right"><Money minor={r.amountMinor} className="font-semibold" /></Td>
@@ -171,6 +174,7 @@ export function RevenuePage() {
           <div className="space-y-4">
             <div className="num text-[32px] font-semibold tracking-tight text-revenue">{money(detail.amountMinor)}</div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[14px]">
+              <dt className="text-ink-3">Payment method</dt><dd className="font-medium">{detail.paymentMethod?.name ?? 'Unspecified'}</dd>
               <dt className="text-ink-3">Received by</dt><dd className="font-medium">{detail.receivedBy?.name ?? 'Company account'}</dd>
               {detail.source && <><dt className="text-ink-3">Source</dt><dd>{detail.source}</dd></>}
               {defs.map((d) => <span key={d.id} className="contents"><dt className="text-ink-3">{d.label}</dt><dd><CustomCell def={d} value={detail.customFields?.[d.key]} /></dd></span>)}

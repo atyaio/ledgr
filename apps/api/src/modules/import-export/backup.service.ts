@@ -13,6 +13,7 @@ import { toCustomFieldDto } from '../custom-fields/custom-fields.service';
 import { toExpenseDto } from '../expenses/expenses.service';
 import { toRecurringDto } from '../recurring/recurring.service';
 import { toRevenueDto } from '../revenue/revenue.service';
+import { toPaymentMethodDto } from '../payment-methods/payment-methods.service';
 import { toSettlementDto } from '../settlements/settlements.service';
 import { toStakeholderDto } from '../stakeholders/stakeholders.service';
 
@@ -26,6 +27,7 @@ const backupSchema = z.object({
   stakeholders: z.array(z.record(z.string(), z.unknown())),
   categories: z.array(z.record(z.string(), z.unknown())),
   customFields: z.array(z.record(z.string(), z.unknown())),
+  paymentMethods: z.array(z.record(z.string(), z.unknown())).optional(),
   expenses: z.array(z.record(z.string(), z.unknown())),
   revenue: z.array(z.record(z.string(), z.unknown())),
   settlements: z.array(z.record(z.string(), z.unknown())),
@@ -46,7 +48,7 @@ export class BackupService {
   ) {}
 
   async export(): Promise<BackupFile> {
-    const [stakeholders, categories, customFields, expenses, revenue, settlements, recurring] = await Promise.all([
+    const [stakeholders, categories, customFields, expenses, revenue, settlements, recurring, paymentMethods] = await Promise.all([
       this.prisma.stakeholder.findMany({ orderBy: { createdAt: 'asc' } }),
       this.prisma.category.findMany({ orderBy: { createdAt: 'asc' } }),
       this.prisma.customFieldDefinition.findMany({ orderBy: { createdAt: 'asc' } }),
@@ -60,13 +62,14 @@ export class BackupService {
       }),
       this.prisma.revenue.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        include: { category: { select: { id: true, name: true, color: true } }, receivedBy: { select: { id: true, name: true, color: true } } },
+        include: { category: { select: { id: true, name: true, color: true } }, receivedBy: { select: { id: true, name: true, color: true } }, paymentMethod: { select: { id: true, name: true, color: true } } },
       }),
       this.prisma.settlement.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         include: { from: { select: { id: true, name: true, color: true } }, to: { select: { id: true, name: true, color: true } } },
       }),
       this.prisma.recurringRule.findMany({ orderBy: { createdAt: 'asc' } }),
+      this.prisma.paymentMethod.findMany({ orderBy: { createdAt: 'asc' } }),
     ]);
     const { auth: _auth, ...config } = this.ctx.config;
     return {
@@ -76,6 +79,7 @@ export class BackupService {
       stakeholders: stakeholders.map(toStakeholderDto),
       categories: categories.map(toCategoryDto),
       customFields: customFields.map(toCustomFieldDto),
+      paymentMethods: paymentMethods.map(toPaymentMethodDto),
       expenses: expenses.map(toExpenseDto),
       revenue: revenue.map(toRevenueDto),
       settlements: settlements.map(toSettlementDto),
@@ -115,8 +119,23 @@ export class BackupService {
         await tx.recurringRule.deleteMany();
         await tx.customFieldDefinition.deleteMany();
         await tx.category.deleteMany();
+        await tx.paymentMethod.deleteMany();
         await tx.stakeholder.deleteMany();
       }
+      await chunked(file.paymentMethods ?? [], (rows) =>
+        tx.paymentMethod.createMany({
+          data: rows.map<Prisma.PaymentMethodCreateManyInput>((m) => ({
+            id: m.id,
+            name: m.name,
+            color: m.color,
+            isDefault: m.isDefault ?? false,
+            archived: m.archived ?? false,
+            sortOrder: m.sortOrder ?? 0,
+            createdAt: d(m.createdAt),
+            updatedAt: d(m.updatedAt),
+          })),
+        }),
+      );
       await chunked(file.stakeholders, (rows) =>
         tx.stakeholder.createMany({
           data: rows.map<Prisma.StakeholderCreateManyInput>((s) => ({
@@ -225,6 +244,7 @@ export class BackupService {
             amountMinor: r.amountMinor,
             description: r.description,
             categoryId: r.categoryId,
+            paymentMethodId: r.paymentMethodId ?? null,
             source: r.source,
             receivedByStakeholderId: r.receivedByStakeholderId,
             notes: r.notes,
@@ -267,6 +287,7 @@ export class BackupService {
         stakeholders: file.stakeholders.length,
         categories: file.categories.length,
         customFields: file.customFields.length,
+        paymentMethods: (file.paymentMethods ?? []).length,
         expenses: file.expenses.length,
         expenseSplits: splits.length,
         revenue: file.revenue.length,

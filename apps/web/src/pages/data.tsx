@@ -25,6 +25,7 @@ export function DataPage() {
   const [dateFormat, setDateFormat] = useState<ImportDateFormat>('auto');
   const [createCats, setCreateCats] = useState(true);
   const [createSh, setCreateSh] = useState(false);
+  const [createPm, setCreatePm] = useState(true);
   const [skipDup, setSkipDup] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportCommitResponse | null>(null);
@@ -60,7 +61,7 @@ export function DataPage() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('mapping', JSON.stringify(mapping));
-      fd.append('options', JSON.stringify({ dateFormat, createMissingCategories: createCats, createMissingStakeholders: createSh, skipDuplicates: skipDup }));
+      fd.append('options', JSON.stringify({ dateFormat, createMissingCategories: createCats, createMissingStakeholders: createSh, createMissingPaymentMethods: createPm, skipDuplicates: skipDup }));
       const r = await api.upload<ImportCommitResponse>(`/import/${entity}/commit`, fd);
       setResult(r);
       await qc.invalidateQueries();
@@ -145,6 +146,7 @@ export function DataPage() {
                   <div className="flex flex-col gap-1">
                     <Checkbox label="Create missing categories" checked={createCats} onChange={(e) => setCreateCats(e.target.checked)} />
                     <Checkbox label="Create missing stakeholders (0% share)" checked={createSh} onChange={(e) => setCreateSh(e.target.checked)} />
+                    {entity === 'revenue' && <Checkbox label="Create missing payment methods" checked={createPm} onChange={(e) => setCreatePm(e.target.checked)} />}
                     <Checkbox label="Skip rows that already exist" checked={skipDup} onChange={(e) => setSkipDup(e.target.checked)} />
                   </div>
                 </div>

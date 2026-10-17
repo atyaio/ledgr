@@ -4,6 +4,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ImportExportModule } from './import-export/import-export.module';
+import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { ProjectModule } from './project/project.module';
 import { RecurringModule } from './recurring/recurring.module';
 import { RevenueModule } from './revenue/revenue.module';
@@ -15,6 +16,7 @@ export const DOMAIN_MODULES: Type[] = [
   ProjectModule,
   CustomFieldsModule,
   CategoriesModule,
+  PaymentMethodsModule,
   StakeholdersModule,
   ExpensesModule,
   RevenueModule,

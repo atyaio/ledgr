@@ -59,7 +59,7 @@ export class AnalyticsService {
       }),
       this.prisma.revenue.findMany({
         where,
-        select: { date: true, amountMinor: true, categoryId: true, receivedByStakeholderId: true, category: { select: { name: true, color: true } } },
+        select: { date: true, amountMinor: true, categoryId: true, receivedByStakeholderId: true, paymentMethodId: true, category: { select: { name: true, color: true } }, paymentMethod: { select: { name: true, color: true } } },
       }),
       this.prisma.expense.aggregate({ where: prevWhere, _sum: { amountMinor: true } }),
       this.prisma.revenue.aggregate({ where: prevWhere, _sum: { amountMinor: true } }),
@@ -116,6 +116,15 @@ export class AnalyticsService {
     };
     const expensesByCategory = groupByCategory(expenses, expenseMinor).map((c) => ({ ...c, categoryId: c.categoryId ?? '' }));
     const revenueByCategory = groupByCategory(revenue, revenueMinor);
+    const byMethod = new Map<string, { paymentMethodId: string | null; name: string; color: string; amountMinor: number; count: number }>();
+    for (const r of revenue) {
+      const key = r.paymentMethodId ?? '';
+      const cur = byMethod.get(key) ?? { paymentMethodId: r.paymentMethodId, name: r.paymentMethod?.name ?? 'Unspecified', color: r.paymentMethod?.color ?? UNCATEGORISED.color, amountMinor: 0, count: 0 };
+      cur.amountMinor += r.amountMinor;
+      cur.count += 1;
+      byMethod.set(key, cur);
+    }
+    const revenueByPaymentMethod = [...byMethod.values()].sort((a, b) => b.amountMinor - a.amountMinor).map((m) => ({ ...m, pct: pct(m.amountMinor, revenueMinor) }));
 
     // ─── Top expenses ──────────────────────────────────────────────────────────
     const topExpenses = [...expenses]
@@ -165,6 +174,7 @@ export class AnalyticsService {
       series,
       expensesByCategory,
       revenueByCategory,
+      revenueByPaymentMethod,
       topExpenses,
       stakeholders: stakeholderBlock,
       budgets,

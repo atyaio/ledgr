@@ -102,6 +102,17 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  color: string;
+  isDefault: boolean;
+  archived: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ExpenseSplit {
   id: string;
   expenseId: string;
@@ -138,6 +149,8 @@ export interface Revenue {
   categoryId: string | null;
   category?: Pick<Category, 'id' | 'name' | 'color'> | null;
   source: string | null;
+  paymentMethodId: string | null;
+  paymentMethod?: Pick<PaymentMethod, 'id' | 'name' | 'color'> | null;
   receivedByStakeholderId: string | null;
   receivedBy?: Pick<Stakeholder, 'id' | 'name' | 'color'> | null;
   notes: string | null;
@@ -179,6 +192,7 @@ export interface RecurringTemplate {
   amountMinor: number;
   categoryId: string | null;
   partyStakeholderId: string | null; // paidBy for expenses, receivedBy for revenue
+  paymentMethodId?: string | null; // revenue only
   vendorOrSource: string | null;
   notes: string | null;
   splitMode: SplitMode;
@@ -316,6 +330,7 @@ export interface AnalyticsOverview {
   series: { bucket: string; revenueMinor: number; expenseMinor: number; netMinor: number; cumulativeNetMinor: number }[];
   expensesByCategory: { categoryId: string; name: string; color: string; amountMinor: number; pct: number; count: number }[];
   revenueByCategory: { categoryId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
+  revenueByPaymentMethod: { paymentMethodId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
   topExpenses: { id: string; date: string; description: string; amountMinor: number; categoryName: string; categoryColor: string }[];
   stakeholders: {
     id: string;
@@ -355,6 +370,7 @@ export interface ImportOptions {
   dateFormat: ImportDateFormat;
   createMissingCategories: boolean;
   createMissingStakeholders: boolean;
+  createMissingPaymentMethods: boolean;
   skipDuplicates: boolean;
 }
 
@@ -370,6 +386,7 @@ export interface BackupFile {
   config: Omit<ProjectConfig, 'auth'>;
   stakeholders: Stakeholder[];
   categories: Category[];
+  paymentMethods?: PaymentMethod[];
   customFields: CustomFieldDefinition[];
   expenses: Expense[];
   revenue: Revenue[];

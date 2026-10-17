@@ -39,6 +39,7 @@ export const listQuery = z.object({
   q: z.string().trim().max(200).optional(),
   categoryId: z.string().optional(),
   stakeholderId: z.string().optional(),
+  paymentMethodId: z.string().optional(),
   sort: z.string().max(40).optional(),
   order: z.enum(['asc', 'desc']).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -103,6 +104,19 @@ export const categoryListQuery = z.object({
 });
 export const budgetsQuery = z.object({ month: z.string().regex(/^\d{4}-\d{2}$/).optional() });
 
+// ─── Payment methods ───────────────────────────────────────────────────────────
+export const createPaymentMethodSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  color: hexColor.optional(),
+  isDefault: z.boolean().optional(),
+  archived: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+});
+export const updatePaymentMethodSchema = createPaymentMethodSchema.partial();
+export type CreatePaymentMethodInput = z.infer<typeof createPaymentMethodSchema>;
+export type UpdatePaymentMethodInput = z.infer<typeof updatePaymentMethodSchema>;
+export const paymentMethodListQuery = z.object({ includeArchived: queryBool });
+
 // ─── Expenses ──────────────────────────────────────────────────────────────────
 export const customSplitSchema = z.object({
   stakeholderId: z.string().min(1),
@@ -133,6 +147,7 @@ export const createRevenueSchema = z.object({
   description: z.string().trim().min(1).max(200),
   categoryId: z.string().nullable().optional(),
   source: z.string().trim().max(120).nullable().optional(),
+  paymentMethodId: z.string().nullable().optional(),
   receivedByStakeholderId: z.string().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   customFields: customFields.optional(),
@@ -180,6 +195,7 @@ export const recurringTemplateSchema = z.object({
   amountMinor: positiveMinor,
   categoryId: z.string().nullable().default(null),
   partyStakeholderId: z.string().nullable().default(null),
+  paymentMethodId: z.string().nullable().optional(),
   vendorOrSource: z.string().trim().max(120).nullable().default(null),
   notes: z.string().max(2000).nullable().default(null),
   splitMode: z.enum(SPLIT_MODES).default('ownership'),
@@ -214,6 +230,7 @@ export const importOptionsSchema = z.object({
   dateFormat: z.enum(['auto', 'iso', 'dmy', 'mdy']).default('auto'),
   createMissingCategories: z.boolean().default(true),
   createMissingStakeholders: z.boolean().default(false),
+  createMissingPaymentMethods: z.boolean().default(true),
   skipDuplicates: z.boolean().default(true),
 });
 export const importCommitSchema = z.object({
@@ -222,6 +239,7 @@ export const importCommitSchema = z.object({
     dateFormat: 'auto',
     createMissingCategories: true,
     createMissingStakeholders: false,
+    createMissingPaymentMethods: true,
     skipDuplicates: true,
   }),
 });

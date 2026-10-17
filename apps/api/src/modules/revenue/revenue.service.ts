@@ -10,9 +10,11 @@ import type { Prisma } from '../../generated/prisma/client';
 import { CategoriesService, categoryRef } from '../categories/categories.service';
 import { CustomFieldsService } from '../custom-fields/custom-fields.service';
 import { StakeholdersService, stakeholderRef } from '../stakeholders/stakeholders.service';
+import { PaymentMethodsService, paymentMethodRef } from '../payment-methods/payment-methods.service';
 
 const REVENUE_INCLUDE = {
   category: { select: { id: true, name: true, color: true } },
+  paymentMethod: { select: { id: true, name: true, color: true } },
   receivedBy: { select: { id: true, name: true, color: true } },
 } satisfies Prisma.RevenueInclude;
 
@@ -27,6 +29,8 @@ export function toRevenueDto(r: RevenueRow): Revenue {
     categoryId: r.categoryId,
     category: r.category ? categoryRef(r.category) : null,
     source: r.source,
+    paymentMethodId: r.paymentMethodId,
+    paymentMethod: r.paymentMethod ? paymentMethodRef(r.paymentMethod) : null,
     receivedByStakeholderId: r.receivedByStakeholderId,
     receivedBy: r.receivedBy ? stakeholderRef(r.receivedBy) : null,
     notes: r.notes,
@@ -54,6 +58,7 @@ export class RevenueService {
     private readonly categories: CategoriesService,
     private readonly stakeholders: StakeholdersService,
     private readonly customFields: CustomFieldsService,
+    private readonly paymentMethods: PaymentMethodsService,
   ) {}
 
   buildWhere(q: ListQuery): Prisma.RevenueWhereInput {
@@ -62,6 +67,7 @@ export class RevenueService {
     if (date) and.push({ date });
     if (q.categoryId) and.push({ categoryId: q.categoryId });
     if (q.stakeholderId) and.push({ receivedByStakeholderId: q.stakeholderId });
+    if (q.paymentMethodId) and.push({ paymentMethodId: q.paymentMethodId });
     if (q.q) and.push({ OR: [{ description: { contains: q.q } }, { source: { contains: q.q } }, { notes: { contains: q.q } }] });
     return and.length ? { AND: and } : {};
   }
@@ -90,9 +96,10 @@ export class RevenueService {
     return toRevenueDto(row);
   }
 
-  private async validateRefs(input: { categoryId?: string | null; receivedByStakeholderId?: string | null }, db: Db): Promise<void> {
+  private async validateRefs(input: { categoryId?: string | null; receivedByStakeholderId?: string | null; paymentMethodId?: string | null }, db: Db): Promise<void> {
     if (input.categoryId) await this.categories.requireKind(input.categoryId, 'revenue', db);
     if (input.receivedByStakeholderId) await this.stakeholders.get(input.receivedByStakeholderId, db);
+    if (input.paymentMethodId) await this.paymentMethods.get(input.paymentMethodId, db);
   }
 
   async create(input: CreateRevenueInput, actor: CurrentUser, opts: RevenueCreateOpts = {}): Promise<Revenue> {
@@ -105,6 +112,7 @@ export class RevenueService {
         amountMinor: input.amountMinor,
         description: input.description,
         categoryId: input.categoryId ?? null,
+        paymentMethodId: input.paymentMethodId ?? null,
         source: input.source ?? null,
         receivedByStakeholderId: input.receivedByStakeholderId ?? null,
         notes: input.notes ?? null,
@@ -131,6 +139,7 @@ export class RevenueService {
         ...(input.amountMinor !== undefined ? { amountMinor: input.amountMinor } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
         ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+        ...(input.paymentMethodId !== undefined ? { paymentMethodId: input.paymentMethodId } : {}),
         ...(input.source !== undefined ? { source: input.source } : {}),
         ...(input.receivedByStakeholderId !== undefined ? { receivedByStakeholderId: input.receivedByStakeholderId } : {}),
         ...(input.notes !== undefined ? { notes: input.notes } : {}),

@@ -4,6 +4,7 @@ import { CustomFieldsModule } from '../custom-fields/custom-fields.module';
 import { ExpensesModule } from '../expenses/expenses.module';
 import { RevenueModule } from '../revenue/revenue.module';
 import { SettlementsModule } from '../settlements/settlements.module';
+import { PaymentMethodsModule } from '../payment-methods/payment-methods.module';
 import { StakeholdersModule } from '../stakeholders/stakeholders.module';
 import { BackupService } from './backup.service';
 import { ExportService } from './export.service';
@@ -12,7 +13,7 @@ import { ImportService } from './import.service';
 import { XlsxService } from './xlsx.service';
 
 @Module({
-  imports: [CustomFieldsModule, CategoriesModule, StakeholdersModule, ExpensesModule, RevenueModule, SettlementsModule],
+  imports: [CustomFieldsModule, CategoriesModule, StakeholdersModule, ExpensesModule, RevenueModule, SettlementsModule, PaymentMethodsModule],
   controllers: [ImportExportController],
   providers: [ExportService, ImportService, BackupService, XlsxService],
   exports: [ExportService, ImportService, BackupService, XlsxService],

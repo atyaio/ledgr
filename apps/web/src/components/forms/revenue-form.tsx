@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { todayISO, type CreateRevenueInput, type CustomFields, type Revenue } from '@ledgr/shared';
-import { useCategories, useRevenueMutations, useStakeholders } from '@/lib/queries';
+import { useCategories, usePaymentMethods, useRevenueMutations, useStakeholders } from '@/lib/queries';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
   const { create, update } = useRevenueMutations();
   const cats = useCategories('revenue');
   const sh = useStakeholders();
+  const pm = usePaymentMethods();
+  const [paymentMethodId, setPaymentMethodId] = useState('');
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState<number | null>(null);
   const [description, setDescription] = useState('');
@@ -33,6 +35,7 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
     setDescription(revenue?.description ?? '');
     setCategoryId(revenue?.categoryId ?? '');
     setReceivedBy(revenue?.receivedByStakeholderId ?? '');
+    setPaymentMethodId(revenue?.paymentMethodId ?? '');
     setSource(revenue?.source ?? '');
     setNotes(revenue?.notes ?? '');
     setCustom(revenue?.customFields ?? {});
@@ -44,6 +47,11 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
     const def = cats.data?.items.find((c) => c.isDefault && !c.archived);
     if (def) setCategoryId(def.id);
   }, [open, revenue, categoryId, cats.data]);
+  useEffect(() => {
+    if (!open || revenue || paymentMethodId) return;
+    const def = pm.data?.items.find((m) => m.isDefault && !m.archived);
+    if (def) setPaymentMethodId(def.id);
+  }, [open, revenue, paymentMethodId, pm.data]);
 
   const busy = create.isPending || update.isPending;
   const valid = !!date && amount !== null && amount > 0 && description.trim().length > 0;
@@ -55,6 +63,7 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
       description: description.trim(),
       categoryId: categoryId || null,
       receivedByStakeholderId: receivedBy || null,
+      paymentMethodId: paymentMethodId || null,
       source: source.trim() || null,
       notes: notes.trim() || null,
       customFields: custom,
@@ -97,12 +106,20 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
           </Field>
           <Field label="Date" required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
         </div>
-        <Field label="Received by">
-          <Select value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)}>
-            <option value="">Company account</option>
-            {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </Select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Payment method">
+            <Select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}>
+              <option value="">{pm.data?.items.length ? 'Unspecified' : 'None set up yet'}</option>
+              {pm.data?.items.filter((m) => !m.archived || m.id === paymentMethodId).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </Select>
+          </Field>
+          <Field label="Received by">
+            <Select value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)}>
+              <option value="">Company account</option>
+              {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </Select>
+          </Field>
+        </div>
         <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setMoreOpen((o) => !o)}>
           {moreOpen ? 'Hide' : 'Add'} source & notes
         </button>

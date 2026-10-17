@@ -34,6 +34,7 @@ import { CategoriesService } from '../categories/categories.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RevenueService } from '../revenue/revenue.service';
 import { SettlementsService } from '../settlements/settlements.service';
+import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 import { StakeholdersService } from '../stakeholders/stakeholders.service';
 import { CUSTOM_FIELD_ENTITY_FOR, ExportService } from './export.service';
 
@@ -71,6 +72,7 @@ export class ImportService {
     private readonly expenses: ExpensesService,
     private readonly revenue: RevenueService,
     private readonly settlements: SettlementsService,
+    private readonly paymentMethods: PaymentMethodsService,
   ) {}
 
   // ─── Parsing ────────────────────────────────────────────────────────────────
@@ -190,7 +192,7 @@ export class ImportService {
     return this.prisma;
   }
   get svc() {
-    return { categories: this.categories, stakeholders: this.stakeholders, expenses: this.expenses, revenue: this.revenue, settlements: this.settlements };
+    return { categories: this.categories, stakeholders: this.stakeholders, expenses: this.expenses, revenue: this.revenue, settlements: this.settlements, paymentMethods: this.paymentMethods };
   }
 }
 
@@ -276,6 +278,21 @@ class ImportContext {
     }
     this.categoryCache.set(key, cat);
     return cat.id;
+  }
+
+  private readonly paymentMethodCache = new Map<string, { id: string }>();
+
+  private async paymentMethod(row: Row): Promise<string | null> {
+    const name = this.cell(row, 'paymentMethod');
+    if (!name) return null;
+    const k = name.toLowerCase();
+    let pm = this.paymentMethodCache.get(k) ?? (await this.s.svc.paymentMethods.findByName(name));
+    if (!pm) {
+      if (!this.options.createMissingPaymentMethods) throw new RowFail(`Unknown payment method "${name}"`);
+      pm = await this.s.svc.paymentMethods.create({ name }, this.actor, { audit: false });
+    }
+    this.paymentMethodCache.set(k, pm);
+    return pm.id;
   }
 
   private async stakeholder(row: Row, key: string, required: boolean): Promise<string | null> {
@@ -371,6 +388,7 @@ class ImportContext {
         description: this.cell(row, 'description'),
         categoryId: await this.category(row, 'revenue', false),
         source: this.opt(row, 'source'),
+        paymentMethodId: await this.paymentMethod(row),
         receivedByStakeholderId: await this.stakeholder(row, 'receivedBy', false),
         notes: this.opt(row, 'notes'),
         customFields: this.customFields(row),

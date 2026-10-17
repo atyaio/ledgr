@@ -14,6 +14,7 @@ const Expenses = lazy(() => import('@/pages/expenses').then((m) => ({ default: m
 const Revenue = lazy(() => import('@/pages/revenue').then((m) => ({ default: m.RevenuePage })));
 const Stakeholders = lazy(() => import('@/pages/stakeholders').then((m) => ({ default: m.StakeholdersPage })));
 const Categories = lazy(() => import('@/pages/categories').then((m) => ({ default: m.CategoriesPage })));
+const Payments = lazy(() => import('@/pages/payments').then((m) => ({ default: m.PaymentsPage })));
 const Recurring = lazy(() => import('@/pages/recurring').then((m) => ({ default: m.RecurringPage })));
 const Data = lazy(() => import('@/pages/data').then((m) => ({ default: m.DataPage })));
 const Settings = lazy(() => import('@/pages/settings').then((m) => ({ default: m.SettingsPage })));
@@ -67,6 +68,7 @@ const router = createBrowserRouter([
           { path: 'revenue', element: page(<Revenue />) },
           { path: 'stakeholders', element: page(<Stakeholders />) },
           { path: 'categories', element: page(<Categories />) },
+          { path: 'payments', element: page(<Payments />) },
           { path: 'recurring', element: page(<Recurring />) },
           { path: 'data', element: page(<Data />) },
           { path: 'settings', element: page(<Settings />) },

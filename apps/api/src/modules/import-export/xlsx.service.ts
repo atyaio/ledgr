@@ -137,6 +137,10 @@ export class XlsxService {
       const sh = await this.prisma.stakeholder.findMany({ where: { active: true }, orderBy: [{ sharePercent: 'desc' }, { name: 'asc' }] });
       out.set('stakeholder', sh.map((s) => s.name));
     }
+    if (entity === 'revenue') {
+      const pm = await this.prisma.paymentMethod.findMany({ where: { archived: false }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+      out.set('paymentMethod', pm.map((m) => m.name));
+    }
     if (entity === 'categories') out.set('kind', ['expense', 'revenue']);
     out.set('yesno', ['yes', 'no']);
     for (const d of defs) if (d.type === 'select') out.set(`cf:${d.key}`, d.options);
@@ -173,6 +177,7 @@ function columnKind(t: ImportColumn, def?: CustomFieldDefinition): Kind {
     case 'sharePercent':
       return 'number';
     case 'category':
+    case 'paymentMethod':
     case 'paidBy':
     case 'receivedBy':
     case 'from':
@@ -187,6 +192,7 @@ function columnKind(t: ImportColumn, def?: CustomFieldDefinition): Kind {
 function listNameFor(t: ImportColumn, def?: CustomFieldDefinition): string | undefined {
   if (def) return def.type === 'boolean' ? 'yesno' : def.type === 'select' ? `cf:${def.key}` : undefined;
   if (t.key === 'category') return 'category';
+  if (t.key === 'paymentMethod') return 'paymentMethod';
   if (['paidBy', 'receivedBy', 'from', 'to'].includes(t.key)) return 'stakeholder';
   if (t.key === 'kind') return 'kind';
   return undefined;

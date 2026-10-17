@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { ArrowLeftRight, BarChart3, Database, LogOut, Menu as MenuIcon, Monitor, Moon, Plus, Repeat, Settings2, Sun, Tags, TrendingDown, TrendingUp, Users, X } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, CreditCard, Database, LogOut, Menu as MenuIcon, Monitor, Moon, Plus, Repeat, Settings2, Sun, Tags, TrendingDown, TrendingUp, Users, X } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
@@ -18,6 +18,7 @@ const NAV = [
   { to: '/revenue', label: 'Revenue', icon: TrendingUp, mobile: true },
   { to: '/stakeholders', label: 'Stakeholders', icon: Users, mobile: false },
   { to: '/categories', label: 'Categories', icon: Tags, mobile: false },
+  { to: '/payments', label: 'Payment methods', icon: CreditCard, mobile: false },
   { to: '/recurring', label: 'Recurring', icon: Repeat, mobile: false },
   { to: '/data', label: 'Import & export', icon: Database, mobile: false },
   { to: '/settings', label: 'Settings', icon: Settings2, mobile: false },

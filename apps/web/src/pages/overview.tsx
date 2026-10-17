@@ -48,6 +48,13 @@ export function OverviewPage() {
           <Breakdown items={o.revenueByCategory.map((c) => ({ id: c.categoryId, ...c }))} emptyLabel="No revenue in this range" />
         </Card>
       </div>
+      {(o.revenueByPaymentMethod ?? []).some((m) => m.paymentMethodId) && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <Card title="Revenue by payment method" subtitle="How customers paid" actions={<Link to="/payments" className="text-[13px] font-medium text-accent inline-flex items-center">Manage <ChevronRight className="size-4" /></Link>}>
+            <Breakdown items={o.revenueByPaymentMethod.map((m) => ({ id: m.paymentMethodId, ...m }))} emptyLabel="No revenue in this range" />
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

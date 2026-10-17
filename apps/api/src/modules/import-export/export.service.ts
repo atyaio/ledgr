@@ -95,7 +95,7 @@ export class ExportService {
       case 'revenue': {
         const rows = await this.prisma.revenue.findMany({
           where: dated,
-          include: { category: { select: { name: true } }, receivedBy: { select: { name: true } } },
+          include: { category: { select: { name: true } }, receivedBy: { select: { name: true } }, paymentMethod: { select: { name: true } } },
           orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         });
         return {
@@ -105,6 +105,7 @@ export class ExportService {
             r.description,
             r.category?.name ?? '',
             r.source ?? '',
+            r.paymentMethod?.name ?? '',
             r.receivedBy?.name ?? '',
             ...this.cfCells(parseCustomFields(r.customFields), defs),
             this.money(r.amountMinor),
@@ -151,7 +152,7 @@ export class ExportService {
     });
     switch (entity) {
       case 'expenses': return [today, 'Cloud hosting – October', 'Hosting & infrastructure', '', ...cf, this.money(125_000), 'AWS', 'Paid from the company account'];
-      case 'revenue': return [today, 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', ...cf, this.money(2_500_000), ''];
+      case 'revenue': return [today, 'Website redesign – milestone 2', 'Services', 'Acme Corp', '', '', ...cf, this.money(2_500_000), ''];
       case 'stakeholders': return ['Jane Doe', '50', 'jane@example.com', today, '', ...cf];
       case 'categories': return ['Marketing', 'expense', '#E0A458', this.money(500_000)];
       case 'settlements': return [today, 'Jane Doe', '', this.money(30_000), 'Reimbursement for September'];

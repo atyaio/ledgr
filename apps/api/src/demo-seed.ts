@@ -21,6 +21,7 @@ import { CustomFieldsService } from './modules/custom-fields/custom-fields.servi
 import { ExpensesService } from './modules/expenses/expenses.service';
 import { RecurringService } from './modules/recurring/recurring.service';
 import { RevenueService } from './modules/revenue/revenue.service';
+import { PaymentMethodsService } from './modules/payment-methods/payment-methods.service';
 import { SettlementsService } from './modules/settlements/settlements.service';
 import { StakeholdersService } from './modules/stakeholders/stakeholders.service';
 
@@ -107,6 +108,7 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
     const revenue = app.get(RevenueService);
     const settlements = app.get(SettlementsService);
     const recurring = app.get(RecurringService);
+    const paymentMethodsSvc = app.get(PaymentMethodsService);
 
     if (!opts.force && (await prisma.expense.count()) > 0) {
       throw new Error('This project already contains expenses. Pass { force: true } to seed demo data anyway.');
@@ -173,6 +175,12 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
       revenueCats.set(name, cat);
     }
 
+    // ─── Payment methods ───────────────────────────────────────────────────────
+    const methods = [] as { id: string }[];
+    for (const [i, name] of ['Cash', 'Visa', 'Online transfer'].entries()) {
+      methods.push((await paymentMethodsSvc.findByName(name)) ?? (await paymentMethodsSvc.create({ name, isDefault: i === 0 }, SEED_ACTOR)));
+    }
+
     // ─── Expenses & revenue ────────────────────────────────────────────────────
     const today = todayISO();
     const firstMonth = addMonths(startOfMonth(today), -(months - 1));
@@ -212,6 +220,7 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
 
       for (let i = 0; i < 8; i++) {
         const client = pick(CLIENTS);
+        const method = chance(0.55) ? methods[0] : chance(0.6) ? methods[1] : methods[2];
         const catName = pick(DEFAULT_REVENUE_CATEGORIES);
         const base = catName === 'Subscriptions' ? between(200, 1500) : catName === 'Consulting' ? between(800, 6000) : between(1500, 14000);
         await revenue.create(
@@ -221,6 +230,7 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
             description: `${client} – ${catName === 'Subscriptions' ? 'monthly plan' : catName === 'Consulting' ? 'advisory hours' : `milestone ${1 + Math.floor(rand() * 4)}`}`,
             categoryId: revenueCats.get(catName)!.id,
             source: client,
+            paymentMethodId: method.id,
             receivedByStakeholderId: chance(0.7) ? null : pick(people).id,
             customFields: { client, channel: pick(CHANNELS) },
           },

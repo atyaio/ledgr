@@ -67,7 +67,8 @@ JSON text (`string` in Prisma), validated against the project's
 | `Category` | `name, kind ('expense'|'revenue'), color, monthlyBudgetMinor? (expense only), archived, sortOrder` |
 | `Expense` | `date, amountMinor, description, categoryId, paidByStakeholderId? (null = paid from company pool), vendor?, notes?, splitMode ('ownership'|'custom'), recurringRuleId?, customFields` |
 | `ExpenseSplit` | snapshot of how an expense is divided: `expenseId, stakeholderId, sharePercent, amountMinor`. Written for every expense; sum of `amountMinor` == expense amount (largest-remainder rounding). |
-| `Revenue` | `date, amountMinor, description, categoryId?, source?, receivedByStakeholderId? (null = company pool), notes?, recurringRuleId?, customFields` |
+| `PaymentMethod` | how revenue is received (Cash, Visa, online…): `name (unique), color, isDefault (one), archived, sortOrder` |
+| `Revenue` | `date, amountMinor, description, categoryId?, paymentMethodId?, source?, receivedByStakeholderId? (null = company pool), notes?, recurringRuleId?, customFields` |
 | `Settlement` | `date, fromStakeholderId, toStakeholderId? (null = company pool), amountMinor, note?` |
 | `CustomFieldDefinition` | `entity ('expense'|'revenue'|'stakeholder'), key (slug), label, type ('text'|'number'|'money'|'date'|'boolean'|'select'), options (JSON string[] for select), required, sortOrder, archived` |
 | `RecurringRule` | `kind ('expense'|'revenue'), frequency ('daily'|'weekly'|'monthly'|'quarterly'|'yearly'), interval (Int ≥1), startDate, endDate?, nextRunAt, active, template (JSON: description, amountMinor, categoryId, paidBy/receivedBy, customFields, splitMode, customSplits), lastGeneratedAt?` |
@@ -108,6 +109,7 @@ sort, order, page, pageSize (default 50, max 500)` → `{ items, total, page, pa
 | auth | `GET /auth/config`, `GET /me` |
 | project | `GET /project` (config + stats), `PATCH /project` (name, currency, locale, weekStartsOn, fiscalYearStartMonth) |
 | stakeholders | `GET/POST /stakeholders`, `GET/PATCH/DELETE /stakeholders/:id`, `GET /stakeholders/balances?from&to`, `GET /stakeholders/distribution?from&to` (revenue/expense/profit share per stakeholder) |
+| payment methods | `GET /payment-methods?includeArchived`, `POST`, `PATCH/:id`, `DELETE/:id` (409 when used), `POST /payment-methods/reorder` |
 | categories | `GET/POST /categories?kind`, `PATCH/DELETE /categories/:id`, `GET /categories/budgets?month=YYYY-MM` (budget vs actual) |
 | expenses | `GET/POST /expenses`, `GET/PATCH/DELETE /expenses/:id`, `POST /expenses/:id/recompute-split`, `POST /expenses/recompute-splits` (range), `POST /expenses/bulk-delete` |
 | revenue | `GET/POST /revenue`, `GET/PATCH/DELETE /revenue/:id`, `POST /revenue/bulk-delete` |

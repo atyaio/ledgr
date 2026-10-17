@@ -33,6 +33,9 @@ import type {
   UpdateStakeholderInput,
   ProjectResponse,
   CustomFieldEntity,
+  PaymentMethod,
+  CreatePaymentMethodInput,
+  UpdatePaymentMethodInput,
 } from '@ledgr/shared';
 import { api, type Query } from './api';
 
@@ -55,6 +58,7 @@ function useInvalidateAll() {
       qc.invalidateQueries({ queryKey: ['settlements'] }),
       qc.invalidateQueries({ queryKey: ['stakeholders'] }),
       qc.invalidateQueries({ queryKey: ['categories'] }),
+      qc.invalidateQueries({ queryKey: ['payment-methods'] }),
       qc.invalidateQueries({ queryKey: ['recurring'] }),
       qc.invalidateQueries({ queryKey: ['audit'] }),
       qc.invalidateQueries({ queryKey: ['project'] }),
@@ -110,6 +114,23 @@ export function useCategoryMutations() {
     create: useMutation({ mutationFn: (b: CreateCategoryInput) => api.post<Category>('/categories', b), onSuccess: inv }),
     update: useMutation({ mutationFn: ({ id, ...b }: UpdateCategoryInput & { id: string }) => api.patch<Category>(`/categories/${id}`, b), onSuccess: inv }),
     remove: useMutation({ mutationFn: (id: string) => api.delete(`/categories/${id}`), onSuccess: inv }),
+  };
+}
+
+// ─── Payment methods ───────────────────────────────────────────────────────────
+export const usePaymentMethods = (includeArchived = false) =>
+  useQuery({
+    queryKey: ['payment-methods', includeArchived],
+    queryFn: () => api.get<PaymentMethod[] | { items: PaymentMethod[] }>('/payment-methods', { includeArchived: includeArchived || undefined }).then(items),
+    staleTime: 30_000,
+  });
+export function usePaymentMethodMutations() {
+  const inv = useInvalidateAll();
+  return {
+    create: useMutation({ mutationFn: (b: CreatePaymentMethodInput) => api.post<PaymentMethod>('/payment-methods', b), onSuccess: inv }),
+    update: useMutation({ mutationFn: ({ id, ...b }: UpdatePaymentMethodInput & { id: string }) => api.patch<PaymentMethod>(`/payment-methods/${id}`, b), onSuccess: inv }),
+    remove: useMutation({ mutationFn: (id: string) => api.delete(`/payment-methods/${id}`), onSuccess: inv }),
+    reorder: useMutation({ mutationFn: (ids: string[]) => api.post('/payment-methods/reorder', { ids }), onSuccess: inv }),
   };
 }
 

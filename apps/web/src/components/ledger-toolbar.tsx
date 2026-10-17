@@ -23,6 +23,7 @@ export function useLedgerParams() {
     q: params.get('q') ?? '',
     categoryId: params.get('categoryId') ?? '',
     stakeholderId: params.get('stakeholderId') ?? '',
+    paymentMethodId: params.get('paymentMethodId') ?? '',
     sort: params.get('sort') ?? 'date',
     order: (params.get('order') ?? 'desc') as 'asc' | 'desc',
     page: Number(params.get('page') ?? '1') || 1,
@@ -34,18 +35,21 @@ export function LedgerToolbar({
   categories,
   stakeholders,
   stakeholderLabel = 'Paid by',
+  paymentMethods,
   onExport,
   extra,
 }: {
   categories: { id: string; name: string }[];
   stakeholders: { id: string; name: string }[];
+  /** When given, a payment-method filter is shown (revenue). */
+  paymentMethods?: { id: string; name: string }[];
   stakeholderLabel?: string;
   /** Called with the format the user picked. */
   onExport?: (format: 'xlsx' | 'csv') => void;
   extra?: ReactNode;
 }) {
   const p = useLedgerParams();
-  const activeFilters = [p.categoryId, p.stakeholderId].filter(Boolean).length;
+  const activeFilters = [p.categoryId, p.stakeholderId, paymentMethods ? p.paymentMethodId : ''].filter(Boolean).length;
   const [open, setOpen] = useState(activeFilters > 0);
   return (
     <div className="space-y-2">
@@ -94,8 +98,16 @@ export function LedgerToolbar({
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </Select>
+          {paymentMethods && (
+            <Select compact className="w-[180px]" value={p.paymentMethodId} onChange={(e) => p.set({ paymentMethodId: e.target.value || null })}>
+              <option value="">All payment methods</option>
+              {paymentMethods.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </Select>
+          )}
           {activeFilters > 0 && (
-            <Button size="xs" variant="ghost" icon={<X className="size-3.5" />} onClick={() => p.set({ categoryId: null, stakeholderId: null })}>
+            <Button size="xs" variant="ghost" icon={<X className="size-3.5" />} onClick={() => p.set({ categoryId: null, stakeholderId: null, paymentMethodId: null })}>
               Clear
             </Button>
           )}

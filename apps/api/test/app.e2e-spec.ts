@@ -344,6 +344,45 @@ describe('ledgr API (e2e)', () => {
 
   // ─── CSV round-trip ─────────────────────────────────────────────────────────
 
+  it('payment methods: CRUD, revenue link, filter, analytics, export column', async () => {
+    const cash = (await http().post('/api/payment-methods').send({ name: 'Cash', isDefault: true }).expect(201)).body;
+    const visa = (await http().post('/api/payment-methods').send({ name: 'Visa', isDefault: true }).expect(201)).body;
+    await http().post('/api/payment-methods').send({ name: 'cash' }).expect(409);
+    const list = (await http().get('/api/payment-methods').expect(200)).body as { id: string; isDefault: boolean }[];
+    expect(list.filter((m) => m.isDefault).map((m) => m.id)).toEqual([visa.id]);
+
+    const r = (await http().post('/api/revenue').send({ date: '2026-03-10', amountMinor: 7000, description: 'Till sales', paymentMethodId: cash.id }).expect(201)).body;
+    expect(r.paymentMethod).toMatchObject({ id: cash.id, name: 'Cash' });
+    await http().post('/api/revenue').send({ date: '2026-03-11', amountMinor: 1000, description: 'Bad method', paymentMethodId: 'nope' }).expect(404);
+    const filtered = (await http().get(`/api/revenue?paymentMethodId=${cash.id}`).expect(200)).body;
+    expect(filtered.items.map((x: { id: string }) => x.id)).toEqual([r.id]);
+
+    const o = (await http().get('/api/analytics/overview?from=2026-03-01&to=2026-03-31').expect(200)).body;
+    const cashBucket = o.revenueByPaymentMethod.find((m: { paymentMethodId: string | null }) => m.paymentMethodId === cash.id);
+    expect(cashBucket).toMatchObject({ name: 'Cash', amountMinor: 7000, count: 1 });
+
+    const csv = (await http().get('/api/export/revenue.csv?from=2026-03-01&to=2026-03-31').expect(200)).text;
+    const [header, first] = csv.split(/\r?\n/);
+    expect(header.split(',')).toContain('Payment method');
+    expect(first).toContain('Cash');
+
+    // Import with a new method name creates it (option on by default)
+    const imported = await http()
+      .post('/api/import/revenue/commit')
+      .attach('file', Buffer.from('Date,Description,Payment method,Amount\n2026-03-12,Online order,Instapay,55.00\n'), 'r.csv')
+      .field('mapping', JSON.stringify({ date: 'Date', description: 'Description', paymentMethod: 'Payment method', amount: 'Amount' }))
+      .field('options', JSON.stringify({ dateFormat: 'iso', createMissingCategories: true, createMissingStakeholders: false, createMissingPaymentMethods: true, skipDuplicates: true }))
+      .expect(201);
+    expect(imported.body).toMatchObject({ inserted: 1, errors: [] });
+    const names = ((await http().get('/api/payment-methods').expect(200)).body as { name: string }[]).map((m) => m.name);
+    expect(names).toContain('Instapay');
+
+    await http().delete(`/api/payment-methods/${cash.id}`).expect(409); // in use
+    await http().patch(`/api/payment-methods/${cash.id}`).send({ archived: true }).expect(200);
+    await http().delete(`/api/revenue/${r.id}`).expect(204);
+    await http().delete(`/api/payment-methods/${cash.id}`).expect(204);
+  });
+
   it('CSV export → import round-trip', async () => {
     const exp = await http().get('/api/export/expenses.csv?from=2026-01-01&to=2026-12-31').expect(200);
     expect(exp.headers['content-type']).toMatch(/text\/csv/);

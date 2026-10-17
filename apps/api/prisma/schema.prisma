@@ -87,6 +87,19 @@ model ExpenseSplit {
   @@index([stakeholderId])
 }
 
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#5B8DEF")
+  isDefault Boolean  @default(false)
+  archived  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  revenue Revenue[]
+}
+
 model Revenue {
   id                      String   @id @default(cuid())
   date                    String
@@ -94,6 +107,7 @@ model Revenue {
   description             String
   categoryId              String?
   source                  String?
+  paymentMethodId         String?
   receivedByStakeholderId String?
   notes                   String?
   recurringRuleId         String?
@@ -103,11 +117,13 @@ model Revenue {
   updatedAt               DateTime @updatedAt
 
   category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
   receivedBy    Stakeholder?   @relation("ReceivedBy", fields: [receivedByStakeholderId], references: [id], onDelete: SetNull)
   recurringRule RecurringRule? @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([categoryId])
+  @@index([paymentMethodId])
 }
 
 model Settlement {
