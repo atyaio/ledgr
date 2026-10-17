@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatMoney, minorToMajor, majorToMinor, minorUnitDigits, type ProjectResponse, type FormatMoneyOptions } from '@ledgr/shared';
 import { api } from './api';
+import { useI18n } from '@/i18n';
 
 export interface ProjectState {
   project: ProjectResponse;
@@ -23,8 +24,10 @@ export function useProjectQuery() {
 }
 
 export function ProjectProvider({ project, children }: { project: ProjectResponse; children: ReactNode }) {
+  const { intlLocale } = useI18n();
   const value = useMemo<ProjectState>(() => {
-    const { currency, locale, weekStartsOn, fiscalYearStartMonth } = project.config;
+    const { currency, weekStartsOn, fiscalYearStartMonth } = project.config;
+    const locale = intlLocale(project.config.locale);
     const dateFmt = {
       short: new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', timeZone: 'UTC' }),
       medium: new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }),
@@ -46,7 +49,7 @@ export function ProjectProvider({ project, children }: { project: ProjectRespons
         return Number.isNaN(d.getTime()) ? iso : dateFmt[style].format(d);
       },
     };
-  }, [project]);
+  }, [project, intlLocale]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

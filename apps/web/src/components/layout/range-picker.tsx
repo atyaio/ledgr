@@ -7,11 +7,13 @@ import { useProject } from '@/lib/project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/dialog';
+import { useI18n } from '@/i18n';
 
 /** Period control: preset chips + prev/next + custom range dialog. Scrolls horizontally on phones. */
 export function RangePicker({ className }: { className?: string }) {
   const { range, preset, setPreset, setRange, shift } = useDateRange();
   const { date } = useProject();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(range);
   useEffect(() => setDraft(range), [range]);
@@ -22,21 +24,21 @@ export function RangePicker({ className }: { className?: string }) {
   return (
     <div className={clsx('flex items-center gap-2', className)}>
       <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mx-1 px-1">
-        <button type="button" className="size-8 shrink-0 inline-flex items-center justify-center rounded-full text-ink-2 hover:bg-card-hover" onClick={() => shift(-1)} aria-label="Previous period">
-          <ChevronLeft className="size-4" />
+        <button type="button" className="size-8 shrink-0 inline-flex items-center justify-center rounded-full text-ink-2 hover:bg-card-hover" onClick={() => shift(-1)} aria-label={t('Previous period')}>
+          <ChevronLeft className="size-4 rtl-flip" />
         </button>
         {RANGE_PRESETS.filter((p) => p.id !== 'custom').map((p) => (
           <button
             type="button"
             key={p.id}
-            title={p.label}
+            title={t(p.label)}
             onClick={() => setPreset(p.id as RangePreset)}
             className={clsx(
               'h-8 px-3 shrink-0 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap',
               preset === p.id ? 'bg-primary text-primary-ink' : 'bg-card border border-line text-ink-2 hover:text-ink hover:bg-card-hover',
             )}
           >
-            {p.id === 'today' ? 'Day' : p.id === 'week' ? 'Week' : p.id === 'month' ? 'Month' : p.id === 'quarter' ? 'Quarter' : p.id === 'year' ? 'Year' : p.id === 'last30' ? '30d' : '12m'}
+            {t(p.id === 'today' ? 'Day' : p.id === 'week' ? 'Week' : p.id === 'month' ? 'Month' : p.id === 'quarter' ? 'Quarter' : p.id === 'year' ? 'Year' : p.id === 'last30' ? '30d' : '12m')}
           </button>
         ))}
         <button
@@ -49,20 +51,20 @@ export function RangePicker({ className }: { className?: string }) {
         >
           <CalendarDays className="size-3.5" />
           <span className="num">{label}</span>
-          <span className="num opacity-60 hidden md:inline">· {days}d</span>
+          <span className="num opacity-60 hidden md:inline">{t('· {days}d', { days })}</span>
         </button>
-        <button type="button" className="size-8 shrink-0 inline-flex items-center justify-center rounded-full text-ink-2 hover:bg-card-hover" onClick={() => shift(1)} aria-label="Next period">
-          <ChevronRight className="size-4" />
+        <button type="button" className="size-8 shrink-0 inline-flex items-center justify-center rounded-full text-ink-2 hover:bg-card-hover" onClick={() => shift(1)} aria-label={t('Next period')}>
+          <ChevronRight className="size-4 rtl-flip" />
         </button>
       </div>
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Custom range"
+        title={t('Custom range')}
         footer={
           <>
             <Button variant="ghost" size="md" onClick={() => setOpen(false)}>
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               variant="primary"
@@ -73,25 +75,25 @@ export function RangePicker({ className }: { className?: string }) {
                 setOpen(false);
               }}
             >
-              Apply
+              {t('Apply')}
             </Button>
           </>
         }
       >
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="label block mb-1.5">From</span>
+            <span className="label block mb-1.5">{t('From')}</span>
             <Input type="date" value={draft.from} max={draft.to} onChange={(e) => setDraft((d) => ({ ...d, from: e.target.value }))} mono />
           </label>
           <label className="block">
-            <span className="label block mb-1.5">To</span>
+            <span className="label block mb-1.5">{t('To')}</span>
             <Input type="date" value={draft.to} min={draft.from} onChange={(e) => setDraft((d) => ({ ...d, to: e.target.value }))} mono />
           </label>
         </div>
         <div className="flex gap-2 mt-3 flex-wrap">
           {(['last7', 'last90', 'all'] as RangePreset[]).map((p) => (
             <Button key={p} size="xs" variant="soft" onClick={() => { setPreset(p); setOpen(false); }}>
-              {p === 'last7' ? 'Last 7 days' : p === 'last90' ? 'Last 90 days' : 'All time'}
+              {t(p === 'last7' ? 'Last 7 days' : p === 'last90' ? 'Last 90 days' : 'All time')}
             </Button>
           ))}
         </div>

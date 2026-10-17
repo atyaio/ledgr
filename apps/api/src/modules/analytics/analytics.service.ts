@@ -21,6 +21,7 @@ const UNCATEGORISED = { name: 'Uncategorised', color: POOL_COLOR };
 interface CategoryBucket {
   categoryId: string | null;
   name: string;
+  nameAr: string | null;
   color: string;
   amountMinor: number;
   count: number;
@@ -53,14 +54,14 @@ export class AnalyticsService {
           description: true,
           categoryId: true,
           paidByStakeholderId: true,
-          category: { select: { name: true, color: true } },
-          payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, color: true } } } },
+          category: { select: { name: true, nameAr: true, color: true } },
+          payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, nameAr: true, color: true } } } },
         },
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       }),
       this.prisma.revenue.findMany({
         where,
-        select: { date: true, amountMinor: true, categoryId: true, receivedByStakeholderId: true, category: { select: { name: true, color: true } }, payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, color: true } } } } },
+        select: { date: true, amountMinor: true, categoryId: true, receivedByStakeholderId: true, category: { select: { name: true, nameAr: true, color: true } }, payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, nameAr: true, color: true } } } } },
       }),
       this.prisma.expense.aggregate({ where: prevWhere, _sum: { amountMinor: true } }),
       this.prisma.revenue.aggregate({ where: prevWhere, _sum: { amountMinor: true } }),
@@ -98,13 +99,14 @@ export class AnalyticsService {
     });
 
     // ─── Category breakdowns ───────────────────────────────────────────────────
-    const groupByCategory = (rows: { categoryId: string | null; amountMinor: number; category: { name: string; color: string } | null }[], total: number) => {
+    const groupByCategory = (rows: { categoryId: string | null; amountMinor: number; category: { name: string; nameAr: string | null; color: string } | null }[], total: number) => {
       const map = new Map<string, CategoryBucket>();
       for (const r of rows) {
         const key = r.categoryId ?? '';
         const cur = map.get(key) ?? {
           categoryId: r.categoryId,
           name: r.category?.name ?? UNCATEGORISED.name,
+          nameAr: r.category?.nameAr ?? null,
           color: r.category?.color ?? UNCATEGORISED.color,
           amountMinor: 0,
           count: 0,
@@ -117,13 +119,13 @@ export class AnalyticsService {
     };
     const expensesByCategory = groupByCategory(expenses, expenseMinor).map((c) => ({ ...c, categoryId: c.categoryId ?? '' }));
     const revenueByCategory = groupByCategory(revenue, revenueMinor);
-    type MethodRow = { amountMinor: number; payments: { paymentMethodId: string; amountMinor: number; paymentMethod: { name: string; color: string } }[] };
+    type MethodRow = { amountMinor: number; payments: { paymentMethodId: string; amountMinor: number; paymentMethod: { name: string; nameAr: string | null; color: string } }[] };
     const byPaymentMethod = (rows: MethodRow[], total: number) => {
-      const map = new Map<string, { paymentMethodId: string | null; name: string; color: string; amountMinor: number; count: number }>();
+      const map = new Map<string, { paymentMethodId: string | null; name: string; nameAr: string | null; color: string; amountMinor: number; count: number }>();
       for (const r of rows) {
         let attributed = 0;
         for (const p of r.payments) {
-          const cur = map.get(p.paymentMethodId) ?? { paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: 0, count: 0 };
+          const cur = map.get(p.paymentMethodId) ?? { paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, nameAr: p.paymentMethod.nameAr, color: p.paymentMethod.color, amountMinor: 0, count: 0 };
           cur.amountMinor += p.amountMinor;
           cur.count += 1;
           attributed += p.amountMinor;
@@ -131,7 +133,7 @@ export class AnalyticsService {
         }
         const rest = r.amountMinor - attributed;
         if (rest > 0) {
-          const cur = map.get('') ?? { paymentMethodId: null, name: 'Unspecified', color: UNCATEGORISED.color, amountMinor: 0, count: 0 };
+          const cur = map.get('') ?? { paymentMethodId: null, name: 'Unspecified', nameAr: null, color: UNCATEGORISED.color, amountMinor: 0, count: 0 };
           cur.amountMinor += rest;
           cur.count += 1;
           map.set('', cur);
@@ -146,7 +148,7 @@ export class AnalyticsService {
     const topExpenses = [...expenses]
       .sort((a, b) => b.amountMinor - a.amountMinor || a.date.localeCompare(b.date))
       .slice(0, 8)
-      .map((e) => ({ id: e.id, date: e.date, description: e.description, amountMinor: e.amountMinor, categoryName: e.category.name, categoryColor: e.category.color }));
+      .map((e) => ({ id: e.id, date: e.date, description: e.description, amountMinor: e.amountMinor, categoryName: e.category.name, categoryNameAr: e.category.nameAr, categoryColor: e.category.color }));
 
     // ─── Stakeholders ──────────────────────────────────────────────────────────
     const active = stakeholders.filter((s) => s.active).map((s) => ({ stakeholderId: s.id, sharePercent: s.sharePercent }));
@@ -157,6 +159,7 @@ export class AnalyticsService {
       return {
         id: s.id,
         name: s.name,
+        nameAr: s.nameAr,
         color: s.color,
         sharePercent: s.sharePercent,
         owedMinor: n.owedMinor,

@@ -1,7 +1,9 @@
 import type { CustomFieldDefinition, CustomFieldValue } from '@ledgr/shared';
 import { useProject } from '@/lib/project';
+import { useI18n } from '@/i18n';
 
 export function CustomCell({ def, value }: { def: CustomFieldDefinition; value: CustomFieldValue | undefined }) {
+  const { t } = useI18n();
   const { money, date } = useProject();
   if (value === null || value === undefined || value === '') return <span className="text-ink-4">—</span>;
   switch (def.type) {
@@ -12,7 +14,7 @@ export function CustomCell({ def, value }: { def: CustomFieldDefinition; value: 
     case 'date':
       return <span className="num text-ink-2">{date(String(value))}</span>;
     case 'boolean':
-      return <span className={value ? 'text-good' : 'text-ink-3'}>{value ? 'Yes' : 'No'}</span>;
+      return <span className={value ? 'text-good' : 'text-ink-3'}>{value ? t('Yes') : t('No')}</span>;
     case 'select':
       return <span className="inline-flex h-6 items-center px-2 rounded-full bg-sunken text-[12px]">{String(value)}</span>;
     default:

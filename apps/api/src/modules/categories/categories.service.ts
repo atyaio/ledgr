@@ -22,6 +22,7 @@ export function toCategoryDto(r: Row): Category {
   return {
     id: r.id,
     name: r.name,
+    nameAr: r.nameAr,
     kind: r.kind as CategoryKind,
     color: r.color,
     monthlyBudgetMinor: r.monthlyBudgetMinor,
@@ -33,7 +34,7 @@ export function toCategoryDto(r: Row): Category {
   };
 }
 
-export const categoryRef = (r: Pick<Row, 'id' | 'name' | 'color'>): Pick<Category, 'id' | 'name' | 'color'> => ({ id: r.id, name: r.name, color: r.color });
+export const categoryRef = (r: Pick<Row, 'id' | 'name' | 'nameAr' | 'color'>): Pick<Category, 'id' | 'name' | 'nameAr' | 'color'> => ({ id: r.id, name: r.name, nameAr: r.nameAr, color: r.color });
 
 @Injectable()
 export class CategoriesService {
@@ -66,7 +67,7 @@ export class CategoriesService {
   async findByName(kind: CategoryKind, name: string, db: Db = this.prisma): Promise<Category | null> {
     const rows = await db.category.findMany({ where: { kind } });
     const n = name.trim().toLowerCase();
-    const hit = rows.find((r) => r.name.toLowerCase() === n);
+    const hit = rows.find((r) => r.name.toLowerCase() === n || (r.nameAr ?? '').trim().toLowerCase() === n);
     return hit ? toCategoryDto(hit) : null;
   }
 
@@ -80,6 +81,7 @@ export class CategoriesService {
     const row = await db.category.create({
       data: {
         name: input.name,
+        nameAr: input.nameAr ?? null,
         kind: input.kind,
         color: input.color ?? pickColor(count),
         monthlyBudgetMinor: input.monthlyBudgetMinor ?? null,
@@ -107,6 +109,7 @@ export class CategoriesService {
       where: { id },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.nameAr !== undefined ? { nameAr: input.nameAr } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
         ...(input.monthlyBudgetMinor !== undefined ? { monthlyBudgetMinor: input.monthlyBudgetMinor } : {}),
         ...(input.isDefault !== undefined ? { isDefault: input.isDefault } : {}),
@@ -160,6 +163,7 @@ export class CategoriesService {
       return {
         categoryId: c.id,
         name: c.name,
+        nameAr: c.nameAr,
         color: c.color,
         budgetMinor,
         spentMinor,

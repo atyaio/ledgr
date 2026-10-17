@@ -5,6 +5,7 @@ import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './button';
 import { useIsMobile } from '@/lib/media';
+import { useI18n } from '@/i18n';
 
 interface BaseProps {
   open: boolean;
@@ -31,17 +32,18 @@ function useEscape(open: boolean, onClose: () => void) {
   }, [open, onClose]);
 }
 
-/** Form container: a bottom sheet on phones, a right-side drawer on larger screens. */
+/** Form container: a bottom sheet on phones, a end-side drawer on larger screens. */
 export function Sheet({ open, onClose, title, description, children, footer, width = 480 }: BaseProps & { width?: number }) {
   useEscape(open, onClose);
   const mobile = useIsMobile();
+  const { t } = useI18n();
   return createPortal(
     <AnimatePresence>
       {open && (
         <div className={clsx('fixed inset-0 z-50 flex', mobile ? 'items-end' : 'justify-end')} role="dialog" aria-modal>
           <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
-            className={clsx('relative bg-card flex flex-col shadow-2xl', mobile ? 'w-full max-h-[94dvh] rounded-t-[24px]' : 'h-full border-l border-line')}
+            className={clsx('relative bg-card flex flex-col shadow-2xl', mobile ? 'w-full max-h-[94dvh] rounded-t-[24px]' : 'h-full border-s border-line')}
             style={mobile ? undefined : { width: `min(${width}px, 100vw)` }}
             initial={mobile ? { y: '100%' } : { x: 32, opacity: 0 }}
             animate={mobile ? { y: 0 } : { x: 0, opacity: 1 }}
@@ -54,7 +56,7 @@ export function Sheet({ open, onClose, title, description, children, footer, wid
                 <h2 className="text-[18px] font-semibold tracking-tight">{title}</h2>
                 {description && <p className="text-[13px] text-ink-3 mt-0.5">{description}</p>}
               </div>
-              <button type="button" onClick={onClose} aria-label="Close" className="text-ink-3 hover:text-ink -mr-2 -mt-1 size-9 inline-flex items-center justify-center rounded-full hover:bg-card-hover">
+              <button type="button" onClick={onClose} aria-label={t('Close')} className="text-ink-3 hover:text-ink -me-2 -mt-1 size-9 inline-flex items-center justify-center rounded-full hover:bg-card-hover">
                 <X className="size-5" />
               </button>
             </header>
@@ -106,7 +108,7 @@ export function ConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Delete',
+  confirmLabel,
   danger = true,
   loading,
 }: {
@@ -119,6 +121,7 @@ export function ConfirmDialog({
   danger?: boolean;
   loading?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <Modal
       open={open}
@@ -128,10 +131,10 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="ghost" size="md" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button variant={danger ? 'danger' : 'primary'} size="md" onClick={onConfirm} loading={loading}>
-            {confirmLabel}
+            {confirmLabel ?? t('Delete')}
           </Button>
         </>
       }

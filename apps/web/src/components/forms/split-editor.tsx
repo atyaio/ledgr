@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import { round2, splitAmount, type SplitMode, type Stakeholder } from '@ledgr/shared';
 import { useProject } from '@/lib/project';
+import { useI18n } from '@/i18n';
 import { Segmented } from '@/components/ui/misc';
 import { Avatar } from '@/components/ui/badge';
 
@@ -24,6 +25,7 @@ export function SplitEditor({
   splits: CustomSplit[];
   onSplits: (s: CustomSplit[]) => void;
 }) {
+  const { t, name } = useI18n();
   const { money } = useProject();
   const active = stakeholders.filter((s) => s.active);
   const shares = mode === 'ownership' ? active.map((s) => ({ stakeholderId: s.id, sharePercent: s.sharePercent })) : splits;
@@ -40,7 +42,7 @@ export function SplitEditor({
   return (
     <div className="rounded-[14px] border border-line overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-sunken/60">
-        <span className="text-[13px] font-medium text-ink-2">Split</span>
+        <span className="text-[13px] font-medium text-ink-2">{t('Split')}</span>
         <Segmented
           size="xs"
           value={mode}
@@ -49,8 +51,8 @@ export function SplitEditor({
             if (m === 'custom' && splits.length === 0) onSplits(active.map((s) => ({ stakeholderId: s.id, sharePercent: s.sharePercent })));
           }}
           items={[
-            { id: 'ownership', label: 'By ownership' },
-            { id: 'custom', label: 'Custom' },
+            { id: 'ownership', label: t('By ownership') },
+            { id: 'custom', label: t('Custom') },
           ]}
         />
       </div>
@@ -60,8 +62,8 @@ export function SplitEditor({
           const amt = preview.find((p) => p.stakeholderId === s.id)?.amountMinor ?? 0;
           return (
             <li key={s.id} className="flex items-center gap-3 px-3.5 h-12 text-[14px]">
-              <Avatar name={s.name} color={s.color} size={26} />
-              <span className="flex-1 truncate">{s.name}</span>
+              <Avatar name={name(s)} color={s.color} size={26} />
+              <span className="flex-1 truncate">{name(s)}</span>
               {mode === 'custom' ? (
                 <span className="relative w-[84px]">
                   <input
@@ -71,26 +73,26 @@ export function SplitEditor({
                     max={100}
                     value={share}
                     onChange={(e) => setPct(s.id, Number(e.target.value))}
-                    className="num w-full h-9 rounded-[10px] border border-line-strong bg-card pl-2 pr-6 text-right text-[14px] focus:border-accent focus:outline-none"
+                    className="num w-full h-9 rounded-[10px] border border-line-strong bg-card ps-2 pe-6 text-end text-[14px] focus:border-accent focus:outline-none"
                   />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[12px] text-ink-3">%</span>
+                  <span className="absolute end-2.5 top-1/2 -translate-y-1/2 text-[12px] text-ink-3">%</span>
                 </span>
               ) : (
-                <span className="num text-ink-3 w-16 text-right text-[13px]">{share.toFixed(share % 1 ? 2 : 0)}%</span>
+                <span className="num text-ink-3 w-16 text-end text-[13px]">{share.toFixed(share % 1 ? 2 : 0)}%</span>
               )}
-              <span className="num w-24 text-right font-medium">{money(amt)}</span>
+              <span className="num w-24 text-end font-medium">{money(amt)}</span>
             </li>
           );
         })}
-        {!active.length && <li className="px-3.5 py-3 text-[13px] text-ink-3">No active stakeholders yet. Add partners first.</li>}
+        {!active.length && <li className="px-3.5 py-3 text-[13px] text-ink-3">{t('No active stakeholders yet. Add partners first.')}</li>}
       </ul>
       <div className="flex items-center justify-between px-3.5 h-9 border-t border-line text-[12.5px]">
         <span className={clsx('num', ok ? 'text-ink-3' : 'text-critical font-medium')}>
-          Total {total.toFixed(2)}% {ok ? '' : '— must equal 100%'}
+          {t('Total')} {total.toFixed(2)}% {ok ? '' : t('— must equal 100%')}
         </span>
         {mode === 'custom' && (
           <button type="button" className="text-accent font-medium" onClick={equalize}>
-            Split equally
+            {t('Split equally')}
           </button>
         )}
       </div>

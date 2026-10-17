@@ -81,12 +81,13 @@ export class BalancesService {
     const balances: StakeholderBalance[] = stakeholders.map((s) => ({
       stakeholderId: s.id,
       name: s.name,
+      nameAr: s.nameAr,
       color: s.color,
       sharePercent: s.sharePercent,
       ...BalancesService.net(f, s.id),
     }));
     balances.push({ stakeholderId: POOL_ID, name: POOL_NAME, color: POOL_COLOR, sharePercent: 0, ...BalancesService.net(f, POOL_ID) });
-    const suggestions = suggestTransfers(balances.map((b) => ({ id: b.stakeholderId, name: b.name, netMinor: b.netMinor })));
+    const suggestions = suggestTransfers(balances.map((b) => ({ id: b.stakeholderId, name: b.name, nameAr: b.nameAr, netMinor: b.netMinor })));
     return {
       range: { from: range.from ?? null, to: range.to ?? null },
       totalExpenseMinor: f.totalExpenseMinor,
@@ -121,6 +122,7 @@ export class BalancesService {
       items: active.map((s) => ({
         stakeholderId: s.id,
         name: s.name,
+        nameAr: s.nameAr,
         color: s.color,
         sharePercent: s.sharePercent,
         revenueShareMinor: revShare.get(s.id) ?? 0,

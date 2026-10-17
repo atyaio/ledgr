@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CATEGORICAL_PALETTE, type CreateStakeholderInput, type CustomFields, type Stakeholder } from '@ledgr/shared';
 import { useStakeholderMutations } from '@/lib/queries';
+import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,9 +11,11 @@ import { ColorPicker } from './color-picker';
 import { ApiRequestError } from '@/lib/api';
 
 export function StakeholderForm({ open, onClose, stakeholder, suggestedShare }: { open: boolean; onClose: () => void; stakeholder?: Stakeholder | null; suggestedShare?: number }) {
+  const { t } = useI18n();
   const toast = useToast();
   const { create, update } = useStakeholderMutations();
   const [name, setName] = useState('');
+  const [nameAr, setNameAr] = useState('');
   const [email, setEmail] = useState('');
   const [share, setShare] = useState('0');
   const [active, setActive] = useState(true);
@@ -26,6 +29,7 @@ export function StakeholderForm({ open, onClose, stakeholder, suggestedShare }: 
     if (!open) return;
     setCfErrors({});
     setName(stakeholder?.name ?? '');
+    setNameAr(stakeholder?.nameAr ?? '');
     setEmail(stakeholder?.email ?? '');
     setShare(String(stakeholder?.sharePercent ?? suggestedShare ?? 0));
     setActive(stakeholder?.active ?? true);
@@ -40,33 +44,34 @@ export function StakeholderForm({ open, onClose, stakeholder, suggestedShare }: 
   const busy = create.isPending || update.isPending;
 
   const submit = async () => {
-    const body: CreateStakeholderInput = { name: name.trim(), email: email.trim() || null, sharePercent: pct, active, joinedAt: joinedAt || null, notes: notes.trim() || null, color, customFields: custom };
+    const body: CreateStakeholderInput = { name: name.trim(), nameAr: nameAr.trim() || null, email: email.trim() || null, sharePercent: pct, active, joinedAt: joinedAt || null, notes: notes.trim() || null, color, customFields: custom };
     try {
       if (stakeholder) await update.mutateAsync({ id: stakeholder.id, ...body });
       else await create.mutateAsync(body);
-      toast.success(stakeholder ? 'Stakeholder updated' : 'Stakeholder added');
+      toast.success(stakeholder ? t('Stakeholder updated') : t('Stakeholder added'));
       onClose();
     } catch (e) {
       if (e instanceof ApiRequestError && e.code === 'CUSTOM_FIELDS' && Array.isArray(e.details)) setCfErrors(Object.fromEntries((e.details as { key: string; message: string }[]).map((i) => [i.key, i.message])));
-      toast.error('Could not save', errorMessage(e));
+      toast.error(t('Could not save'), errorMessage(e));
     }
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={stakeholder ? 'Edit stakeholder' : 'New stakeholder'} description="Ownership share drives default expense splits and profit distribution."
-      footer={<><Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">Cancel</Button><Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{stakeholder ? 'Save changes' : 'Add stakeholder'}</Button></>}>
+    <Sheet open={open} onClose={onClose} title={stakeholder ? t('Edit stakeholder') : t('New stakeholder')} description={t('Ownership share drives default expense splits and profit distribution.')}
+      footer={<><Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">{t('Cancel')}</Button><Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{stakeholder ? t('Save changes') : t('Add stakeholder')}</Button></>}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) submit(); }}>
         <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-          <Field label="Name" required><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!stakeholder} /></Field>
+          <Field label={t('Name')} required><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus={!stakeholder} /></Field>
           <ColorPicker value={color} onChange={setColor} />
         </div>
+        <Field label={t('Arabic name')} hint={t('optional')}><Input lang="ar" dir="rtl" value={nameAr} onChange={(e) => setNameAr(e.target.value)} /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Ownership share" required hint="%"><Input mono type="number" step="0.01" min={0} max={100} value={share} onChange={(e) => setShare(e.target.value)} /></Field>
-          <Field label="Joined"><Input mono type="date" value={joinedAt} onChange={(e) => setJoinedAt(e.target.value)} /></Field>
+          <Field label={t('Ownership share')} required hint="%"><Input mono type="number" step="0.01" min={0} max={100} value={share} onChange={(e) => setShare(e.target.value)} /></Field>
+          <Field label={t('Joined')}><Input mono type="date" value={joinedAt} onChange={(e) => setJoinedAt(e.target.value)} /></Field>
         </div>
-        <Field label="Email"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" /></Field>
-        <Toggle checked={active} onChange={setActive} label="Active partner" description={active ? 'Included in ownership splits and distribution' : 'Kept for history, excluded from new splits'} />
-        <Field label="Notes"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></Field>
+        <Field label={t('Email')}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('Optional')} /></Field>
+        <Toggle checked={active} onChange={setActive} label={t('Active partner')} description={active ? t('Included in ownership splits and distribution') : t('Kept for history, excluded from new splits')} />
+        <Field label={t('Notes')}><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('Optional')} /></Field>
         <CustomFieldInputs entity="stakeholder" values={custom} onChange={setCustom} errors={cfErrors} />
       </form>
     </Sheet>

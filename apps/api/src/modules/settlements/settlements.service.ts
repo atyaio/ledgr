@@ -9,8 +9,8 @@ import type { Prisma } from '../../generated/prisma/client';
 import { StakeholdersService, stakeholderRef } from '../stakeholders/stakeholders.service';
 
 const SETTLEMENT_INCLUDE = {
-  from: { select: { id: true, name: true, color: true } },
-  to: { select: { id: true, name: true, color: true } },
+  from: { select: { id: true, name: true, nameAr: true, color: true } },
+  to: { select: { id: true, name: true, nameAr: true, color: true } },
 } satisfies Prisma.SettlementInclude;
 
 type SettlementRow = Prisma.SettlementGetPayload<{ include: typeof SETTLEMENT_INCLUDE }>;

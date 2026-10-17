@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { todayISO, type CreateRevenueInput, type CustomFields, type PaymentMethod, type Revenue } from '@ledgr/shared';
 import { useCategories, usePaymentMethods, useRevenueMutations, useStakeholders } from '@/lib/queries';
 import { useProject } from '@/lib/project';
+import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { ApiRequestError } from '@/lib/api';
  * Without payment methods it is a plain amount.
  */
 export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { open: boolean; onClose: () => void; revenue?: Revenue | null; switcher?: ReactNode; onSaved?: () => void }) {
+  const { t, name } = useI18n();
   const toast = useToast();
   const { money } = useProject();
   const { create, update } = useRevenueMutations();
@@ -89,13 +91,13 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
     try {
       if (revenue) await update.mutateAsync({ id: revenue.id, ...body });
       else await create.mutateAsync(body);
-      toast.success(revenue ? 'Revenue updated' : 'Revenue added');
+      toast.success(revenue ? t('Revenue updated') : t('Revenue added'));
       onSaved ? onSaved() : onClose();
     } catch (e) {
       if (e instanceof ApiRequestError && e.code === 'CUSTOM_FIELDS' && Array.isArray(e.details)) {
         setCfErrors(Object.fromEntries((e.details as { key: string; message: string }[]).map((i) => [i.key, i.message])));
       }
-      toast.error('Could not save revenue', errorMessage(e));
+      toast.error(t('Could not save revenue'), errorMessage(e));
     }
   };
 
@@ -103,11 +105,11 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
     <Sheet
       open={open}
       onClose={onClose}
-      title={revenue ? 'Edit revenue' : 'New revenue'}
+      title={revenue ? t('Edit revenue') : t('New revenue')}
       footer={
         <>
-          <Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">Cancel</Button>
-          <Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{revenue ? 'Save changes' : 'Add revenue'}</Button>
+          <Button variant="ghost" size="md" onClick={onClose} className="max-md:hidden">{t('Cancel')}</Button>
+          <Button variant="primary" size="lg" onClick={submit} loading={busy} disabled={!valid} className="w-full md:w-auto">{revenue ? t('Save changes') : t('Add revenue')}</Button>
         </>
       }
     >
@@ -115,55 +117,55 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
         {switcher && !revenue && <div>{switcher}</div>}
         {hasMethods && primary ? (
           <>
-            <Field label={<span className="inline-flex items-center gap-1.5"><Swatch color={primary.color} />{primary.name} amount</span>} required hint={primary.isDefault ? 'default method' : undefined}>
+            <Field label={<span className="inline-flex items-center gap-1.5"><Swatch color={primary.color} />{t('{method} amount', { method: name(primary) })}</span>} required hint={primary.isDefault ? t('default method') : undefined}>
               <MoneyInput large value={amounts[primary.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [primary.id]: v }))} autoFocus={!revenue} />
             </Field>
             {others.length > 0 && !showOthers && (
               <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setShowOthers(true)}>
-                + Add {others.map((m) => m.name).join(' / ')} amounts
+                + {t('Add {methods} amounts', { methods: others.map((m) => name(m)).join(' / ') })}
               </button>
             )}
             {others.length > 0 && showOthers && (
               <div className="rounded-[14px] border border-line divide-y divide-line">
                 {others.map((m) => (
                   <label key={m.id} className="flex items-center gap-3 px-3.5 py-2.5">
-                    <span className="inline-flex items-center gap-2 w-32 shrink-0 text-[14px]"><Swatch color={m.color} />{m.name}</span>
+                    <span className="inline-flex items-center gap-2 w-32 shrink-0 text-[14px]"><Swatch color={m.color} />{name(m)}</span>
                     <MoneyInput value={amounts[m.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [m.id]: v }))} placeholder="0.00" className="h-10" />
                   </label>
                 ))}
                 <div className="flex items-center justify-between px-3.5 h-10 text-[13px]">
-                  <span className="text-ink-3">Total</span>
+                  <span className="text-ink-3">{t('Total')}</span>
                   <span className="num font-semibold">{money(total)}</span>
                 </div>
               </div>
             )}
           </>
         ) : (
-          <Field label="Amount" required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!revenue} /></Field>
+          <Field label={t('Amount')} required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!revenue} /></Field>
         )}
-        <Field label="Description" required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Invoice, sale, day's takings…" /></Field>
+        <Field label={t('Description')} required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("Invoice, sale, day's takings…")} /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Category">
+          <Field label={t('Category')}>
             <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Uncategorised</option>
-              {cats.data?.items.filter((c) => !c.archived || c.id === categoryId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="">{t('Uncategorised')}</option>
+              {cats.data?.items.filter((c) => !c.archived || c.id === categoryId).map((c) => <option key={c.id} value={c.id}>{name(c)}</option>)}
             </Select>
           </Field>
-          <Field label="Date" required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
+          <Field label={t('Date')} required><Input mono type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
         </div>
-        <Field label="Received by">
+        <Field label={t('Received by')}>
           <Select value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)}>
-            <option value="">Company account</option>
-            {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <option value="">{t('Company account')}</option>
+            {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{name(s)}</option>)}
           </Select>
         </Field>
         <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setMoreOpen((o) => !o)}>
-          {moreOpen ? 'Hide' : 'Add'} source & notes
+          {moreOpen ? t('Hide source & notes') : t('Add source & notes')}
         </button>
         {moreOpen && (
           <div className="space-y-4">
-            <Field label="Source" hint="client, platform…"><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Optional" /></Field>
-            <Field label="Notes"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></Field>
+            <Field label={t('Source')} hint={t('client, platform…')}><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder={t('Optional')} /></Field>
+            <Field label={t('Notes')}><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('Optional')} /></Field>
           </div>
         )}
         <CustomFieldInputs entity="revenue" values={custom} onChange={setCustom} errors={cfErrors} />

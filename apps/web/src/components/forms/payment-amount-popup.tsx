@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Expense, PaymentMethod, Revenue } from '@ledgr/shared';
 import { useExpenseMutations, useRevenueMutations } from '@/lib/queries';
 import { useProject } from '@/lib/project';
+import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ export type PaymentTarget = { kind: 'revenue'; entry: Revenue; method: PaymentMe
 
 /** "Add Visa amount": set one payment method's amount on an existing expense or revenue entry. */
 export function PaymentAmountPopup({ target, onClose }: { target: PaymentTarget | null; onClose: () => void }) {
+  const { t, name } = useI18n();
   const { money } = useProject();
   const revenue = useRevenueMutations();
   const expenses = useExpenseMutations();
@@ -27,29 +29,29 @@ export function PaymentAmountPopup({ target, onClose }: { target: PaymentTarget 
   const save = async () => {
     try {
       await mutation.mutateAsync({ id: entry.id, paymentMethodId: method.id, amountMinor: amount ?? 0 });
-      toast.success(amount ? `${method.name} amount saved` : `${method.name} amount removed`);
+      toast.success(amount ? t('{method} amount saved', { method: name(method) }) : t('{method} amount removed', { method: name(method) }));
       onClose();
     } catch (e) {
-      toast.error('Could not save', errorMessage(e));
+      toast.error(t('Could not save'), errorMessage(e));
     }
   };
   return (
     <Modal
       open
       onClose={onClose}
-      title={`${existing ? 'Edit' : 'Add'} ${method.name} amount`}
+      title={existing ? t('Edit {method} amount', { method: name(method) }) : t('Add {method} amount', { method: name(method) })}
       description={entry.description}
       footer={
         <>
-          {existing !== null && <Button variant="danger" size="md" onClick={() => setAmount(0)} disabled={amount === 0}>Clear</Button>}
-          <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" size="md" onClick={save} loading={mutation.isPending} disabled={amount === null || amount < 0 || newTotal <= 0}>Save</Button>
+          {existing !== null && <Button variant="danger" size="md" onClick={() => setAmount(0)} disabled={amount === 0}>{t('Clear')}</Button>}
+          <Button variant="ghost" size="md" onClick={onClose}>{t('Cancel')}</Button>
+          <Button variant="primary" size="md" onClick={save} loading={mutation.isPending} disabled={amount === null || amount < 0 || newTotal <= 0}>{t('Save')}</Button>
         </>
       }
     >
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); save(); }}>
-        <Field label={`${method.name} amount`}><MoneyInput large value={amount} onChange={setAmount} autoFocus /></Field>
-        <div className="flex items-center justify-between text-[13px] text-ink-3"><span>New total</span><span className="num font-semibold text-ink">{money(newTotal)}</span></div>
+        <Field label={t('{method} amount', { method: name(method) })}><MoneyInput large value={amount} onChange={setAmount} autoFocus /></Field>
+        <div className="flex items-center justify-between text-[13px] text-ink-3"><span>{t('New total')}</span><span className="num font-semibold text-ink">{money(newTotal)}</span></div>
       </form>
     </Modal>
   );

@@ -58,6 +58,7 @@ export async function initCommand(opts: Opts) {
 
   const folderName = path.basename(projectDir);
   const name = opts.name ?? (opts.yes ? folderName : await ask(p.text({ message: 'Project / business name', placeholder: folderName, defaultValue: folderName })));
+  const nameAr = opts.yes ? '' : await ask(p.text({ message: `Arabic name ${pc.dim('(optional, shown when the dashboard is in Arabic)')}`, defaultValue: '', placeholder: 'اسم المشروع' }));
   const currency = (opts.currency ?? (opts.yes ? 'USD' : await ask(p.text({ message: 'Currency (ISO 4217)', placeholder: 'EGP', defaultValue: 'USD', validate: (v) => (v && !/^[A-Za-z]{3}$/.test(v) ? 'Three letters, e.g. EGP' : undefined) })))).toUpperCase();
   const locale = opts.yes ? 'en-US' : await ask(p.text({ message: 'Locale for number & date formatting', placeholder: 'en-EG', defaultValue: 'en-US' }));
   const weekStartsOn = opts.yes ? 1 : await ask(p.select({ message: 'Week starts on', initialValue: 1, options: [{ value: 6, label: 'Saturday' }, { value: 0, label: 'Sunday' }, { value: 1, label: 'Monday' }] }));
@@ -134,6 +135,7 @@ export async function initCommand(opts: Opts) {
   const config: ProjectConfigLike = {
     ...api.defaultConfig(),
     name: name.trim(),
+    ...(nameAr?.trim() ? { nameAr: nameAr.trim() } : {}),
     slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project',
     currency,
     locale: locale || 'en-US',

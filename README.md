@@ -24,6 +24,7 @@ dashboard; nothing is shared with the host project and no database URL is requir
 - **Analytics overview** for today / week / month / quarter / year / custom ranges, with
   previous-period deltas, cashflow chart, category breakdowns, budgets and largest expenses.
 - **Payment methods** (cash, cards, online…): each expense and revenue row holds an amount per method side by side; adding revenue fills the default method, the others can be added later from the table. Analytics breakdown and one column per method in Excel/CSV.
+- **English and Arabic** with right-to-left layout; the choice is remembered. Categories, payment methods, partners, custom field labels and the project name take an optional Arabic name, with English used when it is blank.
 - **Insights page**: filter by ledger, categories, payment methods and partner; previous-period comparison, weekday pattern, month-by-month table, top entries.
 - **Categories & monthly budgets**, **recurring entries** (rent, retainers…), **custom columns**
   (text, number, money, date, yes/no, select) on expenses, revenue and stakeholders.

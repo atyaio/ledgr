@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { LangProvider } from '@/i18n';
 import { ProjectProvider, useProjectQuery } from '@/lib/project';
 import { ToastProvider } from '@/components/ui/toast';
 import { Loading } from '@/components/ui/misc';
@@ -84,11 +85,13 @@ const router = createBrowserRouter([
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
-      </ToastProvider>
+      <LangProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </ToastProvider>
+      </LangProvider>
     </QueryClientProvider>
   );
 }

@@ -5,6 +5,7 @@ import { ExpenseForm } from '@/components/forms/expense-form';
 import { RevenueForm } from '@/components/forms/revenue-form';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/layout/shell';
+import { useI18n } from '@/i18n';
 
 /**
  * /add/expense and /add/revenue — opened from a home-screen shortcut or widget-like
@@ -14,6 +15,7 @@ import { Logo } from '@/components/layout/shell';
 export function QuickAddPage() {
   const { kind } = useParams<{ kind: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [open, setOpen] = useState(true);
   const [saved, setSaved] = useState(0);
   const k = kind === 'revenue' ? 'revenue' : 'expense';
@@ -27,7 +29,7 @@ export function QuickAddPage() {
     <div className="min-h-full bg-bg flex flex-col" style={{ paddingTop: 'var(--safe-top)' }}>
       <header className="h-14 px-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-1.5 text-[14px] font-medium text-ink-2 hover:text-ink">
-          <ChevronLeft className="size-5" /> Dashboard
+          <ChevronLeft className="size-5 rtl-flip" /> {t('Dashboard')}
         </Link>
         <Logo size={28} />
       </header>
@@ -37,21 +39,21 @@ export function QuickAddPage() {
             {saved > 0 ? (
               <>
                 <span className="mx-auto mb-4 size-16 rounded-full bg-good/10 text-good inline-flex items-center justify-center"><Check className="size-8" /></span>
-                <h1 className="text-[22px] font-semibold tracking-tight">{k === 'expense' ? 'Expense' : 'Revenue'} added</h1>
-                <p className="text-[14px] text-ink-3 mt-1">{saved} saved this session.</p>
+                <h1 className="text-[22px] font-semibold tracking-tight">{t(k === 'expense' ? 'Expense added' : 'Revenue added')}</h1>
+                <p className="text-[14px] text-ink-3 mt-1">{t('{n} saved this session.', { n: saved })}</p>
               </>
             ) : (
               <>
-                <h1 className="text-[22px] font-semibold tracking-tight">Nothing added</h1>
-                <p className="text-[14px] text-ink-3 mt-1">You closed the form without saving.</p>
+                <h1 className="text-[22px] font-semibold tracking-tight">{t('Nothing added')}</h1>
+                <p className="text-[14px] text-ink-3 mt-1">{t('You closed the form without saving.')}</p>
               </>
             )}
             <div className="mt-6 flex flex-col gap-2">
               <Button variant="primary" size="lg" icon={<Plus className="size-5" />} onClick={() => setOpen(true)}>
-                Add another {k}
+                {t(k === 'expense' ? 'Add another expense' : 'Add another revenue')}
               </Button>
               <Button variant="ghost" size="md" onClick={() => navigate(`/${k === 'expense' ? 'expenses' : 'revenue'}`)}>
-                Open the {k === 'expense' ? 'expenses' : 'revenue'} list
+                {t(k === 'expense' ? 'Open the expenses list' : 'Open the revenue list')}
               </Button>
             </div>
           </div>

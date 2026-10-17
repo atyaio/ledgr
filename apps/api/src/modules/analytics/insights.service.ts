@@ -26,10 +26,10 @@ interface Entry {
   description: string;
   amountMinor: number; // after the payment-method filter is applied
   categoryId: string | null;
-  category: { name: string; color: string } | null;
+  category: { name: string; nameAr: string | null; color: string } | null;
   partyId: string | null;
-  party: { name: string; color: string } | null;
-  payments: { paymentMethodId: string; amountMinor: number; paymentMethod: { name: string; color: string } }[];
+  party: { name: string; nameAr: string | null; color: string } | null;
+  payments: { paymentMethodId: string; amountMinor: number; paymentMethod: { name: string; nameAr: string | null; color: string } }[];
 }
 
 /**
@@ -97,11 +97,11 @@ export class InsightsService {
     for (const s of series) s.netMinor = s.revenueMinor - s.expenseMinor;
 
     // ─── Groups ────────────────────────────────────────────────────────────────
-    const group = (rows: Entry[], key: (r: Entry) => { id: string | null; name: string; color: string }, kind: 'revenue' | 'expense', total: number): InsightsGroup[] => {
+    const group = (rows: Entry[], key: (r: Entry) => { id: string | null; name: string; nameAr: string | null; color: string }, kind: 'revenue' | 'expense', total: number): InsightsGroup[] => {
       const map = new Map<string, InsightsGroup>();
       for (const r of rows) {
         const k = key(r);
-        const cur = map.get(k.id ?? '') ?? { id: k.id, name: k.name, color: k.color, revenueMinor: 0, expenseMinor: 0, count: 0, pct: 0 };
+        const cur = map.get(k.id ?? '') ?? { id: k.id, name: k.name, nameAr: k.nameAr, color: k.color, revenueMinor: 0, expenseMinor: 0, count: 0, pct: 0 };
         if (kind === 'revenue') cur.revenueMinor += r.amountMinor;
         else cur.expenseMinor += r.amountMinor;
         cur.count += 1;
@@ -111,7 +111,7 @@ export class InsightsService {
         .map((g) => ({ ...g, pct: pct(kind === 'revenue' ? g.revenueMinor : g.expenseMinor, total) }))
         .sort((a, b) => (kind === 'revenue' ? b.revenueMinor - a.revenueMinor : b.expenseMinor - a.expenseMinor));
     };
-    const byCat = (r: Entry) => ({ id: r.categoryId, name: r.category?.name ?? 'Uncategorised', color: r.category?.color ?? POOL_COLOR });
+    const byCat = (r: Entry) => ({ id: r.categoryId, name: r.category?.name ?? 'Uncategorised', nameAr: r.category?.nameAr ?? null, color: r.category?.color ?? POOL_COLOR });
     const revenueByCategory = group(revenue, byCat, 'revenue', revenueMinor);
     const expensesByCategory = group(expenses, byCat, 'expense', expenseMinor);
 
@@ -136,9 +136,9 @@ export class InsightsService {
         if (!methods.size && r.amountMinor - attributed > 0) out.push({ ...r, amountMinor: r.amountMinor - attributed, categoryId: null, category: null });
         return out;
       });
-    const byMethodKey = (r: Entry) => ({ id: r.categoryId, name: r.category?.name ?? NONE.name, color: r.category?.color ?? NONE.color });
+    const byMethodKey = (r: Entry) => ({ id: r.categoryId, name: r.category?.name ?? NONE.name, nameAr: r.category?.nameAr ?? null, color: r.category?.color ?? NONE.color });
     const byPaymentMethod = merge(group(byMethodRows(revenue), byMethodKey, 'revenue', revenueMinor), group(byMethodRows(expenses), byMethodKey, 'expense', expenseMinor));
-    const byPartyKey = (r: Entry) => ({ id: r.partyId, name: r.party?.name ?? 'Company account', color: r.party?.color ?? POOL_COLOR });
+    const byPartyKey = (r: Entry) => ({ id: r.partyId, name: r.party?.name ?? 'Company account', nameAr: r.party?.nameAr ?? null, color: r.party?.color ?? POOL_COLOR });
     const byStakeholder = merge(group(revenue, byPartyKey, 'revenue', revenueMinor), group(expenses, byPartyKey, 'expense', expenseMinor));
 
     // ─── Weekday pattern ───────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ export class InsightsService {
       [...rows]
         .sort((a, b) => b.amountMinor - a.amountMinor || a.date.localeCompare(b.date))
         .slice(0, 8)
-        .map((r) => ({ id: r.id, date: r.date, description: r.description, amountMinor: r.amountMinor, groupName: r.category?.name ?? 'Uncategorised', groupColor: r.category?.color ?? POOL_COLOR }));
+        .map((r) => ({ id: r.id, date: r.date, description: r.description, amountMinor: r.amountMinor, groupName: r.category?.name ?? 'Uncategorised', groupNameAr: r.category?.nameAr ?? null, groupColor: r.category?.color ?? POOL_COLOR }));
 
     const netMinor = revenueMinor - expenseMinor;
     return {
@@ -237,10 +237,10 @@ export class InsightsService {
         description: true,
         amountMinor: true,
         categoryId: true,
-        category: { select: { name: true, color: true } },
+        category: { select: { name: true, nameAr: true, color: true } },
         receivedByStakeholderId: true,
-        receivedBy: { select: { name: true, color: true } },
-        payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, color: true } } } },
+        receivedBy: { select: { name: true, nameAr: true, color: true } },
+        payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, nameAr: true, color: true } } } },
       },
     });
     return rows.map((r) => ({
@@ -271,10 +271,10 @@ export class InsightsService {
         description: true,
         amountMinor: true,
         categoryId: true,
-        category: { select: { name: true, color: true } },
+        category: { select: { name: true, nameAr: true, color: true } },
         paidByStakeholderId: true,
-        paidBy: { select: { name: true, color: true } },
-        payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, color: true } } } },
+        paidBy: { select: { name: true, nameAr: true, color: true } },
+        payments: { select: { paymentMethodId: true, amountMinor: true, paymentMethod: { select: { name: true, nameAr: true, color: true } } } },
       },
     });
     return rows.map((e) => ({

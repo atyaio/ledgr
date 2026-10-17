@@ -12,6 +12,7 @@ datasource db {
 model Stakeholder {
   id           String   @id @default(cuid())
   name         String
+  nameAr       String?
   email        String?
   sharePercent Float    @default(0)
   active       Boolean  @default(true)
@@ -32,6 +33,7 @@ model Stakeholder {
 model Category {
   id                 String   @id @default(cuid())
   name               String
+  nameAr             String?
   kind               String // expense | revenue
   color              String   @default("#5B8DEF")
   monthlyBudgetMinor Int?
@@ -91,6 +93,7 @@ model ExpenseSplit {
 model PaymentMethod {
   id        String   @id @default(cuid())
   name      String   @unique
+  nameAr    String?
   color     String   @default("#5B8DEF")
   isDefault Boolean  @default(false)
   archived  Boolean  @default(false)
@@ -177,6 +180,7 @@ model CustomFieldDefinition {
   entity    String // expense | revenue | stakeholder
   key       String
   label     String
+  labelAr   String?
   type      String // text | number | money | date | boolean | select
   options   String   @default("[]")
   required  Boolean  @default(false)

@@ -25,10 +25,10 @@ import { StakeholdersService, stakeholderRef } from '../stakeholders/stakeholder
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 
 const EXPENSE_INCLUDE = {
-  category: { select: { id: true, name: true, color: true } },
-  paidBy: { select: { id: true, name: true, color: true } },
+  category: { select: { id: true, name: true, nameAr: true, color: true } },
+  paidBy: { select: { id: true, name: true, nameAr: true, color: true } },
   splits: { include: { stakeholder: { select: { name: true } } }, orderBy: { amountMinor: 'desc' } },
-  payments: { include: { paymentMethod: { select: { name: true, color: true, sortOrder: true } } } },
+  payments: { include: { paymentMethod: { select: { name: true, nameAr: true, color: true, sortOrder: true } } } },
 } satisfies Prisma.ExpenseInclude;
 
 type ExpenseRow = Prisma.ExpenseGetPayload<{ include: typeof EXPENSE_INCLUDE }>;
@@ -48,7 +48,7 @@ export function toExpenseDto(r: ExpenseRow): Expense {
     splitMode: r.splitMode as SplitMode,
     payments: [...r.payments]
       .sort((a, b) => a.paymentMethod.sortOrder - b.paymentMethod.sortOrder || a.paymentMethod.name.localeCompare(b.paymentMethod.name))
-      .map((p) => ({ paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: p.amountMinor })),
+      .map((p) => ({ paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, nameAr: p.paymentMethod.nameAr, color: p.paymentMethod.color, amountMinor: p.amountMinor })),
     splits: r.splits.map((s) => ({
       id: s.id,
       expenseId: s.expenseId,

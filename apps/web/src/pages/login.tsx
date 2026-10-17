@@ -3,9 +3,11 @@ import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
 import { Logo } from '@/components/layout/shell';
+import { useI18n } from '@/i18n';
 
 export function LoginPage() {
   const { signIn, sendMagicLink, status, error: authError, signOut } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -33,41 +35,41 @@ export function LoginPage() {
           <Logo size={40} />
           <div>
             <div className="text-[20px] font-semibold tracking-tight leading-none">ledgr</div>
-            <div className="text-[13px] text-ink-3 mt-1">Sign in to continue</div>
+            <div className="text-[13px] text-ink-3 mt-1">{t('Sign in to continue')}</div>
           </div>
         </div>
 
         {status === 'not-admin' && (
           <div className="mb-4 rounded-[14px] bg-warning/10 p-4 text-[13.5px] leading-relaxed">
-            <strong className="font-semibold">Signed in, but not an admin.</strong> Ask the project owner to set <code className="mono text-[12.5px]">app_metadata.role = "admin"</code> on your user (SQL on <code className="mono text-[12.5px]">auth.users</code> in Supabase), then{' '}
+            <strong className="font-semibold">{t('Signed in, but not an admin.')}</strong> {t('Ask the project owner to set')} <code className="mono text-[12.5px]">app_metadata.role = "admin"</code> {t('on your user (SQL on')} <code className="mono text-[12.5px]">auth.users</code> {t('in Supabase), then')}{' '}
             <button type="button" className="underline font-medium" onClick={() => window.location.reload()}>
-              reload this page
+              {t('reload this page')}
             </button>
-            . Wrong account?{' '}
+            . {t('Wrong account?')}{' '}
             <button type="button" className="underline font-medium" onClick={() => signOut()}>
-              Sign out
+              {t('Sign out')}
             </button>
             .
           </div>
         )}
         {(error || (status === 'signed-out' && authError)) && <div className="mb-4 rounded-[14px] bg-critical/10 p-4 text-[13.5px] text-critical">{error ?? authError}</div>}
-        {sent && <div className="mb-4 rounded-[14px] bg-good/10 p-4 text-[13.5px]">Magic link sent. Check your inbox.</div>}
+        {sent && <div className="mb-4 rounded-[14px] bg-good/10 p-4 text-[13.5px]">{t('Magic link sent. Check your inbox.')}</div>}
 
         <div className="card p-5 space-y-4">
-          <Field label="Email" required>
+          <Field label={t('Email')} required>
             <Input type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
           </Field>
-          <Field label="Password">
+          <Field label={t('Password')}>
             <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </Field>
           <Button type="submit" variant="primary" size="lg" full loading={busy} disabled={!email || !password}>
-            Sign in
+            {t('Sign in')}
           </Button>
           <Button type="button" size="md" variant="ghost" full onClick={magic} disabled={!email || busy}>
-            Email me a magic link instead
+            {t('Email me a magic link instead')}
           </Button>
         </div>
-        <p className="text-center text-[12.5px] text-ink-3 mt-5">Only admins of this project can sign in.</p>
+        <p className="text-center text-[12.5px] text-ink-3 mt-5">{t('Only admins of this project can sign in.')}</p>
       </form>
     </div>
   );

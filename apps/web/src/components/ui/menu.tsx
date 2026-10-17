@@ -103,7 +103,7 @@ export function MenuItem({ children, onClick, danger, icon, disabled }: { childr
       disabled={disabled}
       onClick={onClick}
       className={clsx(
-        'w-full flex items-center gap-3 h-11 md:h-9 px-3 rounded-[10px] text-left text-[15px] md:text-[13.5px] hover:bg-card-hover disabled:opacity-40 disabled:pointer-events-none',
+        'w-full flex items-center gap-3 h-11 md:h-9 px-3 rounded-[10px] text-start text-[15px] md:text-[13.5px] hover:bg-card-hover disabled:opacity-40 disabled:pointer-events-none',
         danger ? 'text-critical' : 'text-ink',
       )}
     >

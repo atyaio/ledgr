@@ -4,6 +4,7 @@ import type { SuggestedTransfer } from './types';
 export interface PartyBalance {
   id: string;
   name: string;
+  nameAr?: string | null;
   netMinor: number; // >0 is owed money, <0 owes money
 }
 
@@ -23,7 +24,7 @@ export function suggestTransfers(balances: PartyBalance[]): SuggestedTransfer[] 
     const c = creditors[j];
     const amt = Math.min(d.netMinor, c.netMinor);
     if (amt > 0) {
-      out.push({ fromStakeholderId: d.id, fromName: d.name, toStakeholderId: c.id, toName: c.name, amountMinor: amt });
+      out.push({ fromStakeholderId: d.id, fromName: d.name, fromNameAr: d.nameAr ?? null, toStakeholderId: c.id, toName: c.name, toNameAr: c.nameAr ?? null, amountMinor: amt });
     }
     d.netMinor -= amt;
     c.netMinor -= amt;

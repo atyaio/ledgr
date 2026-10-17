@@ -51,8 +51,10 @@ export const rangeQuery = z.object({ from: isoDate.optional(), to: isoDate.optio
 export type RangeQuery = z.infer<typeof rangeQuery>;
 
 // ─── Project ───────────────────────────────────────────────────────────────────
+const arName = z.string().trim().max(80).nullable().optional();
 export const projectConfigSchema = z.object({
   name: z.string().trim().min(1).max(80),
+  nameAr: z.string().trim().max(80).optional(),
   slug: z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/),
   currency: z.string().trim().length(3).transform((s) => s.toUpperCase()),
   locale: z.string().trim().min(2).max(20),
@@ -66,13 +68,14 @@ export const projectConfigSchema = z.object({
   }),
 });
 export const updateProjectSchema = projectConfigSchema
-  .pick({ name: true, currency: true, locale: true, weekStartsOn: true, fiscalYearStartMonth: true })
+  .pick({ name: true, nameAr: true, currency: true, locale: true, weekStartsOn: true, fiscalYearStartMonth: true })
   .partial();
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 
 // ─── Stakeholders ──────────────────────────────────────────────────────────────
 export const createStakeholderSchema = z.object({
   name: z.string().trim().min(1).max(80),
+  nameAr: arName,
   email: z.string().trim().email().nullable().optional(),
   sharePercent: percent,
   active: z.boolean().default(true),
@@ -88,6 +91,7 @@ export type UpdateStakeholderInput = z.infer<typeof updateStakeholderSchema>;
 // ─── Categories ────────────────────────────────────────────────────────────────
 export const createCategorySchema = z.object({
   name: z.string().trim().min(1).max(60),
+  nameAr: arName,
   kind: z.enum(CATEGORY_KINDS),
   color: hexColor.optional(),
   monthlyBudgetMinor: minorAmount.min(0).nullable().optional(),
@@ -107,6 +111,7 @@ export const budgetsQuery = z.object({ month: z.string().regex(/^\d{4}-\d{2}$/).
 // ─── Payment methods ───────────────────────────────────────────────────────────
 export const createPaymentMethodSchema = z.object({
   name: z.string().trim().min(1).max(60),
+  nameAr: arName,
   color: hexColor.optional(),
   isDefault: z.boolean().optional(),
   archived: z.boolean().optional(),
@@ -191,6 +196,7 @@ export const createCustomFieldSchema = z.object({
   entity: z.enum(CUSTOM_FIELD_ENTITIES),
   key: slugKey,
   label: z.string().trim().min(1).max(60),
+  labelAr: z.string().trim().max(60).nullable().optional(),
   type: z.enum(CUSTOM_FIELD_TYPES),
   options: z.array(z.string().trim().min(1).max(60)).max(100).default([]),
   required: z.boolean().default(false),

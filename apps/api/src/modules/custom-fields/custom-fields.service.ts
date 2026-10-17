@@ -24,6 +24,7 @@ export function toCustomFieldDto(r: Row): CustomFieldDefinition {
     entity: r.entity as CustomFieldEntity,
     key: r.key,
     label: r.label,
+    labelAr: r.labelAr,
     type: r.type as CustomFieldType,
     options: parseStringArray(r.options),
     required: r.required,
@@ -90,6 +91,7 @@ export class CustomFieldsService {
         entity: input.entity,
         key: input.key,
         label: input.label,
+        labelAr: input.labelAr ?? null,
         type: input.type,
         options: JSON.stringify(input.options),
         required: input.required,
@@ -110,6 +112,7 @@ export class CustomFieldsService {
       where: { id },
       data: {
         ...(input.label !== undefined ? { label: input.label } : {}),
+        ...(input.labelAr !== undefined ? { labelAr: input.labelAr } : {}),
         ...(input.type !== undefined ? { type: input.type } : {}),
         ...(input.options !== undefined ? { options: JSON.stringify(input.options) } : {}),
         ...(input.required !== undefined ? { required: input.required } : {}),

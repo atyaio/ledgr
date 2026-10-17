@@ -35,6 +35,8 @@ export type AuthMode = 'supabase' | 'none';
 
 export interface ProjectConfig {
   name: string;
+  /** Arabic display name; falls back to `name`. */
+  nameAr?: string;
   slug: string;
   currency: string;
   locale: string;
@@ -77,6 +79,7 @@ export interface ProjectResponse {
 export interface Stakeholder {
   id: string;
   name: string;
+  nameAr: string | null;
   email: string | null;
   sharePercent: number;
   active: boolean;
@@ -91,6 +94,7 @@ export interface Stakeholder {
 export interface Category {
   id: string;
   name: string;
+  nameAr: string | null;
   kind: CategoryKind;
   color: string;
   monthlyBudgetMinor: number | null;
@@ -105,6 +109,7 @@ export interface Category {
 export interface PaymentMethod {
   id: string;
   name: string;
+  nameAr: string | null;
   color: string;
   isDefault: boolean;
   archived: boolean;
@@ -117,6 +122,7 @@ export interface PaymentMethod {
 export interface MethodPayment {
   paymentMethodId: string;
   name?: string;
+  nameAr?: string | null;
   color?: string;
   amountMinor: number;
 }
@@ -137,9 +143,9 @@ export interface Expense {
   amountMinor: number;
   description: string;
   categoryId: string;
-  category?: Pick<Category, 'id' | 'name' | 'color'>;
+  category?: Pick<Category, 'id' | 'name' | 'nameAr' | 'color'>;
   paidByStakeholderId: string | null;
-  paidBy?: Pick<Stakeholder, 'id' | 'name' | 'color'> | null;
+  paidBy?: Pick<Stakeholder, 'id' | 'name' | 'nameAr' | 'color'> | null;
   vendor: string | null;
   notes: string | null;
   splitMode: SplitMode;
@@ -158,12 +164,12 @@ export interface Revenue {
   amountMinor: number;
   description: string;
   categoryId: string | null;
-  category?: Pick<Category, 'id' | 'name' | 'color'> | null;
+  category?: Pick<Category, 'id' | 'name' | 'nameAr' | 'color'> | null;
   source: string | null;
   /** Amount received per payment method. Their sum is `amountMinor` when any exist. */
   payments: RevenuePayment[];
   receivedByStakeholderId: string | null;
-  receivedBy?: Pick<Stakeholder, 'id' | 'name' | 'color'> | null;
+  receivedBy?: Pick<Stakeholder, 'id' | 'name' | 'nameAr' | 'color'> | null;
   notes: string | null;
   recurringRuleId: string | null;
   customFields: CustomFields;
@@ -175,9 +181,9 @@ export interface Settlement {
   id: string;
   date: string;
   fromStakeholderId: string;
-  from?: Pick<Stakeholder, 'id' | 'name' | 'color'>;
+  from?: Pick<Stakeholder, 'id' | 'name' | 'nameAr' | 'color'>;
   toStakeholderId: string | null; // null = pool
-  to?: Pick<Stakeholder, 'id' | 'name' | 'color'> | null;
+  to?: Pick<Stakeholder, 'id' | 'name' | 'nameAr' | 'color'> | null;
   amountMinor: number;
   note: string | null;
   createdAt: string;
@@ -189,6 +195,7 @@ export interface CustomFieldDefinition {
   entity: CustomFieldEntity;
   key: string;
   label: string;
+  labelAr: string | null;
   type: CustomFieldType;
   options: string[];
   required: boolean;
@@ -271,6 +278,7 @@ export interface ApiError {
 export interface StakeholderBalance {
   stakeholderId: string; // or POOL_ID
   name: string;
+  nameAr?: string | null;
   color: string;
   sharePercent: number;
   owedMinor: number;
@@ -283,8 +291,10 @@ export interface StakeholderBalance {
 export interface SuggestedTransfer {
   fromStakeholderId: string;
   fromName: string;
+  fromNameAr?: string | null;
   toStakeholderId: string; // may be POOL_ID
   toName: string;
+  toNameAr?: string | null;
   amountMinor: number;
 }
 
@@ -299,6 +309,7 @@ export interface BalancesResponse {
 export interface StakeholderDistribution {
   stakeholderId: string;
   name: string;
+  nameAr?: string | null;
   color: string;
   sharePercent: number;
   revenueShareMinor: number;
@@ -318,6 +329,7 @@ export interface DistributionResponse {
 export interface BudgetStatus {
   categoryId: string;
   name: string;
+  nameAr?: string | null;
   color: string;
   budgetMinor: number;
   spentMinor: number;
@@ -339,14 +351,15 @@ export interface AnalyticsOverview {
   previous: { revenueMinor: number; expenseMinor: number; netMinor: number };
   delta: { revenuePct: number | null; expensePct: number | null; netPct: number | null };
   series: { bucket: string; revenueMinor: number; expenseMinor: number; netMinor: number; cumulativeNetMinor: number }[];
-  expensesByCategory: { categoryId: string; name: string; color: string; amountMinor: number; pct: number; count: number }[];
-  expensesByPaymentMethod: { paymentMethodId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
-  revenueByCategory: { categoryId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
-  revenueByPaymentMethod: { paymentMethodId: string | null; name: string; color: string; amountMinor: number; pct: number; count: number }[];
-  topExpenses: { id: string; date: string; description: string; amountMinor: number; categoryName: string; categoryColor: string }[];
+  expensesByCategory: { categoryId: string; name: string; nameAr?: string | null; color: string; amountMinor: number; pct: number; count: number }[];
+  expensesByPaymentMethod: { paymentMethodId: string | null; name: string; nameAr?: string | null; color: string; amountMinor: number; pct: number; count: number }[];
+  revenueByCategory: { categoryId: string | null; name: string; nameAr?: string | null; color: string; amountMinor: number; pct: number; count: number }[];
+  revenueByPaymentMethod: { paymentMethodId: string | null; name: string; nameAr?: string | null; color: string; amountMinor: number; pct: number; count: number }[];
+  topExpenses: { id: string; date: string; description: string; amountMinor: number; categoryName: string; categoryNameAr?: string | null; categoryColor: string }[];
   stakeholders: {
     id: string;
     name: string;
+    nameAr?: string | null;
     color: string;
     sharePercent: number;
     owedMinor: number;
@@ -377,6 +390,7 @@ export interface InsightsBucket {
 export interface InsightsGroup {
   id: string | null;
   name: string;
+  nameAr?: string | null;
   color: string;
   revenueMinor: number;
   expenseMinor: number;
@@ -412,8 +426,8 @@ export interface InsightsResponse {
   byStakeholder: InsightsGroup[];
   byWeekday: { weekday: number; label: string; days: number; revenueMinor: number; expenseMinor: number; avgRevenueMinor: number; avgExpenseMinor: number }[];
   byMonth: { month: string; revenueMinor: number; expenseMinor: number; netMinor: number; marginPct: number | null; revenueCount: number; expenseCount: number }[];
-  topRevenue: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupColor: string }[];
-  topExpenses: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupColor: string }[];
+  topRevenue: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupNameAr?: string | null; groupColor: string }[];
+  topExpenses: { id: string; date: string; description: string; amountMinor: number; groupName: string; groupNameAr?: string | null; groupColor: string }[];
 }
 
 // ─── Import / export ───────────────────────────────────────────────────────────

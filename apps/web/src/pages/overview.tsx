@@ -6,6 +6,7 @@ import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { useOverview } from '@/lib/queries';
 import { pct, signedPct } from '@/lib/format';
+import { useI18n } from '@/i18n';
 import { Loading, Card, Meter, EmptyState } from '@/components/ui/misc';
 import { Money } from '@/components/ui/money';
 import { Avatar, Swatch } from '@/components/ui/badge';
@@ -15,46 +16,48 @@ import { Sparkline } from '@/components/charts/sparkline';
 import { Button } from '@/components/ui/button';
 
 export function OverviewPage() {
+  const { t } = useI18n();
+  const { locale } = useProject();
   const { range } = useDateRange();
   const q = useOverview(range.from, range.to);
-  if (q.isPending) return <Loading label="Crunching the numbers" />;
-  if (q.isError) return <EmptyState title="Could not load analytics" description={q.error.message} />;
+  if (q.isPending) return <Loading label={t('Crunching the numbers')} />;
+  if (q.isError) return <EmptyState title={t('Could not load analytics')} description={q.error.message} />;
   const o = q.data;
   const search = typeof location !== 'undefined' ? location.search : '';
   return (
     <div className={clsx('space-y-4', q.isFetching && 'opacity-80 transition-opacity')}>
       <Hero o={o} />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2 min-h-[320px]" title="Cashflow">
-          {o.series.length ? <div className="h-[260px]"><CashflowChart series={o.series} granularity={o.range.granularity} /></div> : <EmptyState title="No entries in this range" />}
+        <Card className="xl:col-span-2 min-h-[320px]" title={t('Cashflow')}>
+          {o.series.length ? <div className="h-[260px]"><CashflowChart series={o.series} granularity={o.range.granularity} /></div> : <EmptyState title={t('No entries in this range')} />}
         </Card>
-        <Card title="Where the money went" actions={<Link to={{ pathname: '/expenses', search }} className="text-[13px] font-medium text-accent inline-flex items-center">All <ChevronRight className="size-4" /></Link>}>
+        <Card title={t('Where the money went')} actions={<Link to={{ pathname: '/expenses', search }} className="text-[13px] font-medium text-accent inline-flex items-center">{t('All')} <ChevronRight className="size-4 rtl-flip" /></Link>}>
           <Breakdown items={o.expensesByCategory.map((c) => ({ id: c.categoryId, ...c }))} />
         </Card>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2" title="Partners" subtitle="Balances for this period" actions={<Link to={{ pathname: '/stakeholders', search: `${search ? search + '&' : '?'}tab=balances` }} className="text-[13px] font-medium text-accent inline-flex items-center">Settle up <ChevronRight className="size-4" /></Link>} flush>
+        <Card className="xl:col-span-2" title={t('Partners')} subtitle={t('Balances for this period')} actions={<Link to={{ pathname: '/stakeholders', search: `${search ? search + '&' : '?'}tab=balances` }} className="text-[13px] font-medium text-accent inline-flex items-center">{t('Settle up')} <ChevronRight className="size-4 rtl-flip" /></Link>} flush>
           <Partners o={o} />
         </Card>
-        <Card title="Budgets" subtitle={o.budgets.length ? budgetMonthLabel(o.range.to) : undefined}>
+        <Card title={t('Budgets')} subtitle={o.budgets.length ? budgetMonthLabel(o.range.to, locale) : undefined}>
           <Budgets o={o} />
         </Card>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2" title="Largest expenses" flush>
+        <Card className="xl:col-span-2" title={t('Largest expenses')} flush>
           <TopExpenses o={o} />
         </Card>
-        <Card title="Revenue by category">
-          <Breakdown items={o.revenueByCategory.map((c) => ({ id: c.categoryId, ...c }))} emptyLabel="No revenue in this range" />
+        <Card title={t('Revenue by category')}>
+          <Breakdown items={o.revenueByCategory.map((c) => ({ id: c.categoryId, ...c }))} emptyLabel={t('No revenue in this range')} />
         </Card>
       </div>
       {((o.revenueByPaymentMethod ?? []).some((m) => m.paymentMethodId) || (o.expensesByPaymentMethod ?? []).some((m) => m.paymentMethodId)) && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Card title="Revenue by payment method" subtitle="How customers paid" actions={<Link to="/payments" className="text-[13px] font-medium text-accent inline-flex items-center">Manage <ChevronRight className="size-4" /></Link>}>
-            <Breakdown items={(o.revenueByPaymentMethod ?? []).map((m) => ({ id: m.paymentMethodId, ...m }))} emptyLabel="No revenue in this range" />
+          <Card title={t('Revenue by payment method')} subtitle={t('How customers paid')} actions={<Link to="/payments" className="text-[13px] font-medium text-accent inline-flex items-center">{t('Manage')} <ChevronRight className="size-4 rtl-flip" /></Link>}>
+            <Breakdown items={(o.revenueByPaymentMethod ?? []).map((m) => ({ id: m.paymentMethodId, ...m }))} emptyLabel={t('No revenue in this range')} />
           </Card>
-          <Card title="Expenses by payment method" subtitle="How you paid">
-            <Breakdown items={(o.expensesByPaymentMethod ?? []).map((m) => ({ id: m.paymentMethodId, ...m }))} emptyLabel="No expenses in this range" />
+          <Card title={t('Expenses by payment method')} subtitle={t('How you paid')}>
+            <Breakdown items={(o.expensesByPaymentMethod ?? []).map((m) => ({ id: m.paymentMethodId, ...m }))} emptyLabel={t('No expenses in this range')} />
           </Card>
         </div>
       )}
@@ -63,37 +66,39 @@ export function OverviewPage() {
 }
 
 function Delta({ value, invert }: { value: number | null; invert?: boolean }) {
-  if (value === null || !Number.isFinite(value)) return <span className="text-ink-3 text-[12.5px]">no previous period</span>;
+  const { t } = useI18n();
+  if (value === null || !Number.isFinite(value)) return <span className="text-ink-3 text-[12.5px]">{t('no previous period')}</span>;
   if (Math.abs(value) < 0.05) value = 0;
   const up = value > 0;
   const good = invert ? !up : up;
   const Icon = value === 0 ? Minus : up ? ArrowUpRight : ArrowDownRight;
   return (
     <span className={clsx('inline-flex items-center gap-1 text-[12.5px] font-medium', value === 0 ? 'text-ink-3' : good ? 'text-good' : 'text-critical')}>
-      <Icon className="size-3.5" /> {signedPct(value, 1)} <span className="text-ink-3 font-normal">vs previous</span>
+      <Icon className="size-3.5" /> {signedPct(value, 1)} <span className="text-ink-3 font-normal">{t('vs previous')}</span>
     </span>
   );
 }
 
 function Hero({ o }: { o: AnalyticsOverview }) {
+  const { t } = useI18n();
   const { money } = useProject();
   const net = o.series.map((s) => s.netMinor);
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
       <div className="card p-5 md:col-span-1 flex flex-col justify-between gap-4">
         <div>
-          <div className="label">Net result</div>
+          <div className="label">{t('Net result')}</div>
           <div className={clsx('num text-[34px] md:text-[36px] font-semibold tracking-[-0.02em] leading-none mt-2', o.totals.netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(o.totals.netMinor, { signed: true })}</div>
           <div className="mt-2"><Delta value={o.delta.netPct} /></div>
         </div>
         <div className="flex items-end justify-between gap-3">
-          <div className="text-[12.5px] text-ink-3">Margin <span className="num text-ink font-medium">{o.totals.marginPct === null ? '—' : pct(o.totals.marginPct, 1)}</span></div>
+          <div className="text-[12.5px] text-ink-3">{t('Margin')} <span className="num text-ink font-medium">{o.totals.marginPct === null ? '—' : pct(o.totals.marginPct, 1)}</span></div>
           <Sparkline values={net} width={120} height={32} baseline />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 md:gap-4 md:col-span-2">
-        <StatCard label="Revenue" minor={o.totals.revenueMinor} tone="revenue" delta={<Delta value={o.delta.revenuePct} />} count={`${o.totals.revenueCount} entries`} values={o.series.map((s) => s.revenueMinor)} color="var(--s-revenue)" />
-        <StatCard label="Expenses" minor={o.totals.expenseMinor} tone="expense" delta={<Delta value={o.delta.expensePct} invert />} count={`${o.totals.expenseCount} entries`} values={o.series.map((s) => s.expenseMinor)} color="var(--s-expense)" />
+        <StatCard label={t('Revenue')} minor={o.totals.revenueMinor} tone="revenue" delta={<Delta value={o.delta.revenuePct} />} count={t('{n} entries', { n: o.totals.revenueCount })} values={o.series.map((s) => s.revenueMinor)} color="var(--s-revenue)" />
+        <StatCard label={t('Expenses')} minor={o.totals.expenseMinor} tone="expense" delta={<Delta value={o.delta.expensePct} invert />} count={t('{n} entries', { n: o.totals.expenseCount })} values={o.series.map((s) => s.expenseMinor)} color="var(--s-expense)" />
       </div>
     </div>
   );
@@ -104,7 +109,7 @@ function StatCard({ label, minor, delta, count, values, color, tone }: { label: 
   return (
     <div className="card p-4 md:p-5 flex flex-col justify-between gap-3">
       <div>
-        <div className="flex items-center gap-2"><Swatch color={color} size={8} /><span className="label">{label}</span></div>
+        <div className="flex items-center gap-2"><Swatch color={color} size={9} /><span className="label">{label}</span></div>
         <div className={clsx('num text-[22px] md:text-[26px] font-semibold tracking-[-0.02em] leading-none mt-2', tone === 'revenue' ? 'text-ink' : 'text-ink')}>{money(minor)}</div>
       </div>
       <div className="flex items-end justify-between gap-2">
@@ -119,20 +124,21 @@ function StatCard({ label, minor, delta, count, values, color, tone }: { label: 
 }
 
 function Partners({ o }: { o: AnalyticsOverview }) {
+  const { t, name } = useI18n();
   const { money } = useProject();
-  if (!o.stakeholders.length) return <EmptyState title="No partners yet" description="Add stakeholders and their ownership share to start splitting expenses." action={<Link to="/stakeholders"><Button variant="soft">Add partners</Button></Link>} />;
+  if (!o.stakeholders.length) return <EmptyState title={t('No partners yet')} description={t('Add stakeholders and their ownership share to start splitting expenses.')} action={<Link to="/stakeholders"><Button variant="soft">{t('Add partners')}</Button></Link>} />;
   return (
     <ul className="divide-y divide-line">
       {o.stakeholders.map((s) => (
         <li key={s.id} className="px-4 md:px-5 py-3 flex items-center gap-3">
-          <Avatar name={s.name} color={s.color} size={36} />
+          <Avatar name={name(s)} color={s.color} size={36} />
           <div className="flex-1 min-w-0">
-            <div className="text-[14.5px] font-medium truncate">{s.name} <span className="num text-[12.5px] text-ink-3 font-normal">{pct(s.sharePercent, 0)}</span></div>
-            <div className="text-[12.5px] text-ink-3 truncate">Paid {money(s.paidMinor, { compact: true })} · share {money(s.owedMinor, { compact: true })}<span className="hidden sm:inline"> · profit {money(s.profitShareMinor, { compact: true, signed: true })}</span></div>
+            <div className="text-[14.5px] font-medium truncate">{name(s)} <span className="num text-[12.5px] text-ink-3 font-normal">{pct(s.sharePercent, 0)}</span></div>
+            <div className="text-[12.5px] text-ink-3 truncate">{t('Paid {paid} · share {share}', { paid: money(s.paidMinor, { compact: true }), share: money(s.owedMinor, { compact: true }) })}<span className="hidden sm:inline"> · {t('profit')} {money(s.profitShareMinor, { compact: true, signed: true })}</span></div>
           </div>
-          <div className="text-right shrink-0">
+          <div className="text-end shrink-0">
             <Money minor={s.netMinor} tone="flow" signed className="text-[15px] font-semibold block" />
-            <span className="text-[11.5px] text-ink-3">{s.netMinor > 0 ? 'is owed' : s.netMinor < 0 ? 'owes' : 'settled'}</span>
+            <span className="text-[11.5px] text-ink-3">{s.netMinor > 0 ? t('is owed') : s.netMinor < 0 ? t('owes') : t('settled')}</span>
           </div>
         </li>
       ))}
@@ -141,18 +147,19 @@ function Partners({ o }: { o: AnalyticsOverview }) {
 }
 
 function Budgets({ o }: { o: AnalyticsOverview }) {
+  const { t, name } = useI18n();
   const { money } = useProject();
-  if (!o.budgets.length) return <EmptyState title="No budgets" description="Set a monthly budget on an expense category to track it here." action={<Link to="/categories"><Button variant="soft" size="sm">Categories</Button></Link>} />;
+  if (!o.budgets.length) return <EmptyState title={t('No budgets')} description={t('Set a monthly budget on an expense category to track it here.')} action={<Link to="/categories"><Button variant="soft" size="sm">{t('Categories')}</Button></Link>} />;
   return (
     <ul className="space-y-4">
       {o.budgets.map((b) => (
         <li key={b.categoryId}>
           <div className="flex items-center justify-between text-[13.5px] mb-1.5">
-            <span className="inline-flex items-center gap-2"><Swatch color={b.color} size={9} />{b.name}</span>
+            <span className="inline-flex items-center gap-2"><Swatch color={b.color} size={9} />{name(b)}</span>
             <span className="num"><span className={clsx('font-medium', b.pct >= 100 && 'text-critical')}>{money(b.spentMinor, { compact: true })}</span><span className="text-ink-3"> / {money(b.budgetMinor, { compact: true })}</span></span>
           </div>
           <Meter value={b.pct} />
-          <div className={clsx('text-[12px] mt-1', b.pct >= 100 ? 'text-critical' : b.pct >= 85 ? 'text-warning' : 'text-ink-3')}>{b.remainingMinor >= 0 ? `${money(b.remainingMinor)} left` : `${money(-b.remainingMinor)} over budget`}</div>
+          <div className={clsx('text-[12px] mt-1', b.pct >= 100 ? 'text-critical' : b.pct >= 85 ? 'text-warning' : 'text-ink-3')}>{b.remainingMinor >= 0 ? t('{amount} left', { amount: money(b.remainingMinor) }) : t('{amount} over budget', { amount: money(-b.remainingMinor) })}</div>
         </li>
       ))}
     </ul>
@@ -160,8 +167,9 @@ function Budgets({ o }: { o: AnalyticsOverview }) {
 }
 
 function TopExpenses({ o }: { o: AnalyticsOverview }) {
+  const { t, name } = useI18n();
   const { date } = useProject();
-  if (!o.topExpenses.length) return <EmptyState title="No expenses in this range" />;
+  if (!o.topExpenses.length) return <EmptyState title={t('No expenses in this range')} />;
   return (
     <ul className="divide-y divide-line">
       {o.topExpenses.slice(0, 6).map((e) => (
@@ -169,7 +177,7 @@ function TopExpenses({ o }: { o: AnalyticsOverview }) {
           <span className="inline-flex items-center justify-center size-9 rounded-[12px] shrink-0" style={{ background: `${e.categoryColor}1f` }}><Swatch color={e.categoryColor} size={10} /></span>
           <div className="flex-1 min-w-0">
             <div className="text-[14.5px] font-medium truncate">{e.description}</div>
-            <div className="text-[12.5px] text-ink-3 truncate">{e.categoryName} · {date(e.date)}</div>
+            <div className="text-[12.5px] text-ink-3 truncate">{name({ name: e.categoryName, nameAr: e.categoryNameAr })} · {date(e.date)}</div>
           </div>
           <Money minor={e.amountMinor} className="text-[15px] font-semibold shrink-0" />
         </li>
@@ -178,8 +186,8 @@ function TopExpenses({ o }: { o: AnalyticsOverview }) {
   );
 }
 
-function budgetMonthLabel(to: string): string {
+function budgetMonthLabel(to: string, locale?: string): string {
   const today = new Date().toISOString().slice(0, 10);
   const m = (to < today ? to : today).slice(0, 7);
-  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${m}-01T00:00:00Z`));
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${m}-01T00:00:00Z`));
 }

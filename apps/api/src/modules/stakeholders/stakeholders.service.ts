@@ -14,6 +14,7 @@ export function toStakeholderDto(r: Row): Stakeholder {
   return {
     id: r.id,
     name: r.name,
+    nameAr: r.nameAr,
     email: r.email,
     sharePercent: r.sharePercent,
     active: r.active,
@@ -26,9 +27,10 @@ export function toStakeholderDto(r: Row): Stakeholder {
   };
 }
 
-export const stakeholderRef = (r: Pick<Row, 'id' | 'name' | 'color'>): Pick<Stakeholder, 'id' | 'name' | 'color'> => ({
+export const stakeholderRef = (r: Pick<Row, 'id' | 'name' | 'nameAr' | 'color'>): Pick<Stakeholder, 'id' | 'name' | 'nameAr' | 'color'> => ({
   id: r.id,
   name: r.name,
+  nameAr: r.nameAr,
   color: r.color,
 });
 
@@ -66,7 +68,7 @@ export class StakeholdersService {
   async findByName(name: string, db: Db = this.prisma): Promise<Stakeholder | null> {
     const rows = await db.stakeholder.findMany();
     const n = name.trim().toLowerCase();
-    const hit = rows.find((r) => r.name.toLowerCase() === n);
+    const hit = rows.find((r) => r.name.toLowerCase() === n || (r.nameAr ?? '').trim().toLowerCase() === n);
     return hit ? toStakeholderDto(hit) : null;
   }
 
@@ -77,6 +79,7 @@ export class StakeholdersService {
     const row = await db.stakeholder.create({
       data: {
         name: input.name,
+        nameAr: input.nameAr ?? null,
         email: input.email ?? null,
         sharePercent: input.sharePercent,
         active: input.active ?? true,
@@ -99,6 +102,7 @@ export class StakeholdersService {
       where: { id },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.nameAr !== undefined ? { nameAr: input.nameAr } : {}),
         ...(input.email !== undefined ? { email: input.email } : {}),
         ...(input.sharePercent !== undefined ? { sharePercent: input.sharePercent } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),

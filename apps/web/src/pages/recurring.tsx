@@ -12,16 +12,19 @@ import { Badge, Tile } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { Menu, MenuItem, MenuSeparator } from '@/components/ui/menu';
 import { errorMessage, useToast } from '@/components/ui/toast';
+import { useI18n, type I18n } from '@/i18n';
 
-function schedule(r: RecurringRule): string {
-  const unit = { daily: 'day', weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }[r.frequency];
-  return r.interval === 1 ? `Every ${unit}` : `Every ${r.interval} ${unit}s`;
+const EVERY_ONE: Record<RecurringRule['frequency'], string> = { daily: 'Every day', weekly: 'Every week', monthly: 'Every month', quarterly: 'Every quarter', yearly: 'Every year' };
+const EVERY_N: Record<RecurringRule['frequency'], string> = { daily: 'Every {n} days', weekly: 'Every {n} weeks', monthly: 'Every {n} months', quarterly: 'Every {n} quarters', yearly: 'Every {n} years' };
+function schedule(r: RecurringRule, t: I18n['t']): string {
+  return r.interval === 1 ? t(EVERY_ONE[r.frequency]) : t(EVERY_N[r.frequency], { n: r.interval });
 }
 
 export function RecurringPage() {
   const q = useRecurring();
   const { update, remove, run } = useRecurringMutations();
   const toast = useToast();
+  const { t } = useI18n();
   const { date } = useProject();
   const [editing, setEditing] = useState<RecurringRule | null | undefined>(undefined);
   const [confirm, setConfirm] = useState<RecurringRule | null>(null);
@@ -31,17 +34,17 @@ export function RecurringPage() {
   const runAll = async () => {
     try {
       const r = await run.mutateAsync(undefined);
-      toast.success(r.generated.length ? `Generated ${r.generated.length} entries` : 'Nothing due right now');
+      toast.success(r.generated.length ? t('Generated {n} entries', { n: r.generated.length }) : t('Nothing due right now'));
     } catch (e) {
-      toast.error('Run failed', errorMessage(e));
+      toast.error(t('Run failed'), errorMessage(e));
     }
   };
 
   return (
     <>
-      <PageHeader title="Recurring" subtitle="Rent, retainers, subscriptions: added automatically when due." actions={<><Button variant="secondary" size="sm" className="rounded-full" icon={<Zap className="size-4" />} onClick={runAll} loading={run.isPending}>Run due now</Button><Button variant="primary" size="sm" className="rounded-full" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>New rule</Button></>} />
+      <PageHeader title={t('Recurring')} subtitle={t('Rent, retainers, subscriptions: added automatically when due.')} actions={<><Button variant="secondary" size="sm" className="rounded-full" icon={<Zap className="size-4" />} onClick={runAll} loading={run.isPending}>{t('Run due now')}</Button><Button variant="primary" size="sm" className="rounded-full" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>{t('New rule')}</Button></>} />
       <Card flush>
-        {q.isPending ? <Loading /> : !items.length ? <EmptyState icon={<Repeat />} title="No recurring rules" description="Create one for rent, salaries or retainers and ledgr adds the entries on schedule." action={<Button variant="soft" onClick={() => setEditing(null)}>New rule</Button>} /> : (
+        {q.isPending ? <Loading /> : !items.length ? <EmptyState icon={<Repeat />} title={t('No recurring rules')} description={t('Create one for rent, salaries or retainers and ledgr adds the entries on schedule.')} action={<Button variant="soft" onClick={() => setEditing(null)}>{t('New rule')}</Button>} /> : (
           <ul className="divide-y divide-line">
             {items.map((r) => {
               const due = r.active && r.nextRunAt <= today;
@@ -50,20 +53,20 @@ export function RecurringPage() {
                   <ListRow
                     className="flex-1"
                     leading={<Tile color={r.kind === 'expense' ? 'var(--s-expense)' : 'var(--s-revenue)'}><Repeat className="size-4" /></Tile>}
-                    title={<span className="inline-flex items-center gap-2">{r.name}{!r.active ? <Badge>paused</Badge> : due ? <Badge tone="warning">due</Badge> : null}</span>}
-                    subtitle={`${schedule(r)} · next ${date(r.nextRunAt)}${r.endDate ? ` · ends ${date(r.endDate)}` : ''} · ${r.generatedCount} generated`}
+                    title={<span className="inline-flex items-center gap-2">{r.name}{!r.active ? <Badge>{t('paused')}</Badge> : due ? <Badge tone="warning">{t('due')}</Badge> : null}</span>}
+                    subtitle={`${schedule(r, t)} · ${t('next {date}', { date: date(r.nextRunAt) })}${r.endDate ? ` · ${t('ends {date}', { date: date(r.endDate) })}` : ''} · ${t('{n} generated', { n: r.generatedCount })}`}
                     trailing={<Money minor={r.template.amountMinor} tone={r.kind === 'expense' ? 'expense' : 'revenue'} className="text-[15px] font-semibold" />}
                     onClick={() => setEditing(r)}
                   />
-                  <div className="pr-3">
-                    <Menu trigger={() => <button type="button" className="size-9 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-card-hover" aria-label="Actions"><MoreHorizontal className="size-4" /></button>}>
+                  <div className="pe-3">
+                    <Menu trigger={() => <button type="button" className="size-9 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-card-hover" aria-label={t('Actions')}><MoreHorizontal className="size-4" /></button>}>
                       {(close) => (
                         <>
-                          <MenuItem icon={<Pencil />} onClick={() => { close(); setEditing(r); }}>Edit</MenuItem>
-                          <MenuItem icon={<Zap />} onClick={async () => { close(); try { const x = await run.mutateAsync(r.id); toast.success(x.generated.length ? `Generated ${x.generated.length}` : 'Nothing due'); } catch (e) { toast.error('Run failed', errorMessage(e)); } }}>Run now</MenuItem>
-                          <MenuItem icon={r.active ? <Pause /> : <Play />} onClick={async () => { close(); try { await update.mutateAsync({ id: r.id, active: !r.active }); } catch (e) { toast.error('Failed', errorMessage(e)); } }}>{r.active ? 'Pause' : 'Resume'}</MenuItem>
+                          <MenuItem icon={<Pencil />} onClick={() => { close(); setEditing(r); }}>{t('Edit')}</MenuItem>
+                          <MenuItem icon={<Zap />} onClick={async () => { close(); try { const x = await run.mutateAsync(r.id); toast.success(x.generated.length ? t('Generated {n}', { n: x.generated.length }) : t('Nothing due')); } catch (e) { toast.error(t('Run failed'), errorMessage(e)); } }}>{t('Run now')}</MenuItem>
+                          <MenuItem icon={r.active ? <Pause /> : <Play />} onClick={async () => { close(); try { await update.mutateAsync({ id: r.id, active: !r.active }); } catch (e) { toast.error(t('Failed'), errorMessage(e)); } }}>{t(r.active ? 'Pause' : 'Resume')}</MenuItem>
                           <MenuSeparator />
-                          <MenuItem icon={<Trash2 />} danger onClick={() => { close(); setConfirm(r); }}>Delete</MenuItem>
+                          <MenuItem icon={<Trash2 />} danger onClick={() => { close(); setConfirm(r); }}>{t('Delete')}</MenuItem>
                         </>
                       )}
                     </Menu>
@@ -75,7 +78,7 @@ export function RecurringPage() {
         )}
       </Card>
       <RecurringForm open={editing !== undefined} onClose={() => setEditing(undefined)} rule={editing ?? null} />
-      <ConfirmDialog open={!!confirm} onClose={() => setConfirm(null)} onConfirm={async () => { try { await remove.mutateAsync(confirm!.id); toast.success('Rule deleted'); setConfirm(null); } catch (e) { toast.error('Delete failed', errorMessage(e)); } }} loading={remove.isPending} title={`Delete “${confirm?.name}”?`} description="Entries already generated stay in the ledger." />
+      <ConfirmDialog open={!!confirm} onClose={() => setConfirm(null)} onConfirm={async () => { try { await remove.mutateAsync(confirm!.id); toast.success(t('Rule deleted')); setConfirm(null); } catch (e) { toast.error(t('Delete failed'), errorMessage(e)); } }} loading={remove.isPending} title={t('Delete “{name}”?', { name: confirm?.name ?? '' })} description={t('Entries already generated stay in the ledger.')} />
     </>
   );
 }

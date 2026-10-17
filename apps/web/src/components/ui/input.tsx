@@ -15,10 +15,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & { compact?: boolean }>(function Select({ className, children, compact, ...rest }, ref) {
   return (
     <div className="relative">
-      <select ref={ref} className={clsx(base, 'appearance-none pr-9', compact ? 'h-9 rounded-[10px] text-[13.5px]' : 'h-11 md:h-10', className)} {...rest}>
+      <select ref={ref} className={clsx(base, 'appearance-none pe-9', compact ? 'h-9 rounded-[10px] text-[13.5px]' : 'h-11 md:h-10', className)} {...rest}>
         {children}
       </select>
-      <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 text-ink-3" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <svg className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 size-4 text-ink-3" viewBox="0 0 16 16" fill="none" aria-hidden>
         <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
@@ -31,7 +31,7 @@ export function Field({ label, hint, error, children, className, required }: { l
       <span className="mb-1.5 flex items-baseline justify-between gap-2">
         <span className="text-[13px] font-medium text-ink-2">
           {label}
-          {required && <span className="text-critical ml-0.5">*</span>}
+          {required && <span className="text-critical ms-0.5">*</span>}
         </span>
         {hint && <span className="text-[12px] text-ink-3">{hint}</span>}
       </span>
@@ -58,7 +58,7 @@ export function Toggle({ checked, onChange, label, disabled, description }: { ch
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="w-full flex items-center justify-between gap-3 text-left text-[14px] text-ink disabled:opacity-50 min-h-[40px]"
+      className="w-full flex items-center justify-between gap-3 text-start text-[14px] text-ink disabled:opacity-50 min-h-[40px]"
     >
       <span>
         <span className="block font-medium">{label}</span>

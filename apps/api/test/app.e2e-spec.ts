@@ -458,6 +458,31 @@ describe('ledgr API (e2e)', () => {
     await http().delete(`/api/categories/${other.id}`).expect(204);
   });
 
+  it('arabic names round-trip and match on import', async () => {
+    const cat = (await http().post('/api/categories').send({ name: 'Rent', nameAr: 'الإيجار', kind: 'expense' }).expect(201)).body;
+    expect(cat.nameAr).toBe('الإيجار');
+    const got = (await http().get(`/api/categories/${cat.id}`).expect(200)).body;
+    expect(got.nameAr).toBe('الإيجار');
+    const updated = (await http().patch(`/api/categories/${cat.id}`).send({ nameAr: null }).expect(200)).body;
+    expect(updated.nameAr).toBeNull();
+    await http().patch(`/api/categories/${cat.id}`).send({ nameAr: 'إيجار' }).expect(200);
+    const pm = (await http().post('/api/payment-methods').send({ name: 'Wallet', nameAr: 'محفظة' }).expect(201)).body;
+    // Import resolves names by the Arabic spelling too.
+    const imported = await http()
+      .post('/api/import/expenses/commit')
+      .attach('file', Buffer.from('Date,Description,Category,Wallet,Total\n2026-07-01,Shop rent,إيجار,100.00,100.00\n'), 'ar.csv')
+      .field('mapping', JSON.stringify({ date: 'Date', description: 'Description', category: 'Category', [`pm:${pm.id}`]: 'Wallet', amount: 'Total' }))
+      .field('options', JSON.stringify({ dateFormat: 'iso', createMissingCategories: false, createMissingStakeholders: false, skipDuplicates: true }))
+      .expect(201);
+    expect(imported.body).toMatchObject({ inserted: 1, errors: [] });
+    const e = (await http().get('/api/expenses?q=Shop%20rent').expect(200)).body.items[0];
+    expect(e.category).toMatchObject({ id: cat.id, nameAr: 'إيجار' });
+    expect(e.payments[0]).toMatchObject({ name: 'Wallet', nameAr: 'محفظة' });
+    await http().delete(`/api/expenses/${e.id}`).expect(204);
+    await http().delete(`/api/payment-methods/${pm.id}`).expect(204);
+    await http().delete(`/api/categories/${cat.id}`).expect(204);
+  });
+
   it('CSV export → import round-trip', async () => {
     const exp = await http().get('/api/export/expenses.csv?from=2026-01-01&to=2026-12-31').expect(200);
     expect(exp.headers['content-type']).toMatch(/text\/csv/);

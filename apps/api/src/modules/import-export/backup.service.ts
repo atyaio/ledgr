@@ -55,19 +55,19 @@ export class BackupService {
       this.prisma.expense.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         include: {
-          category: { select: { id: true, name: true, color: true } },
-          paidBy: { select: { id: true, name: true, color: true } },
+          category: { select: { id: true, name: true, nameAr: true, color: true } },
+          paidBy: { select: { id: true, name: true, nameAr: true, color: true } },
           splits: { include: { stakeholder: { select: { name: true } } }, orderBy: { amountMinor: 'desc' } },
-          payments: { include: { paymentMethod: { select: { name: true, color: true, sortOrder: true } } } },
+          payments: { include: { paymentMethod: { select: { name: true, nameAr: true, color: true, sortOrder: true } } } },
         },
       }),
       this.prisma.revenue.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        include: { category: { select: { id: true, name: true, color: true } }, receivedBy: { select: { id: true, name: true, color: true } }, payments: { include: { paymentMethod: { select: { name: true, color: true, sortOrder: true } } } } },
+        include: { category: { select: { id: true, name: true, nameAr: true, color: true } }, receivedBy: { select: { id: true, name: true, nameAr: true, color: true } }, payments: { include: { paymentMethod: { select: { name: true, nameAr: true, color: true, sortOrder: true } } } } },
       }),
       this.prisma.settlement.findMany({
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        include: { from: { select: { id: true, name: true, color: true } }, to: { select: { id: true, name: true, color: true } } },
+        include: { from: { select: { id: true, name: true, nameAr: true, color: true } }, to: { select: { id: true, name: true, nameAr: true, color: true } } },
       }),
       this.prisma.recurringRule.findMany({ orderBy: { createdAt: 'asc' } }),
       this.prisma.paymentMethod.findMany({ orderBy: { createdAt: 'asc' } }),
@@ -130,6 +130,7 @@ export class BackupService {
           data: rows.map<Prisma.PaymentMethodCreateManyInput>((m) => ({
             id: m.id,
             name: m.name,
+            nameAr: m.nameAr ?? null,
             color: m.color,
             isDefault: m.isDefault ?? false,
             archived: m.archived ?? false,
@@ -144,6 +145,7 @@ export class BackupService {
           data: rows.map<Prisma.StakeholderCreateManyInput>((s) => ({
             id: s.id,
             name: s.name,
+            nameAr: s.nameAr ?? null,
             email: s.email,
             sharePercent: s.sharePercent,
             active: s.active,
@@ -161,6 +163,7 @@ export class BackupService {
           data: rows.map<Prisma.CategoryCreateManyInput>((c) => ({
             id: c.id,
             name: c.name,
+            nameAr: c.nameAr ?? null,
             kind: c.kind,
             color: c.color,
             monthlyBudgetMinor: c.monthlyBudgetMinor,
@@ -179,6 +182,7 @@ export class BackupService {
             entity: f.entity,
             key: f.key,
             label: f.label,
+            labelAr: f.labelAr ?? null,
             type: f.type,
             options: JSON.stringify(f.options ?? []),
             required: f.required,

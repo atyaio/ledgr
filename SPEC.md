@@ -161,7 +161,9 @@ Routes: `/login`, `/` (Overview), `/insights` (filtered analytics), `/expenses`,
 budgets), `/recurring`, `/data` (import/export + backup), `/settings` (project,
 custom fields, audit log).
 
-Design direction: dark, dense, financial-terminal; light theme toggle. Tabular
+Languages: English and Arabic (RTL). `localStorage['ledgr:lang']` persists the choice; `<html lang dir>` follow it. UI strings are keyed by their English text (`apps/web/src/i18n`). Configurable records carry an optional Arabic name (`nameAr` on categories, payment methods, stakeholders; `labelAr` on custom fields; `nameAr` in config.json) shown in Arabic mode, falling back to English. Amounts keep Latin digits (`ar-EG-u-nu-latn`).
+
+Design direction: calm, clean, app-like; light by default, dark follows the system. Tabular
 numerals everywhere money appears. Global date-range control shared by all pages
 via the URL (`?from&to`).
 

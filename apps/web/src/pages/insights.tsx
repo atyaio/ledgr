@@ -8,6 +8,7 @@ import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { useCategories, useInsights, usePaymentMethods, useStakeholders } from '@/lib/queries';
 import { pct, signedPct } from '@/lib/format';
+import { useI18n } from '@/i18n';
 import { Card, EmptyState, Loading, PageHeader, Segmented } from '@/components/ui/misc';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Select } from '@/components/ui/input';
@@ -24,6 +25,7 @@ const LEDGERS: { id: InsightsLedger; label: string }[] = [
 ];
 
 export function InsightsPage() {
+  const { t, name } = useI18n();
   const { range } = useDateRange();
   const [params, setParams] = useSearchParams();
   const ledger = (params.get('ledger') as InsightsLedger) || 'both';
@@ -39,44 +41,46 @@ export function InsightsPage() {
   const sh = useStakeholders();
   const q = useInsights(useMemo(() => ({ from: range.from, to: range.to, ledger, categoryIds: categoryIds.join(',') || undefined, paymentMethodIds: methodIds.join(',') || undefined, stakeholderId: stakeholderId || undefined, granularity: granularity || undefined }), [range, ledger, categoryIds.join(','), methodIds.join(','), stakeholderId, granularity]));
 
-  const catOptions = useMemo(() => (cats.data?.items ?? []).filter((c) => ledger === 'both' || c.kind === (ledger === 'revenue' ? 'revenue' : 'expense')).map((c) => ({ id: c.id, label: c.name, color: c.color, hint: c.kind })), [cats.data, ledger]);
-  const methodOptions = useMemo(() => (pm.data?.items ?? []).map((m) => ({ id: m.id, label: m.name, color: m.color })), [pm.data]);
+  const catOptions = useMemo(() => (cats.data?.items ?? []).filter((c) => ledger === 'both' || c.kind === (ledger === 'revenue' ? 'revenue' : 'expense')).map((c) => ({ id: c.id, label: name(c), color: c.color, hint: t(c.kind) })), [cats.data, ledger, name, t]);
+  const methodOptions = useMemo(() => (pm.data?.items ?? []).map((m) => ({ id: m.id, label: name(m), color: m.color })), [pm.data, name]);
 
   return (
     <>
-      <PageHeader title="Insights" subtitle="Slice the ledger by category, payment method and partner, compared with the previous period." />
+      <PageHeader title={t('Insights')} subtitle={t('Slice the ledger by category, payment method and partner, compared with the previous period.')} />
       <div className="flex items-center gap-2 flex-wrap mb-4">
-        <Segmented value={ledger} onChange={(v) => set({ ledger: v === 'both' ? null : v, cats: null })} items={LEDGERS} />
-        <MultiSelect label="Categories" icon={<Tags className="size-4" />} options={catOptions} value={categoryIds} onChange={(ids) => set({ cats: ids.join(',') || null })} />
-        <MultiSelect label="Payment" icon={<CreditCard className="size-4" />} options={methodOptions} value={methodIds} onChange={(ids) => set({ methods: ids.join(',') || null })} />
-        <div className="inline-flex items-center gap-1.5 h-9 pl-3 pr-1 rounded-full border border-line bg-card text-[13.5px] text-ink-2">
+        <Segmented value={ledger} onChange={(v) => set({ ledger: v === 'both' ? null : v, cats: null })} items={LEDGERS.map((l) => ({ id: l.id, label: t(l.label) }))} />
+        <MultiSelect label={t('Categories')} icon={<Tags className="size-4" />} options={catOptions} value={categoryIds} onChange={(ids) => set({ cats: ids.join(',') || null })} />
+        <MultiSelect label={t('Payment')} icon={<CreditCard className="size-4" />} options={methodOptions} value={methodIds} onChange={(ids) => set({ methods: ids.join(',') || null })} />
+        <div className="inline-flex items-center gap-1.5 h-9 ps-3 pe-1 rounded-full border border-line bg-card text-[13.5px] text-ink-2">
           <Users className="size-4" />
-          <Select compact className="h-7 border-0 bg-transparent pl-1 pr-7 w-[150px] rounded-full" value={stakeholderId} onChange={(e) => set({ partner: e.target.value || null })}>
-            <option value="">Partner: all</option>
-            {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          <Select compact className="h-7 border-0 bg-transparent ps-1 pe-7 w-[150px] rounded-full" value={stakeholderId} onChange={(e) => set({ partner: e.target.value || null })}>
+            <option value="">{t('Partner: all')}</option>
+            {sh.data?.items.map((s) => <option key={s.id} value={s.id}>{name(s)}</option>)}
           </Select>
         </div>
         <div className="flex-1" />
-        <Segmented size="xs" value={granularity || 'auto'} onChange={(v) => set({ g: v === 'auto' ? null : v })} items={[{ id: 'auto', label: 'Auto' }, { id: 'day', label: 'Day' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }]} />
+        <Segmented size="xs" value={granularity || 'auto'} onChange={(v) => set({ g: v === 'auto' ? null : v })} items={[{ id: 'auto', label: t('Auto') }, { id: 'day', label: t('Day') }, { id: 'week', label: t('Week') }, { id: 'month', label: t('Month') }]} />
       </div>
 
-      {q.isPending && <Loading label="Slicing the ledger" />}
-      {q.isError && <EmptyState title="Could not load insights" description={q.error.message} />}
+      {q.isPending && <Loading label={t('Slicing the ledger')} />}
+      {q.isError && <EmptyState title={t('Could not load insights')} description={q.error.message} />}
       {q.data && <Body d={q.data} ledger={ledger} filtered={!!(categoryIds.length || methodIds.length || stakeholderId)} />}
     </>
   );
 }
 
 function Delta({ value, invert }: { value: number | null; invert?: boolean }) {
-  if (value === null || !Number.isFinite(value)) return <span className="text-ink-3 text-[12px]">no previous period</span>;
+  const { t } = useI18n();
+  if (value === null || !Number.isFinite(value)) return <span className="text-ink-3 text-[12px]">{t('no previous period')}</span>;
   if (Math.abs(value) < 0.05) value = 0;
   const up = value > 0;
   const good = invert ? !up : up;
   const Icon = value === 0 ? Minus : up ? ArrowUpRight : ArrowDownRight;
-  return <span className={clsx('inline-flex items-center gap-0.5 text-[12px] font-medium', value === 0 ? 'text-ink-3' : good ? 'text-good' : 'text-critical')}><Icon className="size-3.5" />{signedPct(value, 1)} <span className="font-normal text-ink-3">vs previous</span></span>;
+  return <span className={clsx('inline-flex items-center gap-0.5 text-[12px] font-medium', value === 0 ? 'text-ink-3' : good ? 'text-good' : 'text-critical')}><Icon className="size-3.5" />{signedPct(value, 1)} <span className="font-normal text-ink-3">{t('vs previous')}</span></span>;
 }
 
 function Body({ d, ledger, filtered }: { d: InsightsResponse; ledger: InsightsLedger; filtered: boolean }) {
+  const { t: tr, lang } = useI18n();
   const { money, date } = useProject();
   const showRev = ledger !== 'expenses';
   const showExp = ledger !== 'revenue';
@@ -84,34 +88,34 @@ function Body({ d, ledger, filtered }: { d: InsightsResponse; ledger: InsightsLe
   return (
     <div className={clsx('space-y-4', filtered && 'fade-up')}>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {showRev && <Kpi label="Revenue" value={money(t.revenueMinor)} sub={<Delta value={d.delta.revenuePct} />} extra={`${t.revenueCount} entries · avg ${money(t.avgRevenuePerEntryMinor, { compact: true })}`} />}
-        {showExp && <Kpi label="Expenses" value={money(t.expenseMinor)} sub={<Delta value={d.delta.expensePct} invert />} extra={`${t.expenseCount} entries · avg ${money(t.avgExpensePerEntryMinor, { compact: true })}`} />}
-        {showRev && showExp && <Kpi label="Net" value={money(t.netMinor, { signed: true })} tone={t.netMinor < 0 ? 'bad' : undefined} sub={<Delta value={d.delta.netPct} />} extra={t.marginPct === null ? 'no revenue' : `margin ${pct(t.marginPct, 1)}`} />}
+        {showRev && <Kpi label={tr('Revenue')} value={money(t.revenueMinor)} sub={<Delta value={d.delta.revenuePct} />} extra={tr('{n} entries · avg {avg}', { n: t.revenueCount, avg: money(t.avgRevenuePerEntryMinor, { compact: true }) })} />}
+        {showExp && <Kpi label={tr('Expenses')} value={money(t.expenseMinor)} sub={<Delta value={d.delta.expensePct} invert />} extra={tr('{n} entries · avg {avg}', { n: t.expenseCount, avg: money(t.avgExpensePerEntryMinor, { compact: true }) })} />}
+        {showRev && showExp && <Kpi label={tr('Net')} value={money(t.netMinor, { signed: true })} tone={t.netMinor < 0 ? 'bad' : undefined} sub={<Delta value={d.delta.netPct} />} extra={t.marginPct === null ? tr('no revenue') : tr('margin {pct}', { pct: pct(t.marginPct, 1) })} />}
         {showRev ? (
-          <Kpi label="Per day" value={money(t.avgRevenuePerDayMinor)} sub={<span className="text-[12px] text-ink-3">{t.activeDays} of {d.range.days} days active</span>} extra={t.bestDay ? `best ${date(t.bestDay.date, 'short')} · ${money(t.bestDay.revenueMinor, { compact: true })}` : undefined} />
+          <Kpi label={tr('Per day')} value={money(t.avgRevenuePerDayMinor)} sub={<span className="text-[12px] text-ink-3">{tr('{active} of {days} days active', { active: t.activeDays, days: d.range.days })}</span>} extra={t.bestDay ? tr('best {date} · {amount}', { date: date(t.bestDay.date, 'short'), amount: money(t.bestDay.revenueMinor, { compact: true }) }) : undefined} />
         ) : (
-          <Kpi label="Per day" value={money(t.avgExpensePerDayMinor)} sub={<span className="text-[12px] text-ink-3">{t.activeDays} of {d.range.days} days active</span>} />
+          <Kpi label={tr('Per day')} value={money(t.avgExpensePerDayMinor)} sub={<span className="text-[12px] text-ink-3">{tr('{active} of {days} days active', { active: t.activeDays, days: d.range.days })}</span>} />
         )}
       </div>
 
-      <Card title="Trend" subtitle={`By ${d.range.granularity} · dotted line is the previous period (${date(d.range.previousFrom, 'short')} – ${date(d.range.previousTo)})`}>
+      <Card title={tr('Trend')} subtitle={tr('By {granularity} · dotted line is the previous period ({from} – {to})', { granularity: tr(d.range.granularity), from: date(d.range.previousFrom, 'short'), to: date(d.range.previousTo) })}>
         <div className="h-[280px]"><Trend d={d} showRev={showRev} showExp={showExp} /></div>
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {showRev && <Card title="Revenue by category"><Breakdown items={d.revenueByCategory.map((g) => ({ id: g.id, name: g.name, color: g.color, amountMinor: g.revenueMinor, pct: g.pct, count: g.count }))} emptyLabel="No revenue" /></Card>}
-        {showExp && <Card title="Expenses by category"><Breakdown items={d.expensesByCategory.map((g) => ({ id: g.id, name: g.name, color: g.color, amountMinor: g.expenseMinor, pct: g.pct, count: g.count }))} emptyLabel="No expenses" /></Card>}
-        <Card title="By payment method" subtitle={showRev && showExp ? 'Revenue and expenses combined' : undefined}><GroupList groups={d.byPaymentMethod} showRev={showRev} showExp={showExp} /></Card>
-        <Card title="By partner" subtitle="Received by / paid by"><GroupList groups={d.byStakeholder} showRev={showRev} showExp={showExp} /></Card>
-        <Card title="Weekday pattern" subtitle="Average per day of the week" className={clsx(showRev && showExp && 'xl:col-span-2')}>
+        {showRev && <Card title={tr('Revenue by category')}><Breakdown items={d.revenueByCategory.map((g) => ({ id: g.id, name: g.name, nameAr: g.nameAr, color: g.color, amountMinor: g.revenueMinor, pct: g.pct, count: g.count }))} emptyLabel={tr('No revenue')} /></Card>}
+        {showExp && <Card title={tr('Expenses by category')}><Breakdown items={d.expensesByCategory.map((g) => ({ id: g.id, name: g.name, nameAr: g.nameAr, color: g.color, amountMinor: g.expenseMinor, pct: g.pct, count: g.count }))} emptyLabel={tr('No expenses')} /></Card>}
+        <Card title={tr('By payment method')} subtitle={showRev && showExp ? tr('Revenue and expenses combined') : undefined}><GroupList groups={d.byPaymentMethod} showRev={showRev} showExp={showExp} /></Card>
+        <Card title={tr('By partner')} subtitle={tr('Received by / paid by')}><GroupList groups={d.byStakeholder} showRev={showRev} showExp={showExp} /></Card>
+        <Card title={tr('Weekday pattern')} subtitle={tr('Average per day of the week')} className={clsx(showRev && showExp && 'xl:col-span-2')}>
           <div className="h-[220px]"><Weekday d={d} showRev={showRev} showExp={showExp} /></div>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="xl:col-span-2" title="Month by month" flush>
+        <Card className="xl:col-span-2" title={tr('Month by month')} flush>
           <Table>
-            <thead><tr><Th>Month</Th>{showRev && <Th align="right">Revenue</Th>}{showExp && <Th align="right">Expenses</Th>}{showRev && showExp && <><Th align="right">Net</Th><Th align="right">Margin</Th></>}<Th align="right">Entries</Th></tr></thead>
+            <thead><tr><Th>{tr('Month')}</Th>{showRev && <Th align="right">{tr('Revenue')}</Th>}{showExp && <Th align="right">{tr('Expenses')}</Th>}{showRev && showExp && <><Th align="right">{tr('Net')}</Th><Th align="right">{tr('Margin')}</Th></>}<Th align="right">{tr('Entries')}</Th></tr></thead>
             <tbody>
               {d.byMonth.map((m) => (
                 <Tr key={m.month}>
@@ -125,16 +129,16 @@ function Body({ d, ledger, filtered }: { d: InsightsResponse; ledger: InsightsLe
             </tbody>
           </Table>
         </Card>
-        <Card title={showRev ? 'Largest revenue' : 'Largest expenses'} flush>
+        <Card title={showRev ? tr('Largest revenue') : tr('Largest expenses')} flush>
           <ul className="divide-y divide-line">
             {(showRev ? d.topRevenue : d.topExpenses).slice(0, 8).map((e) => (
               <li key={e.id} className="px-4 md:px-5 py-2.5 flex items-center gap-3">
                 <Swatch color={e.groupColor} size={9} />
-                <div className="flex-1 min-w-0"><div className="text-[14px] font-medium truncate">{e.description}</div><div className="text-[12px] text-ink-3">{e.groupName} · {date(e.date)}</div></div>
+                <div className="flex-1 min-w-0"><div className="text-[14px] font-medium truncate">{e.description}</div><div className="text-[12px] text-ink-3">{e.groupNameAr && lang === 'ar' ? e.groupNameAr : tr(e.groupName)} · {date(e.date)}</div></div>
                 <Money minor={e.amountMinor} className="font-semibold" />
               </li>
             ))}
-            {!(showRev ? d.topRevenue : d.topExpenses).length && <li><EmptyState title="Nothing here" /></li>}
+            {!(showRev ? d.topRevenue : d.topExpenses).length && <li><EmptyState title={tr('Nothing here')} /></li>}
           </ul>
         </Card>
       </div>
@@ -154,8 +158,9 @@ function Kpi({ label, value, sub, extra, tone }: { label: string; value: string;
 }
 
 function GroupList({ groups, showRev, showExp }: { groups: InsightsGroup[]; showRev: boolean; showExp: boolean }) {
+  const { t, lang } = useI18n();
   const { money } = useProject();
-  if (!groups.length) return <div className="text-[13.5px] text-ink-3 py-8 text-center">Nothing in this range</div>;
+  if (!groups.length) return <div className="text-[13.5px] text-ink-3 py-8 text-center">{t('Nothing in this range')}</div>;
   const total = (g: InsightsGroup) => (showRev ? g.revenueMinor : 0) + (showExp ? g.expenseMinor : 0);
   const max = Math.max(1, ...groups.map(total));
   return (
@@ -163,8 +168,8 @@ function GroupList({ groups, showRev, showExp }: { groups: InsightsGroup[]; show
       {groups.map((g) => (
         <li key={g.id ?? 'none'}>
           <div className="flex items-center justify-between text-[13.5px] mb-1.5">
-            <span className="inline-flex items-center gap-2 truncate"><Swatch color={g.color} size={9} />{g.name}<span className="num text-[12px] text-ink-3">{g.count}</span></span>
-            <span className="num font-medium">{money(total(g))}{showRev && showExp && g.revenueMinor && g.expenseMinor ? <span className="text-ink-3 font-normal text-[12px]"> · in {money(g.revenueMinor, { compact: true })} / out {money(g.expenseMinor, { compact: true })}</span> : null}</span>
+            <span className="inline-flex items-center gap-2 truncate"><Swatch color={g.color} size={9} />{g.nameAr && lang === 'ar' ? g.nameAr : t(g.name)}<span className="num text-[12px] text-ink-3">{g.count}</span></span>
+            <span className="num font-medium">{money(total(g))}{showRev && showExp && g.revenueMinor && g.expenseMinor ? <span className="text-ink-3 font-normal text-[12px]"> · {t('in {in} / out {out}', { in: money(g.revenueMinor, { compact: true }), out: money(g.expenseMinor, { compact: true }) })}</span> : null}</span>
           </div>
           <div className="h-2 rounded-full bg-sunken overflow-hidden flex gap-[2px]">
             {showRev && g.revenueMinor > 0 && <div className="h-full rounded-full" style={{ width: `${(g.revenueMinor / max) * 100}%`, background: showExp ? 'var(--s-revenue)' : g.color }} />}
@@ -177,20 +182,21 @@ function GroupList({ groups, showRev, showExp }: { groups: InsightsGroup[]; show
 }
 
 function Trend({ d, showRev, showExp }: { d: InsightsResponse; showRev: boolean; showExp: boolean }) {
+  const { t } = useI18n();
   const { money, date, toMajor, locale } = useProject();
   const g = d.range.granularity;
   const fmtAxis = (v: number) => new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(toMajor(v));
   const fmtBucket = (b: string) => (g === 'month' ? new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(`${b}T00:00:00Z`)) : date(b, 'short'));
   const data = d.series.map((s) => ({ ...s, label: fmtBucket(s.bucket) }));
   const legend = [
-    ...(showRev ? [{ label: 'Revenue', color: 'var(--s-revenue)' }] : []),
-    ...(showExp ? [{ label: 'Expenses', color: 'var(--s-expense)' }] : []),
-    { label: 'Previous period', color: 'var(--ink-3)', kind: 'line' as const },
+    ...(showRev ? [{ label: t('Revenue'), color: 'var(--s-revenue)' }] : []),
+    ...(showExp ? [{ label: t('Expenses'), color: 'var(--s-expense)' }] : []),
+    { label: t('Previous period'), color: 'var(--ink-3)', kind: 'line' as const },
   ];
   return (
     <div className="h-full flex flex-col">
       <div className="pb-2"><Legend items={legend} /></div>
-      <div className="flex-1 -ml-3">
+      <div className="flex-1 -ms-3">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: 0 }} barGap={2} barCategoryGap="28%">
             <CartesianGrid vertical={false} stroke="var(--line)" />
@@ -203,10 +209,10 @@ function Trend({ d, showRev, showExp }: { d: InsightsResponse; showRev: boolean;
                 const p = payload[0]!.payload as (typeof data)[number];
                 return (
                   <ChartTooltip
-                    title={g === 'day' ? date(p.bucket, 'long') : g === 'week' ? `Week of ${date(p.bucket)}` : fmtBucket(p.bucket)}
+                    title={g === 'day' ? date(p.bucket, 'long') : g === 'week' ? t('Week of {date}', { date: date(p.bucket) }) : fmtBucket(p.bucket)}
                     rows={[
-                      ...(showRev ? [{ label: 'Revenue', value: `${money(p.revenueMinor)} · ${p.revenueCount}`, color: 'var(--s-revenue)' }, { label: 'Prev. revenue', value: money(p.prevRevenueMinor) }] : []),
-                      ...(showExp ? [{ label: 'Expenses', value: `${money(p.expenseMinor)} · ${p.expenseCount}`, color: 'var(--s-expense)' }, { label: 'Prev. expenses', value: money(p.prevExpenseMinor) }] : []),
+                      ...(showRev ? [{ label: t('Revenue'), value: `${money(p.revenueMinor)} · ${p.revenueCount}`, color: 'var(--s-revenue)' }, { label: t('Prev. revenue'), value: money(p.prevRevenueMinor) }] : []),
+                      ...(showExp ? [{ label: t('Expenses'), value: `${money(p.expenseMinor)} · ${p.expenseCount}`, color: 'var(--s-expense)' }, { label: t('Prev. expenses'), value: money(p.prevExpenseMinor) }] : []),
                     ]}
                   />
                 );
@@ -224,16 +230,17 @@ function Trend({ d, showRev, showExp }: { d: InsightsResponse; showRev: boolean;
 }
 
 function Weekday({ d, showRev, showExp }: { d: InsightsResponse; showRev: boolean; showExp: boolean }) {
+  const { t, lang } = useI18n();
   const { money, toMajor, locale } = useProject();
   const fmtAxis = (v: number) => new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(toMajor(v));
-  const data = d.byWeekday.map((w) => ({ ...w, label: w.label.slice(0, 3) }));
+  const data = d.byWeekday.map((w) => ({ ...w, full: t(w.label), label: lang === 'ar' ? t(w.label) : t(w.label).slice(0, 3) }));
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: -8 }} barGap={2} barCategoryGap="30%">
         <CartesianGrid vertical={false} stroke="var(--line)" />
         <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: 'var(--line)' }} tick={{ fill: 'var(--ink-3)', fontSize: 11 }} />
         <YAxis tickLine={false} axisLine={false} tickFormatter={fmtAxis} width={48} tick={{ fill: 'var(--ink-3)', fontSize: 11 }} />
-        <Tooltip cursor={{ fill: 'var(--card-hover)', opacity: 0.8 }} content={({ active, payload }) => { if (!active || !payload?.length) return null; const p = payload[0]!.payload as (typeof data)[number]; return <ChartTooltip title={`${p.label} · ${p.days} days`} rows={[...(showRev ? [{ label: 'Avg revenue', value: money(p.avgRevenueMinor), color: 'var(--s-revenue)' }] : []), ...(showExp ? [{ label: 'Avg expenses', value: money(p.avgExpenseMinor), color: 'var(--s-expense)' }] : [])]} />; }} />
+        <Tooltip cursor={{ fill: 'var(--card-hover)', opacity: 0.8 }} content={({ active, payload }) => { if (!active || !payload?.length) return null; const p = payload[0]!.payload as (typeof data)[number]; return <ChartTooltip title={t('{day} · {n} days', { day: p.full, n: p.days })} rows={[...(showRev ? [{ label: t('Avg revenue'), value: money(p.avgRevenueMinor), color: 'var(--s-revenue)' }] : []), ...(showExp ? [{ label: t('Avg expenses'), value: money(p.avgExpenseMinor), color: 'var(--s-expense)' }] : [])]} />; }} />
         {showRev && <Bar dataKey="avgRevenueMinor" fill="var(--s-revenue)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />}
         {showExp && <Bar dataKey="avgExpenseMinor" fill="var(--s-expense)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />}
       </BarChart>

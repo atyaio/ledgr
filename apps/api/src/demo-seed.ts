@@ -134,9 +134,9 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
     // ─── Stakeholders ──────────────────────────────────────────────────────────
     const people: Stakeholder[] = [];
     const seedPeople = [
-      { name: 'Nour Hassan', sharePercent: 50, email: 'nour@studio.example', role: 'Founder' },
-      { name: 'Omar Adel', sharePercent: 30, email: 'omar@studio.example', role: 'Partner' },
-      { name: 'Layla Said', sharePercent: 20, email: 'layla@studio.example', role: 'Engineer' },
+      { name: 'Nour Hassan', nameAr: 'نور حسن', sharePercent: 50, email: 'nour@studio.example', role: 'Founder' },
+      { name: 'Omar Adel', nameAr: 'عمر عادل', sharePercent: 30, email: 'omar@studio.example', role: 'Partner' },
+      { name: 'Layla Said', nameAr: 'ليلى سعيد', sharePercent: 20, email: 'layla@studio.example', role: 'Engineer' },
     ];
     for (const p of seedPeople) {
       const existing = await stakeholders.findByName(p.name);
@@ -145,6 +145,7 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
           (await stakeholders.create(
             {
               name: p.name,
+              nameAr: p.nameAr,
               sharePercent: p.sharePercent,
               email: p.email,
               active: true,
@@ -163,22 +164,30 @@ export async function seedDemo(ctx: LedgrContext, opts: SeedDemoOptions = {}): P
       'Hosting & infrastructure': money(6500),
       Marketing: money(8000),
     };
+    const AR: Record<string, string> = {
+      Salaries: 'الرواتب', 'Software & subscriptions': 'برامج واشتراكات', 'Hosting & infrastructure': 'استضافة وبنية تحتية', Marketing: 'تسويق', 'Office & rent': 'مكتب وإيجار',
+      Equipment: 'معدات', Travel: 'سفر', 'Legal & accounting': 'قانوني ومحاسبة', 'Fees & taxes': 'رسوم وضرائب', Other: 'أخرى',
+      Sales: 'مبيعات', Services: 'خدمات', Subscriptions: 'اشتراكات', Consulting: 'استشارات',
+    };
     const expenseCats = new Map<string, Category>();
     for (const name of DEFAULT_EXPENSE_CATEGORIES) {
-      let cat = (await categories.findByName('expense', name)) ?? (await categories.create({ name, kind: 'expense', monthlyBudgetMinor: budgets[name] ?? null }, SEED_ACTOR));
+      let cat = (await categories.findByName('expense', name)) ?? (await categories.create({ name, nameAr: AR[name] ?? null, kind: 'expense', monthlyBudgetMinor: budgets[name] ?? null }, SEED_ACTOR));
+      if (!cat.nameAr && AR[name]) cat = await categories.update(cat.id, { nameAr: AR[name] }, SEED_ACTOR);
       if (budgets[name] && cat.monthlyBudgetMinor !== budgets[name]) cat = await categories.update(cat.id, { monthlyBudgetMinor: budgets[name] }, SEED_ACTOR);
       expenseCats.set(name, cat);
     }
     const revenueCats = new Map<string, Category>();
     for (const name of DEFAULT_REVENUE_CATEGORIES) {
-      const cat = (await categories.findByName('revenue', name)) ?? (await categories.create({ name, kind: 'revenue' }, SEED_ACTOR));
+      let cat = (await categories.findByName('revenue', name)) ?? (await categories.create({ name, nameAr: AR[name] ?? null, kind: 'revenue' }, SEED_ACTOR));
+      if (!cat.nameAr && AR[name]) cat = await categories.update(cat.id, { nameAr: AR[name] }, SEED_ACTOR);
       revenueCats.set(name, cat);
     }
 
     // ─── Payment methods ───────────────────────────────────────────────────────
     const methods = [] as { id: string }[];
-    for (const [i, name] of ['Cash', 'Visa', 'Online transfer'].entries()) {
-      methods.push((await paymentMethodsSvc.findByName(name)) ?? (await paymentMethodsSvc.create({ name, isDefault: i === 0 }, SEED_ACTOR)));
+    const methodNames: [string, string][] = [['Cash', 'كاش'], ['Visa', 'فيزا'], ['Online transfer', 'تحويل إلكتروني']];
+    for (const [i, [name, nameAr]] of methodNames.entries()) {
+      methods.push((await paymentMethodsSvc.findByName(name)) ?? (await paymentMethodsSvc.create({ name, nameAr, isDefault: i === 0 }, SEED_ACTOR)));
     }
 
     // ─── Expenses & revenue ────────────────────────────────────────────────────

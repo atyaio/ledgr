@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useIsMobile } from '@/lib/media';
 import { Swatch } from './badge';
+import { useI18n } from '@/i18n';
 
 export interface MultiOption {
   id: string;
@@ -19,6 +20,7 @@ export function MultiSelect({ label, options, value, onChange, icon }: { label: 
   const panelRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const mobile = useIsMobile();
+  const { t } = useI18n();
   const selected = options.filter((o) => value.includes(o.id));
   useEffect(() => {
     if (!open) return;
@@ -42,14 +44,14 @@ export function MultiSelect({ label, options, value, onChange, icon }: { label: 
     };
   }, [open]);
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
-  const summary = selected.length === 0 ? 'All' : selected.length === 1 ? selected[0].label : `${selected.length} selected`;
+  const summary = selected.length === 0 ? t('All') : selected.length === 1 ? selected[0].label : t('{n} selected', { n: selected.length });
   const list = (
     <ul className="max-h-[320px] overflow-y-auto py-1">
       {options.map((o) => {
         const on = value.includes(o.id);
         return (
           <li key={o.id}>
-            <button type="button" onClick={() => toggle(o.id)} className="w-full flex items-center gap-2.5 px-3 h-10 md:h-9 text-left text-[14px] md:text-[13.5px] hover:bg-card-hover">
+            <button type="button" onClick={() => toggle(o.id)} className="w-full flex items-center gap-2.5 px-3 h-10 md:h-9 text-start text-[14px] md:text-[13.5px] hover:bg-card-hover">
               <span className={clsx('size-[18px] rounded-[5px] border inline-flex items-center justify-center shrink-0', on ? 'bg-accent border-accent text-white' : 'border-line-strong')}>{on && <Check className="size-3" />}</span>
               {o.color && <Swatch color={o.color} />}
               <span className="flex-1 truncate">{o.label}</span>
@@ -58,7 +60,7 @@ export function MultiSelect({ label, options, value, onChange, icon }: { label: 
           </li>
         );
       })}
-      {!options.length && <li className="px-3 py-3 text-[13px] text-ink-3">Nothing to filter by yet.</li>}
+      {!options.length && <li className="px-3 py-3 text-[13px] text-ink-3">{t('Nothing to filter by yet.')}</li>}
     </ul>
   );
   return (
@@ -66,12 +68,12 @@ export function MultiSelect({ label, options, value, onChange, icon }: { label: 
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={clsx('h-9 pl-3 pr-2 inline-flex items-center gap-1.5 rounded-full border text-[13.5px] font-medium whitespace-nowrap', selected.length ? 'bg-primary text-primary-ink border-primary' : 'bg-card border-line text-ink-2 hover:text-ink')}
+        className={clsx('h-9 ps-3 pe-2 inline-flex items-center gap-1.5 rounded-full border text-[13.5px] font-medium whitespace-nowrap', selected.length ? 'bg-primary text-primary-ink border-primary' : 'bg-card border-line text-ink-2 hover:text-ink')}
       >
         {icon}
         <span className="opacity-70">{label}:</span> {summary}
         {selected.length ? (
-          <span role="button" aria-label={`Clear ${label}`} onClick={(e) => { e.stopPropagation(); onChange([]); }} className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full hover:bg-white/20"><X className="size-3.5" /></span>
+          <span role="button" aria-label={t('Clear {label}', { label })} onClick={(e) => { e.stopPropagation(); onChange([]); }} className="ms-0.5 inline-flex size-5 items-center justify-center rounded-full hover:bg-white/20"><X className="size-3.5" /></span>
         ) : (
           <ChevronDown className="size-4 opacity-70" />
         )}

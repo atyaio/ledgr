@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
 import { Spinner } from './spinner';
+import { useI18n } from '@/i18n';
 
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
@@ -87,10 +88,11 @@ export function EmptyState({ title, description, action, icon }: { title: ReactN
   );
 }
 
-export function Loading({ label = 'Loading' }: { label?: string }) {
+export function Loading({ label }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-center gap-2 h-40 text-ink-3 text-[14px]">
-      <Spinner className="size-4" /> {label}…
+      <Spinner className="size-4" /> {label ?? t('Loading')}…
     </div>
   );
 }
@@ -112,14 +114,14 @@ export function ListRow({ leading, title, subtitle, trailing, onClick, className
     <Comp
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={clsx('w-full flex items-center gap-3 px-4 py-3 text-left min-h-[60px] transition-colors', onClick && 'row-hover pressable', selected && 'bg-accent-soft/50', className)}
+      className={clsx('w-full flex items-center gap-3 px-4 py-3 text-start min-h-[60px] transition-colors', onClick && 'row-hover pressable', selected && 'bg-accent-soft/50', className)}
     >
       {leading}
       <span className="flex-1 min-w-0">
         <span className="block text-[14.5px] font-medium truncate">{title}</span>
         {subtitle && <span className="block text-[12.5px] text-ink-3 truncate">{subtitle}</span>}
       </span>
-      {trailing && <span className="shrink-0 text-right">{trailing}</span>}
+      {trailing && <span className="shrink-0 text-end">{trailing}</span>}
     </Comp>
   );
 }

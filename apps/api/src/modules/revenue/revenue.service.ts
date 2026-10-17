@@ -13,9 +13,9 @@ import { StakeholdersService, stakeholderRef } from '../stakeholders/stakeholder
 import { PaymentMethodsService } from '../payment-methods/payment-methods.service';
 
 const REVENUE_INCLUDE = {
-  category: { select: { id: true, name: true, color: true } },
-  receivedBy: { select: { id: true, name: true, color: true } },
-  payments: { include: { paymentMethod: { select: { name: true, color: true, sortOrder: true } } } },
+  category: { select: { id: true, name: true, nameAr: true, color: true } },
+  receivedBy: { select: { id: true, name: true, nameAr: true, color: true } },
+  payments: { include: { paymentMethod: { select: { name: true, nameAr: true, color: true, sortOrder: true } } } },
 } satisfies Prisma.RevenueInclude;
 
 type RevenueRow = Prisma.RevenueGetPayload<{ include: typeof REVENUE_INCLUDE }>;
@@ -31,7 +31,7 @@ export function toRevenueDto(r: RevenueRow): Revenue {
     source: r.source,
     payments: [...r.payments]
       .sort((a, b) => a.paymentMethod.sortOrder - b.paymentMethod.sortOrder || a.paymentMethod.name.localeCompare(b.paymentMethod.name))
-      .map<RevenuePayment>((p) => ({ paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, color: p.paymentMethod.color, amountMinor: p.amountMinor })),
+      .map<RevenuePayment>((p) => ({ paymentMethodId: p.paymentMethodId, name: p.paymentMethod.name, nameAr: p.paymentMethod.nameAr, color: p.paymentMethod.color, amountMinor: p.amountMinor })),
     receivedByStakeholderId: r.receivedByStakeholderId,
     receivedBy: r.receivedBy ? stakeholderRef(r.receivedBy) : null,
     notes: r.notes,

@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={api}>
       {children}
-      <div className="fixed top-3 inset-x-3 md:inset-x-auto md:top-auto md:bottom-5 md:right-5 z-[70] flex flex-col gap-2 md:w-[360px] pointer-events-none" style={{ paddingTop: 'var(--safe-top)' }}>
+      <div className="fixed top-3 inset-x-3 md:inset-x-auto md:top-auto md:bottom-5 md:end-5 z-[70] flex flex-col gap-2 md:w-[360px] pointer-events-none" style={{ paddingTop: 'var(--safe-top)' }}>
         <AnimatePresence>
           {items.map((t) => (
             <motion.div

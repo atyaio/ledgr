@@ -15,12 +15,12 @@ export const MoneyInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<
     }, [value]);
     return (
       <div className="relative">
-        <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 font-medium pointer-events-none ${large ? 'text-[16px]' : 'text-[13px]'}`}>{currency}</span>
+        <span className={`absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-3 font-medium pointer-events-none ${large ? 'text-[16px]' : 'text-[13px]'}`}>{currency}</span>
         <Input
           ref={ref}
           mono
           inputMode="decimal"
-          className={`${large ? 'pl-16 h-14 text-[26px] font-semibold rounded-[14px]' : 'pl-14'} text-right ${className ?? ''}`}
+          className={`${large ? 'ps-16 h-14 text-[26px] font-semibold rounded-[14px]' : 'ps-14'} text-end ${className ?? ''}`}
           value={text}
           placeholder="0.00"
           onChange={(e) => {

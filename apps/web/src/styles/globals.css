@@ -212,6 +212,23 @@ textarea {
 }
 }
 
+/* ─── Arabic / RTL ──────────────────────────────────────────────────────────── */
+:root[lang='ar'] {
+  --font-sans: 'IBM Plex Sans Arabic', 'Geist', ui-sans-serif, system-ui, sans-serif;
+}
+:root[lang='ar'] body {
+  letter-spacing: 0;
+}
+:root[lang='ar'] .num,
+:root[lang='ar'] .mono {
+  font-family: 'Geist', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+[dir='rtl'] .rtl-flip {
+  transform: scaleX(-1);
+}
+
 /* ─── Components ────────────────────────────────────────────────────────────── */
 @layer components {
 .num {

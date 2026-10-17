@@ -9,10 +9,10 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import type { PaymentMethod as Row } from '../../generated/prisma/client';
 
 export function toPaymentMethodDto(r: Row): PaymentMethod {
-  return { id: r.id, name: r.name, color: r.color, isDefault: r.isDefault, archived: r.archived, sortOrder: r.sortOrder, createdAt: toIso(r.createdAt), updatedAt: toIso(r.updatedAt) };
+  return { id: r.id, name: r.name, nameAr: r.nameAr, color: r.color, isDefault: r.isDefault, archived: r.archived, sortOrder: r.sortOrder, createdAt: toIso(r.createdAt), updatedAt: toIso(r.updatedAt) };
 }
 
-export const paymentMethodRef = (r: Pick<Row, 'id' | 'name' | 'color'>): Pick<PaymentMethod, 'id' | 'name' | 'color'> => ({ id: r.id, name: r.name, color: r.color });
+export const paymentMethodRef = (r: Pick<Row, 'id' | 'name' | 'nameAr' | 'color'>): Pick<PaymentMethod, 'id' | 'name' | 'nameAr' | 'color'> => ({ id: r.id, name: r.name, nameAr: r.nameAr, color: r.color });
 
 /** How revenue was received: cash, card, online… One default; archived ones stay on history. */
 @Injectable()
@@ -35,7 +35,8 @@ export class PaymentMethodsService {
 
   async findByName(name: string, db: Db = this.prisma): Promise<PaymentMethod | null> {
     const rows = await db.paymentMethod.findMany();
-    const hit = rows.find((r) => r.name.toLowerCase() === name.trim().toLowerCase());
+    const n = name.trim().toLowerCase();
+    const hit = rows.find((r) => r.name.toLowerCase() === n || (r.nameAr ?? '').trim().toLowerCase() === n);
     return hit ? toPaymentMethodDto(hit) : null;
   }
 
@@ -46,7 +47,7 @@ export class PaymentMethodsService {
     const count = await db.paymentMethod.count();
     if (input.isDefault) await db.paymentMethod.updateMany({ where: { isDefault: true }, data: { isDefault: false } });
     const row = await db.paymentMethod.create({
-      data: { name: input.name, color: input.color ?? pickColor(count), isDefault: input.isDefault ?? false, archived: input.archived ?? false, sortOrder: input.sortOrder ?? count },
+      data: { name: input.name, nameAr: input.nameAr ?? null, color: input.color ?? pickColor(count), isDefault: input.isDefault ?? false, archived: input.archived ?? false, sortOrder: input.sortOrder ?? count },
     });
     const dto = toPaymentMethodDto(row);
     if (opts.audit !== false) await this.audit.log({ actor, action: 'create', entity: 'paymentMethod', entityId: dto.id, after: dto });
@@ -64,6 +65,7 @@ export class PaymentMethodsService {
       where: { id },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.nameAr !== undefined ? { nameAr: input.nameAr } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
         ...(input.isDefault !== undefined ? { isDefault: input.isDefault } : {}),
         ...(input.archived === true ? { isDefault: false } : {}),
