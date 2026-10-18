@@ -95,6 +95,15 @@ export const pagesC: Record<string, string> = {
   'New revenue row': 'قيد إيراد جديد',
   'Existing row updated': 'تم تحديث القيد الموجود',
 
+  // ── Pay-outs
+  'Subtract cash pay-outs': 'خصم المصروفات النقدية من الدرج',
+  'Money taken out of the drawer during the shift (supplies, petty cash) comes off the cash amount.': 'المبالغ المسحوبة من الدرج أثناء الوردية (مشتريات، نثريات) تُخصم من مبلغ الكاش.',
+  'pay-outs −{amount}': 'مسحوبات −{amount}',
+  'Cash pay-outs': 'مسحوبات نقدية',
+  'taken off the cash amount': 'مخصومة من الكاش',
+  'not subtracted': 'غير مخصومة',
+  'Pay-out': 'مسحوب',
+
   // ── Shift sales
   'Receipts': 'الفواتير',
   '{n} refunds': '{n} مرتجعات',

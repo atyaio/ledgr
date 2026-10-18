@@ -69,6 +69,7 @@ export interface LvShift {
   discounts?: number;
   net_sales?: number;
   payments?: { payment_type_id: string; money_amount: number }[];
+  cash_movements?: { type: 'PAY_IN' | 'PAY_OUT'; money_amount: number; comment?: string | null; employee_id?: string; created_at?: string }[];
 }
 
 export interface LvLineItem {

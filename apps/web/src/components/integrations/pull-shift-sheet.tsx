@@ -114,6 +114,7 @@ export function PullShiftSheet({ open, onClose }: { open: boolean; onClose: () =
                   </div>
                   <div className="text-[12.5px] text-ink-3 mt-0.5 truncate">
                     {selected.length ? selected.map((p) => `${p.name} ${money(p.amountMinor, { compact: true })}`).join(' · ') : t('nothing through the selected payment types')}
+                    {s.paidOutMinor > 0 && <span> · {t('pay-outs −{amount}', { amount: money(s.paidOutMinor, { compact: true }) })}</span>}
                     {s.netSalesMinor ? <span> · {t('net sales {amount}', { amount: money(s.netSalesMinor, { compact: true }) })}</span> : null}
                   </div>
                 </div>

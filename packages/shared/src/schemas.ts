@@ -302,6 +302,7 @@ export const loyverseSettingsSchema = z.object({
   paymentTypeIds: z.array(z.string().min(1)).max(100).optional(),
   methodMap: z.record(z.string(), z.string().min(1)).optional(),
   categoryId: z.string().min(1).nullable().optional(),
+  subtractPayouts: z.boolean().optional(),
 });
 export type UpdateLoyverseSettingsInput = z.infer<typeof loyverseSettingsSchema>;
 export const pullShiftSchema = z.object({ shiftId: z.string().min(1).optional() });

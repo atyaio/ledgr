@@ -31,6 +31,19 @@ export function ShiftSalesList({ sales, compact }: { sales: ShiftSalesResponse; 
           {notPulled.map((p) => <span key={p.paymentTypeId} title={t('Not pulled into the ledger')}><Badge className="opacity-80">{p.name} · {money(p.amountMinor, { compact: true })}</Badge></span>)}
         </div>
       )}
+      {sales.payouts.length > 0 && (
+        <div>
+          <div className="label mb-1.5">{t('Cash pay-outs')} <span className="num text-ink-3 font-normal normal-case tracking-normal">−{money(sales.totals.paidOutMinor, { compact: true })}{sales.totals.payoutsSubtracted ? ` · ${t('taken off the cash amount')}` : ` · ${t('not subtracted')}`}</span></div>
+          <ul className="divide-y divide-line rounded-[12px] border border-line overflow-hidden">
+            {sales.payouts.map((p, i) => (
+              <li key={i} className="flex items-center gap-3 px-3 py-1.5 text-[13px]">
+                <span dir="auto" className="flex-1 min-w-0 truncate">{p.comment ?? t('Pay-out')}</span>
+                <span className="num text-ink-2 shrink-0">−{money(p.amountMinor)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {sales.byCategory.length > 1 && (
         <div>
           <div className="label mb-1.5">{t('By category')}</div>

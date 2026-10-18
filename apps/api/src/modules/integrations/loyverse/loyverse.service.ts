@@ -46,7 +46,8 @@ interface Meta {
 interface ShiftRaw {
   shift: LvShift;
   payments: { paymentTypeId: string; name: string; type: string; amountMinor: number; pulled: boolean }[];
-  totals: { receipts: number; refunds: number; grossMinor: number; netMinor: number; costMinor: number; quantity: number };
+  totals: { receipts: number; refunds: number; grossMinor: number; netMinor: number; costMinor: number; quantity: number; paidOutMinor: number; payoutsSubtracted: boolean };
+  payouts: { amountMinor: number; comment: string | null; at: string | null }[];
 }
 
 interface SaleAgg {
@@ -60,7 +61,7 @@ interface SaleAgg {
   costMinor: number;
 }
 
-const DEFAULT_SETTINGS: LoyverseSettings = { storeIds: [], paymentTypeIds: [], methodMap: {}, categoryId: null };
+const DEFAULT_SETTINGS: LoyverseSettings = { storeIds: [], paymentTypeIds: [], methodMap: {}, categoryId: null, subtractPayouts: true };
 
 type IntegrationRow = Prisma.IntegrationGetPayload<Record<string, never>>;
 
@@ -221,6 +222,7 @@ export class LoyverseService {
       if (input.categoryId) await this.categories.requireKind(input.categoryId, 'revenue');
       next.categoryId = input.categoryId;
     }
+    if (input.subtractPayouts !== undefined) next.subtractPayouts = input.subtractPayouts;
     const row = await this.prisma.integration.update({ where: { id: r.id }, data: { settings: JSON.stringify(next) } });
     await this.audit.log({ actor, action: 'update', entity: 'integration', entityId: PROVIDER, before, after: next });
     return this.toDto(row);
@@ -354,6 +356,7 @@ export class LoyverseService {
         netSalesMinor: toMinor(x.net_sales, r.decimalPlaces),
         refundsMinor: toMinor(x.refunds, r.decimalPlaces),
         cashMinor: toMinor((x.cash_payments ?? 0) - (x.cash_refunds ?? 0), r.decimalPlaces),
+        paidOutMinor: toMinor(x.paid_out, r.decimalPlaces),
         payments: (x.payments ?? []).map((pm) => ({ paymentTypeId: pm.payment_type_id, name: typeById.get(pm.payment_type_id)?.name ?? pm.payment_type_id, type: typeById.get(pm.payment_type_id)?.type ?? 'OTHER', amountMinor: toMinor(pm.money_amount, r.decimalPlaces), selected: selected.has(pm.payment_type_id) })),
         pulled: p ? { shiftId: p.id, revenueId: p.revenueId, pulledAt: toIso(p.pulledAt) } : null,
       };
@@ -399,6 +402,19 @@ export class LoyverseService {
         if (existing) existing.amountMinor += amount;
         else payments.push({ paymentMethodId: methodId, amountMinor: amount });
       }
+      // Cash pay-outs (supplies bought from the till) come off the drawer's own cash type.
+      const paidOutMinor = toMinor(shift.paid_out ?? (shift.cash_movements ?? []).filter((m) => m.type === 'PAY_OUT').reduce((a, m) => a + m.money_amount, 0), r.decimalPlaces);
+      let payoutsSubtracted = false;
+      if (settings.subtractPayouts && paidOutMinor > 0) {
+        const drawerType = [...pulledIds].find((id) => typeById.get(id)?.type === 'CASH');
+        const drawerMethod = drawerType ? methodMap[drawerType] : undefined;
+        const entry = drawerMethod ? payments.find((p) => p.paymentMethodId === drawerMethod) : undefined;
+        if (entry) {
+          entry.amountMinor = Math.max(0, entry.amountMinor - paidOutMinor);
+          payoutsSubtracted = true;
+          if (entry.amountMinor === 0) payments.splice(payments.indexOf(entry), 1);
+        }
+      }
       if (!payments.length) {
         const names = [...pulledIds].map((id) => typeById.get(id)?.name ?? id).join(', ');
         throw badRequest('EMPTY_SHIFT', `No sales through ${names || 'the selected payment types'} in this shift (${receipts.length} receipts).`);
@@ -423,7 +439,8 @@ export class LoyverseService {
       const raw: ShiftRaw = {
         shift,
         payments: [...agg.payments.entries()].map(([id, amountMinor]) => ({ paymentTypeId: id, name: typeById.get(id)?.name ?? agg.paymentNames.get(id) ?? id, type: typeById.get(id)?.type ?? agg.paymentKinds.get(id) ?? 'OTHER', amountMinor, pulled: pulledIds.has(id) })),
-        totals: agg.totals,
+        totals: { ...agg.totals, paidOutMinor, payoutsSubtracted },
+        payouts: (shift.cash_movements ?? []).filter((m) => m.type === 'PAY_OUT').map((m) => ({ amountMinor: toMinor(m.money_amount, r.decimalPlaces), comment: m.comment?.trim() || null, at: m.created_at ?? null })),
       };
       const items = await this.prisma.posItem.findMany({ where: { provider: PROVIDER, externalId: { in: [...new Set([...agg.lines.values()].map((l) => l.externalItemId).filter((x): x is string => !!x))] } }, include: { category: { select: { name: true } } } });
       const itemByExt = new Map(items.map((i) => [i.externalId, i]));
@@ -445,7 +462,7 @@ export class LoyverseService {
         await tx.integration.update({ where: { id: r.id }, data: { lastShiftPullAt: new Date(), lastError: null, settings: JSON.stringify({ ...settings, methodMap }) } });
         return row;
       });
-      await this.audit.log({ actor, action: 'import', entity: 'posShift', entityId: shiftRow.id, after: { shift: shift.id, store: storeName, date, revenueId: revenue.id, created, receipts: receipts.length, payments } });
+      await this.audit.log({ actor, action: 'import', entity: 'posShift', entityId: shiftRow.id, after: { shift: shift.id, store: storeName, date, revenueId: revenue.id, created, receipts: receipts.length, payments, paidOutMinor, payoutsSubtracted } });
       const fresh = await this.revenue.get(revenue.id);
       return { revenue: fresh, shift: shiftRef(shiftRow), created, sales: await this.shiftSales(shiftRow.id) };
     } catch (e) {
@@ -518,6 +535,7 @@ export class LoyverseService {
     const row = await this.prisma.posShift.findUnique({ where: { id: shiftId }, include: { sales: { orderBy: { netMinor: 'desc' } } } });
     if (!row) throw notFound('Shift', shiftId);
     const raw = parseJson<ShiftRaw | null>(row.raw, null);
+    const t = raw?.totals as Partial<ShiftRaw['totals']> | undefined; // rows pulled before pay-outs existed lack the new fields
     const lines = row.sales.map((s) => ({ itemId: s.itemId, externalItemId: s.externalItemId, itemName: s.itemName, variantName: s.variantName, sku: s.sku, categoryName: s.categoryName, quantity: s.quantity, grossMinor: s.grossMinor, netMinor: s.netMinor, costMinor: s.costMinor }));
     const net = lines.reduce((a, l) => a + l.netMinor, 0);
     const cats = new Map<string, { name: string; quantity: number; netMinor: number }>();
@@ -531,7 +549,8 @@ export class LoyverseService {
     return {
       shift: shiftRef(row),
       payments: raw?.payments ?? [],
-      totals: raw?.totals ?? { receipts: row.receipts, refunds: 0, grossMinor: 0, netMinor: net, costMinor: 0, quantity: 0 },
+      totals: { receipts: t?.receipts ?? row.receipts, refunds: t?.refunds ?? 0, grossMinor: t?.grossMinor ?? 0, netMinor: t?.netMinor ?? net, costMinor: t?.costMinor ?? 0, quantity: t?.quantity ?? 0, paidOutMinor: t?.paidOutMinor ?? 0, payoutsSubtracted: t?.payoutsSubtracted ?? false },
+      payouts: raw?.payouts ?? [],
       lines,
       byCategory: [...cats.values()].sort((a, b) => b.netMinor - a.netMinor).map((c) => ({ ...c, pct: net > 0 ? (c.netMinor / net) * 100 : 0 })),
     };

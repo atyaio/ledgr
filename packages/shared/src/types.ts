@@ -522,6 +522,8 @@ export interface LoyverseSettings {
   methodMap: Record<string, string>;
   /** ledgr revenue category for shift rows; null = the default revenue category. */
   categoryId: string | null;
+  /** Take the shift's cash pay-outs (money removed from the drawer) off the cash amount. Default true. */
+  subtractPayouts: boolean;
 }
 
 export interface LoyverseIntegration {
@@ -603,6 +605,8 @@ export interface LoyverseShiftPreview {
   netSalesMinor: number;
   refundsMinor: number;
   cashMinor: number;
+  /** Cash removed from the drawer during the shift (PAY_OUT movements). */
+  paidOutMinor: number;
   payments: { paymentTypeId: string; name: string; type: string; amountMinor: number; selected: boolean }[];
   pulled: { shiftId: string; revenueId: string | null; pulledAt: string } | null;
 }
@@ -624,7 +628,9 @@ export interface ShiftSalesResponse {
   shift: PosShiftRef;
   /** Amount per Loyverse payment type across the shift's receipts (all types, not only the pulled ones). */
   payments: { paymentTypeId: string; name: string; type: string; amountMinor: number; pulled: boolean }[];
-  totals: { receipts: number; refunds: number; grossMinor: number; netMinor: number; costMinor: number; quantity: number };
+  totals: { receipts: number; refunds: number; grossMinor: number; netMinor: number; costMinor: number; quantity: number; paidOutMinor: number; payoutsSubtracted: boolean };
+  /** Cash movements out of the drawer, with the cashier's note. */
+  payouts: { amountMinor: number; comment: string | null; at: string | null }[];
   lines: PosSaleLine[];
   byCategory: { name: string; quantity: number; netMinor: number; pct: number }[];
 }

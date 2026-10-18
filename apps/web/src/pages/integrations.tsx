@@ -10,7 +10,7 @@ import { useI18n } from '@/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, EmptyState, Loading, PageHeader } from '@/components/ui/misc';
 import { Badge, Swatch } from '@/components/ui/badge';
-import { Checkbox, Field, Input, Select } from '@/components/ui/input';
+import { Checkbox, Field, Input, Select, Toggle } from '@/components/ui/input';
 import { ConfirmDialog, Modal } from '@/components/ui/dialog';
 import { EmptyRow, Table, Td, Th, Tr } from '@/components/ui/table';
 import { errorMessage, useToast } from '@/components/ui/toast';
@@ -111,17 +111,19 @@ function LoyverseConnected({ i, onReconnect }: { i: LoyverseIntegration; onRecon
   const [typeIds, setTypeIds] = useState<string[]>(i.settings.paymentTypeIds);
   const [methodMap, setMethodMap] = useState<Record<string, string>>(i.settings.methodMap);
   const [categoryId, setCategoryId] = useState<string>(i.settings.categoryId ?? '');
+  const [subtractPayouts, setSubtractPayouts] = useState<boolean>(i.settings.subtractPayouts ?? true);
   useEffect(() => {
     setStoreIds(i.settings.storeIds);
     setTypeIds(i.settings.paymentTypeIds);
     setMethodMap(i.settings.methodMap);
     setCategoryId(i.settings.categoryId ?? '');
+    setSubtractPayouts(i.settings.subtractPayouts ?? true);
   }, [i.settings]);
   const effectiveTypes = typeIds.length ? typeIds : i.paymentTypes.filter(isCashLikePaymentType).map((p) => p.id);
-  const dirty = JSON.stringify({ storeIds, typeIds, methodMap, categoryId }) !== JSON.stringify({ storeIds: i.settings.storeIds, typeIds: i.settings.paymentTypeIds, methodMap: i.settings.methodMap, categoryId: i.settings.categoryId ?? '' });
+  const dirty = JSON.stringify({ storeIds, typeIds, methodMap, categoryId, subtractPayouts }) !== JSON.stringify({ storeIds: i.settings.storeIds, typeIds: i.settings.paymentTypeIds, methodMap: i.settings.methodMap, categoryId: i.settings.categoryId ?? '', subtractPayouts: i.settings.subtractPayouts ?? true });
   const save = async () => {
     try {
-      await settings.mutateAsync({ storeIds, paymentTypeIds: effectiveTypes, methodMap, categoryId: categoryId || null });
+      await settings.mutateAsync({ storeIds, paymentTypeIds: effectiveTypes, methodMap, categoryId: categoryId || null, subtractPayouts });
       toast.success(t('Integration settings saved'));
     } catch (e) {
       toast.error(t('Could not save'), errorMessage(e));
@@ -192,6 +194,7 @@ function LoyverseConnected({ i, onReconnect }: { i: LoyverseIntegration; onRecon
                 </ul>
               </div>
             )}
+            <Toggle checked={subtractPayouts} onChange={setSubtractPayouts} label={t('Subtract cash pay-outs')} description={t('Money taken out of the drawer during the shift (supplies, petty cash) comes off the cash amount.')} />
             <Field label={t('Revenue category')} hint={t('for the shift rows')}>
               <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                 <option value="">{t('Default category')}</option>

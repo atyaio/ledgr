@@ -93,7 +93,10 @@ Rules:
   cash-like ones — kind `CASH` or a name containing cash/كاش/نقد, e.g. "Talabat cash")
   go on the revenue row, each mapped to a ledgr payment method by `methodMap`; cash-like
   types all fold into the ledger's one Cash method (found by either name, else created),
-  other types are matched or created by name. Row: `date` = local day of `closedAt`
+  other types are matched or created by name. With `settings.subtractPayouts` (default
+  true) the shift's cash pay-outs (`paid_out`, PAY_OUT cash movements) come off the
+  amount of the `CASH`-kind type, never below zero; the pay-outs are listed on the shift's
+  sales response. Row: `date` = local day of `closedAt`
   (`config.timezone`, default the machine zone), `description` = `Shift · store ·
   HH:mm–HH:mm`, `source` = `Loyverse`, category = `settings.categoryId` or the default
   revenue category. Re-pulling the same shift updates that row (date, description,

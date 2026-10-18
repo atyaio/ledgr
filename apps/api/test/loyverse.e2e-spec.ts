@@ -21,6 +21,8 @@ function stubLoyverse() {
     closed_at: '2026-06-01T14:00:00.000Z',
     cash_payments: 20.5,
     cash_refunds: 4.5,
+    paid_out: 3,
+    cash_movements: [{ type: 'PAY_OUT', money_amount: 2, comment: 'Milk' }, { type: 'PAY_OUT', money_amount: 1, comment: '' }],
     gross_sales: 40,
     refunds: 4.5,
     net_sales: 36,
@@ -150,7 +152,7 @@ describe('Loyverse integration (e2e)', () => {
   it('lists only closed shifts with the provider totals', async () => {
     const shifts: LoyverseShiftPreview[] = (await http().get('/api/integrations/loyverse/shifts?limit=5').expect(200)).body;
     expect(shifts).toHaveLength(1);
-    expect(shifts[0]).toMatchObject({ externalId: 'sh1', storeName: 'Main', cashMinor: 1600, netSalesMinor: 3600, pulled: null });
+    expect(shifts[0]).toMatchObject({ externalId: 'sh1', storeName: 'Main', cashMinor: 1600, paidOutMinor: 300, netSalesMinor: 3600, pulled: null });
     expect(shifts[0].payments).toEqual([
       { paymentTypeId: 'pt-cash', name: 'Cash', type: 'CASH', amountMinor: 2050, selected: true },
       { paymentTypeId: 'pt-talabat', name: 'Talabat cash', type: 'OTHER', amountMinor: 400, selected: true },
@@ -166,9 +168,11 @@ describe('Loyverse integration (e2e)', () => {
     const res = await http().post('/api/integrations/loyverse/pull-shift').send({}).expect(201);
     const r: PullShiftResponse = res.body;
     expect(r.created).toBe(true);
-    // cash 12 + 4.5 − 4.5 refund, plus Talabat cash 4 folded in; the cancelled receipt and the other POS device are ignored
-    expect(r.revenue.amountMinor).toBe(1600);
-    expect(r.revenue.payments).toEqual([expect.objectContaining({ name: 'Cash', amountMinor: 1600 })]);
+    // cash 12 + 4.5 − 4.5 refund − 3 paid out, plus Talabat cash 4 folded in; the cancelled receipt and the other POS device are ignored
+    expect(r.revenue.amountMinor).toBe(1300);
+    expect(r.revenue.payments).toEqual([expect.objectContaining({ name: 'Cash', amountMinor: 1300 })]);
+    expect(r.sales.totals).toMatchObject({ paidOutMinor: 300, payoutsSubtracted: true });
+    expect(r.sales.payouts).toEqual([{ amountMinor: 200, comment: 'Milk', at: null }, { amountMinor: 100, comment: null, at: null }]);
     expect(r.revenue.date).toBe('2026-06-01');
     expect(r.revenue.description).toBe('Shift · Main · 06:00–14:00');
     expect(r.revenue.source).toBe('Loyverse');
@@ -216,9 +220,17 @@ describe('Loyverse integration (e2e)', () => {
     const res = await http().post('/api/integrations/loyverse/pull-shift').send({}).expect(201);
     const r: Revenue = res.body.revenue;
     expect(r.id).toBe(revenueId);
-    expect(r.amountMinor).toBe(3200);
-    expect(r.payments.map((p) => [p.name, p.amountMinor])).toEqual([['Cash', 1200], ['Visa', 2000]]);
+    expect(r.amountMinor).toBe(2900);
+    expect(r.payments.map((p) => [p.name, p.amountMinor])).toEqual([['Cash', 900], ['Visa', 2000]]);
     await http().put('/api/integrations/loyverse/settings').send({ paymentTypeIds: ['pt-cash', 'pt-talabat'] }).expect(200);
+  });
+
+  it('pay-outs can be left on the cash amount', async () => {
+    await http().put('/api/integrations/loyverse/settings').send({ subtractPayouts: false }).expect(200);
+    const res = await http().post('/api/integrations/loyverse/pull-shift').send({}).expect(201);
+    expect(res.body.revenue.amountMinor).toBe(1600);
+    expect(res.body.sales.totals.payoutsSubtracted).toBe(false);
+    await http().put('/api/integrations/loyverse/settings').send({ subtractPayouts: true }).expect(200);
   });
 
   it('deleting the revenue row frees the shift to be pulled again', async () => {
@@ -227,7 +239,7 @@ describe('Loyverse integration (e2e)', () => {
     expect(shifts[0].pulled?.revenueId).toBeNull();
     const res = await http().post('/api/integrations/loyverse/pull-shift').send({}).expect(201);
     expect(res.body.created).toBe(true);
-    expect(res.body.revenue.amountMinor).toBe(1600);
+    expect(res.body.revenue.amountMinor).toBe(1300);
     revenueId = res.body.revenue.id;
   });
 
@@ -244,7 +256,7 @@ describe('Loyverse integration (e2e)', () => {
     expect((await http().get('/api/integrations/loyverse').expect(200)).body).toEqual({ provider: 'loyverse', connected: false });
     expect((await http().get('/api/integrations/loyverse/items').expect(400)).body.code).toBe('NOT_CONNECTED');
     const r = await http().get(`/api/revenue/${revenueId}`).expect(200);
-    expect(r.body.amountMinor).toBe(1600);
+    expect(r.body.amountMinor).toBe(1300);
     expect(r.body.pos).toBeNull();
     const audit = (await http().get('/api/audit?entity=posShift').expect(200)).body;
     expect(audit.items.length).toBeGreaterThan(0);
