@@ -107,7 +107,7 @@ export function PullShiftSheet({ open, onClose }: { open: boolean; onClose: () =
               <li key={s.externalId} className={clsx('flex items-center gap-3 px-1 py-3', i === 0 && 'bg-accent-soft/40 rounded-[12px]')}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[14.5px] font-medium">{clock.day(s.closedAt)}</span>
+                    <span className="text-[14.5px] font-medium">{clock.day(s.openedAt)}</span>
                     <span className="num text-[12.5px] text-ink-3">{clock.window(s.openedAt, s.closedAt)}</span>
                     {s.storeName && <Badge>{s.storeName}</Badge>}
                     {s.pulled && <Badge tone={s.pulled.revenueId ? 'good' : 'warning'}>{s.pulled.revenueId ? t('in ledger') : t('row deleted')}</Badge>}

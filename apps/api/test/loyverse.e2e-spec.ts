@@ -18,7 +18,7 @@ function stubLoyverse() {
     store_id: 'st1',
     pos_device_id: 'dev1',
     opened_at: '2026-06-01T06:00:00.000Z',
-    closed_at: '2026-06-01T14:00:00.000Z',
+    closed_at: '2026-06-02T01:00:00.000Z', // closes after midnight: the row still belongs to June 1
     cash_payments: 20.5,
     cash_refunds: 4.5,
     paid_out: 3,
@@ -174,7 +174,7 @@ describe('Loyverse integration (e2e)', () => {
     expect(r.sales.totals).toMatchObject({ paidOutMinor: 300, payoutsSubtracted: true });
     expect(r.sales.payouts).toEqual([{ amountMinor: 200, comment: 'Milk', at: null }, { amountMinor: 100, comment: null, at: null }]);
     expect(r.revenue.date).toBe('2026-06-01');
-    expect(r.revenue.description).toBe('Shift · Main · 06:00–14:00');
+    expect(r.revenue.description).toBe('Shift · Main · 06:00–01:00');
     expect(r.revenue.source).toBe('Loyverse');
     expect(r.revenue.category?.name).toBe('POS sales');
     expect(r.revenue.pos).toMatchObject({ provider: 'loyverse', externalId: 'sh1', storeName: 'Main', receipts: 3 });

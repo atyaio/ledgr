@@ -421,7 +421,7 @@ export class LoyverseService {
       }
 
       const storeName = meta.stores.find((s) => s.id === shift.store_id)?.name ?? null;
-      const date = localDate(shift.closed_at, tz);
+      const date = localDate(shift.opened_at, tz); // a shift that closes after midnight belongs to the day it opened
       const description = `Shift · ${storeName ?? 'Loyverse'} · ${localTime(shift.opened_at, tz)}–${localTime(shift.closed_at, tz)}`;
       const categoryId = settings.categoryId ?? (await this.prisma.category.findFirst({ where: { kind: 'revenue', isDefault: true, archived: false } }))?.id ?? null;
 
