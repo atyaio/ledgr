@@ -1,11 +1,19 @@
 {
   "name": "@atyaio/ledgr-web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ledgr dashboard: prebuilt static files served by @atyaio/ledgr-api.",
   "type": "module",
-  "files": ["dist"],
-  "repository": { "type": "git", "url": "https://github.com/atyaio/ledgr.git", "directory": "apps/web" },
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atyaio/ledgr.git",
+    "directory": "apps/web"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
