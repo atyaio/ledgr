@@ -8,3 +8,4 @@ dist
 .ledgr/*.db*
 apps/api/src/generated
 coverage
+*.tsbuildinfo
