@@ -80,7 +80,7 @@ export function Modal({ open, onClose, title, description, children, footer, wid
         <div className={clsx('fixed inset-0 z-50 flex', mobile ? 'items-end' : 'items-center justify-center p-4')} role="dialog" aria-modal>
           <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
-            className={clsx('relative bg-card shadow-2xl w-full', mobile ? 'rounded-t-[24px] max-h-[92dvh] flex flex-col' : 'rounded-[20px] border border-line')}
+            className={clsx('relative bg-card shadow-2xl w-full flex flex-col', mobile ? 'rounded-t-[24px] max-h-[92dvh]' : 'rounded-[20px] border border-line max-h-[90dvh]')}
             style={mobile ? undefined : { maxWidth: width }}
             initial={mobile ? { y: '100%' } : { y: 8, opacity: 0, scale: 0.98 }}
             animate={mobile ? { y: 0 } : { y: 0, opacity: 1, scale: 1 }}
@@ -88,12 +88,12 @@ export function Modal({ open, onClose, title, description, children, footer, wid
             transition={{ type: 'spring', stiffness: 460, damping: 38 }}
           >
             {mobile && <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line-strong" />}
-            <header className="px-5 pt-4 pb-2">
+            <header className="px-5 pt-4 pb-2 shrink-0">
               <h2 className="text-[18px] font-semibold tracking-tight">{title}</h2>
               {description && <p className="text-[13.5px] text-ink-2 mt-1 leading-relaxed">{description}</p>}
             </header>
-            <div className="px-5 pb-4 overflow-y-auto">{children}</div>
-            {footer && <footer className={clsx('flex items-center justify-end gap-2 px-5 py-3 safe-bottom', mobile ? 'flex-col-reverse [&>*]:w-full' : 'border-t border-line')}>{footer}</footer>}
+            <div className="px-5 pb-4 overflow-y-auto min-h-0 flex-1">{children}</div>
+            {footer && <footer className={clsx('flex items-center justify-end gap-2 px-5 py-3 safe-bottom shrink-0', mobile ? 'flex-col-reverse [&>*]:w-full' : 'border-t border-line')}>{footer}</footer>}
           </motion.div>
         </div>
       )}
