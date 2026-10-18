@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { RANGE_PRESETS, daysBetween, type RangePreset } from '@ledgr/shared';
+import { RANGE_PRESETS, daysBetween, type RangePreset } from '@atyaio/ledgr-shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { Button } from '@/components/ui/button';

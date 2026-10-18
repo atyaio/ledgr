@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
-import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_REVENUE_CATEGORIES, slugifyKey, type CustomFieldEntity, type CustomFieldType } from '@ledgr/shared';
+import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_REVENUE_CATEGORIES, slugifyKey, type CustomFieldEntity, type CustomFieldType } from '@atyaio/ledgr-shared';
 import { loadApi, type ProjectConfigLike } from '../api.js';
 import { cloneSource, hasLocalSource, installAndBuild, localSourceBuilt } from '../source.js';
 
@@ -51,7 +51,7 @@ export async function initCommand(opts: Opts) {
     p.log.warn(`A ledgr project already exists at ${pc.cyan(paths.dir)}`);
     const again = opts.yes ? false : await ask(p.confirm({ message: 'Reconfigure it? (data is kept)', initialValue: false }));
     if (!again) {
-      p.outro(`Run ${pc.cyan('npx ledgr start')} to open it.`);
+      p.outro(`Run ${pc.cyan('ledgr start')} to open it.`);
       return;
     }
   }

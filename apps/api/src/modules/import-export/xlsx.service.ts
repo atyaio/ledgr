@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
-import { parseISODate, type CustomFieldDefinition, type ImportColumn, type ImportEntity, type RangeQuery } from '@ledgr/shared';
+import { parseISODate, type CustomFieldDefinition, type ImportColumn, type ImportEntity, type RangeQuery } from '@atyaio/ledgr-shared';
 import { LedgrContext } from '../../common/config/ledgr-config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ExportService, type CsvTable } from './export.service';

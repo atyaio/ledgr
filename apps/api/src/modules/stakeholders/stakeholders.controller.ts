@@ -6,7 +6,7 @@ import {
   type CreateStakeholderInput,
   type RangeQuery,
   type UpdateStakeholderInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { forceQuery, type ForceQuery } from '../../common/query';
 import { zod } from '../../common/zod.pipe';

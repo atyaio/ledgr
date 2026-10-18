@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { POOL_ID, type CreateSettlementInput, type ListQuery, type Paginated, type Settlement, type UpdateSettlementInput } from '@ledgr/shared';
+import { POOL_ID, type CreateSettlementInput, type ListQuery, type Paginated, type Settlement, type UpdateSettlementInput } from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { dateRangeWhere, toIso, type Db } from '../../common/db';

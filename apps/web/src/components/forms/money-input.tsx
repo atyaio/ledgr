@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useState, type InputHTMLAttributes } from 'react';
-import { parseMoney } from '@ledgr/shared';
+import { parseMoney } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { Input } from '@/components/ui/input';
 

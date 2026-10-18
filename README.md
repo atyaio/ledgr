@@ -58,9 +58,9 @@ merges newer upstream commits into your changes (conflicts are left for you to r
 ## Repo layout
 
 ```
-packages/shared   @ledgr/shared  types, zod schemas, money/split/date/csv utilities (vitest)
-apps/api          @ledgr/api     NestJS 12 + Prisma 7 (SQLite via better-sqlite3), REST under /api
-apps/web          @ledgr/web     React 19 + Vite + Tailwind 4 dashboard (served by the API)
+packages/shared   @atyaio/ledgr-shared  types, zod schemas, money/split/date/csv utilities (vitest)
+apps/api          @atyaio/ledgr-api     NestJS 12 + Prisma 7 (SQLite via better-sqlite3), REST under /api
+apps/web          @atyaio/ledgr-web     React 19 + Vite + Tailwind 4 dashboard (served by the API)
 packages/cli      ledgr          `ledgr init | start | doctor | seed`
 ```
 
@@ -71,8 +71,8 @@ See [SPEC.md](SPEC.md) for the data model, API and business rules.
 ```bash
 pnpm install
 pnpm build                                  # shared → api + web → cli
-pnpm --filter @ledgr/shared test
-pnpm --filter @ledgr/api test:e2e
+pnpm --filter @atyaio/ledgr-shared test
+pnpm --filter @atyaio/ledgr-api test:e2e
 
 # run against a sample project
 mkdir -p /tmp/demo && cd /tmp/demo
@@ -81,8 +81,8 @@ node ~/work/ledgr/packages/cli/dist/index.js seed --demo
 node ~/work/ledgr/packages/cli/dist/index.js start --open
 
 # hot reload: API on :4848, Vite on :5173 proxying /api
-pnpm --filter @ledgr/api dev    # needs LEDGR_DIR=/path/to/.ledgr
-pnpm --filter @ledgr/web dev
+pnpm --filter @atyaio/ledgr-api dev    # needs LEDGR_DIR=/path/to/.ledgr
+pnpm --filter @atyaio/ledgr-web dev
 ```
 
 ## Hosting a project

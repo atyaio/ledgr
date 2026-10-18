@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { detectPreset, rangeForPreset, shiftRange, type DateRange, type RangePreset } from '@ledgr/shared';
+import { detectPreset, rangeForPreset, shiftRange, type DateRange, type RangePreset } from '@atyaio/ledgr-shared';
 import { useProject } from './project';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
-import { createRecurringSchema, updateRecurringSchema, type CreateRecurringInput, type UpdateRecurringInput } from '@ledgr/shared';
+import { createRecurringSchema, updateRecurringSchema, type CreateRecurringInput, type UpdateRecurringInput } from '@atyaio/ledgr-shared';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { zod } from '../../common/zod.pipe';
 import { RecurringService } from './recurring.service';

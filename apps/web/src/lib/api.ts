@@ -1,4 +1,4 @@
-import type { ApiError } from '@ledgr/shared';
+import type { ApiError } from '@atyaio/ledgr-shared';
 
 export class ApiRequestError extends Error {
   constructor(

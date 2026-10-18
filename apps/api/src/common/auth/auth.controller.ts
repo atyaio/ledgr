@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import type { AuthConfigResponse, MeResponse } from '@ledgr/shared';
+import type { AuthConfigResponse, MeResponse } from '@atyaio/ledgr-shared';
 import { LedgrContext } from '../config/ledgr-config';
 import { type CurrentUser, User } from './current-user.decorator';
 import { Public } from './public.decorator';

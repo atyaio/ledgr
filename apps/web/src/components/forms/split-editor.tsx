@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { round2, splitAmount, type SplitMode, type Stakeholder } from '@ledgr/shared';
+import { round2, splitAmount, type SplitMode, type Stakeholder } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';
 import { Segmented } from '@/components/ui/misc';

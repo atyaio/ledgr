@@ -2,7 +2,7 @@ import { clsx } from 'clsx';
 import { ArrowRight, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { POOL_ID, round2, type Settlement, type Stakeholder, type SuggestedTransfer } from '@ledgr/shared';
+import { POOL_ID, round2, type Settlement, type Stakeholder, type SuggestedTransfer } from '@atyaio/ledgr-shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { useBalances, useCustomFields, useDistribution, useSettlementMutations, useSettlements, useStakeholderMutations, useStakeholders } from '@/lib/queries';

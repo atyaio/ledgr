@@ -8,8 +8,8 @@ import {
   type AnalyticsOverview,
   type AnalyticsQuery,
   type Granularity,
-} from '@ledgr/shared';
-import { todayISO } from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
+import { todayISO } from '@atyaio/ledgr-shared';
 import { LedgrContext } from '../../common/config/ledgr-config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { deltaPct, pct } from '../../common/query';

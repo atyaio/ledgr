@@ -10,7 +10,7 @@ import {
   type ListQuery,
   type RangeQuery,
   type UpdateExpenseInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { z } from 'zod';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { zod } from '../../common/zod.pipe';

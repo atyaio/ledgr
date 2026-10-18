@@ -7,5 +7,5 @@ export default defineConfig({
   clean: true,
   sourcemap: false,
   banner: { js: '#!/usr/bin/env node' },
-  external: [/^@ledgr\//, 'better-sqlite3', '@prisma/client', '@prisma/adapter-better-sqlite3'],
+  external: [/^@atyaio\/ledgr-/, 'better-sqlite3', '@prisma/client', '@prisma/adapter-better-sqlite3'],
 });

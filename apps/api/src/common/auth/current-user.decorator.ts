@@ -1,5 +1,5 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
-import type { MeResponse } from '@ledgr/shared';
+import type { MeResponse } from '@atyaio/ledgr-shared';
 
 export type CurrentUser = MeResponse;
 

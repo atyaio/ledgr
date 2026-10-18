@@ -1,5 +1,5 @@
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { pickColor, type CustomFieldEntity, type CustomFieldType } from '@ledgr/shared';
+import { pickColor, type CustomFieldEntity, type CustomFieldType } from '@atyaio/ledgr-shared';
 import { PrismaClient } from './generated/prisma/client';
 import { LedgrContext } from './common/config/ledgr-config';
 import { runMigrations } from './common/prisma/migrator';

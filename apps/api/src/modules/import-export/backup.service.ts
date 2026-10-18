@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { BackupFile, Expense, ProjectConfig } from '@ledgr/shared';
+import type { BackupFile, Expense, ProjectConfig } from '@atyaio/ledgr-shared';
 import { z } from 'zod';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';

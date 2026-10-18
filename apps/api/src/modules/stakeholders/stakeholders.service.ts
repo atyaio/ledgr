@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { pickColor, shareTotal, type CreateStakeholderInput, type Stakeholder, type UpdateStakeholderInput } from '@ledgr/shared';
+import { pickColor, shareTotal, type CreateStakeholderInput, type Stakeholder, type UpdateStakeholderInput } from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import type { Db } from '../../common/db';

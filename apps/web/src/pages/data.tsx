@@ -2,7 +2,7 @@ import { clsx } from 'clsx';
 import { Download, FileUp, ShieldCheck, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { IMPORT_ENTITIES, type ImportCommitResponse, type ImportDateFormat, type ImportEntity, type ImportPreviewResponse } from '@ledgr/shared';
+import { IMPORT_ENTITIES, type ImportCommitResponse, type ImportDateFormat, type ImportEntity, type ImportPreviewResponse } from '@atyaio/ledgr-shared';
 import { api, downloadFile } from '@/lib/api';
 import { useDateRange } from '@/lib/range';
 import { Button } from '@/components/ui/button';

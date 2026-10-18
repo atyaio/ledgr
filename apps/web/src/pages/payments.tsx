@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { Archive, ArchiveRestore, CreditCard, MoreHorizontal, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import type { PaymentMethod } from '@ledgr/shared';
+import type { PaymentMethod } from '@atyaio/ledgr-shared';
 import { usePaymentMethodMutations, usePaymentMethods } from '@/lib/queries';
 import { PaymentMethodForm } from '@/components/forms/payment-method-form';
 import { Button } from '@/components/ui/button';

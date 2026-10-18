@@ -14,7 +14,7 @@ import {
   type ImportCommitResponse,
   type ImportPreviewResponse,
   type Stakeholder,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { createApp } from '../src/bootstrap';
 import { defaultConfig, resolvePaths, writeConfig } from '../src/common/config/ledgr-config';
 

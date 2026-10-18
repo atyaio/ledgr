@@ -3,7 +3,7 @@ import { ArrowDownRight, ArrowUpRight, CreditCard, Minus, Tags, Users } from 'lu
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { InsightsGroup, InsightsLedger, InsightsResponse } from '@ledgr/shared';
+import type { InsightsGroup, InsightsLedger, InsightsResponse } from '@atyaio/ledgr-shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { useCategories, useInsights, usePaymentMethods, useStakeholders } from '@/lib/queries';
@@ -18,7 +18,7 @@ import { Table, Td, Th, Tr } from '@/components/ui/table';
 import { ChartTooltip, Legend } from '@/components/charts/tooltip';
 import { Breakdown } from '@/components/charts/breakdown';
 import { qty } from '@/components/integrations/shift-sales';
-import { CATEGORICAL_PALETTE } from '@ledgr/shared';
+import { CATEGORICAL_PALETTE } from '@atyaio/ledgr-shared';
 
 const LEDGERS: { id: InsightsLedger; label: string }[] = [
   { id: 'both', label: 'Both' },

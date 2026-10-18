@@ -11,7 +11,7 @@ import {
   type SplitMode,
   type SplitResult,
   type UpdateExpenseInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { dateRangeWhere, INTERACTIVE_TX, toIso, type Db } from '../../common/db';

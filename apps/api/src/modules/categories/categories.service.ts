@@ -8,7 +8,7 @@ import {
   type CategoryKind,
   type CreateCategoryInput,
   type UpdateCategoryInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import type { Db } from '../../common/db';

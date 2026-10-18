@@ -48,7 +48,7 @@ import type {
   PullShiftResponse,
   ShiftSalesResponse,
   UpdateLoyverseSettingsInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { api, type Query } from './api';
 
 /** Some list endpoints return a bare array; normalise to `{ items }`. */

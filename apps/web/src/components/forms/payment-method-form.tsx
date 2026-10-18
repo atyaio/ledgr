@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CATEGORICAL_PALETTE, type CreatePaymentMethodInput, type PaymentMethod } from '@ledgr/shared';
+import { CATEGORICAL_PALETTE, type CreatePaymentMethodInput, type PaymentMethod } from '@atyaio/ledgr-shared';
 import { usePaymentMethodMutations } from '@/lib/queries';
 import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';

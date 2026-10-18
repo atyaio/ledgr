@@ -11,7 +11,7 @@ import {
   type RecurringRunResponse,
   type RecurringTemplate,
   type UpdateRecurringInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { toIso } from '../../common/db';

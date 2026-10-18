@@ -15,7 +15,7 @@ export async function startCommand(opts: Opts) {
   const dir = path.join(projectDir, '.ledgr');
   const webDist = opts.apiOnly ? null : resolveWebDist(projectDir);
   if (!opts.apiOnly && !webDist) {
-    console.error(pc.yellow('Dashboard build not found (@ledgr/web/dist). Serving the API only. Run `pnpm build` in the ledgr repo, or use --api-only to silence this.'));
+    console.error(pc.yellow('Dashboard build not found (@atyaio/ledgr-web/dist). Serving the API only. Run `pnpm build` in the ledgr repo, or use --api-only to silence this.'));
   }
   let started;
   try {

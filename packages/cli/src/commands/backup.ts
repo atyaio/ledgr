@@ -9,7 +9,7 @@ export async function backupCommand(opts: Opts) {
   const projectDir = path.resolve(opts.dir);
   const api = loadApi(projectDir);
   if (!api.backupDatabase) {
-    throw new Error('The installed @ledgr/api is too old for `ledgr backup`. Upgrade the ledgr package (or run `ledgr upgrade` in a standalone folder).');
+    throw new Error('The installed @atyaio/ledgr-api is too old for `ledgr backup`. Upgrade the ledgr package (or run `ledgr upgrade` in a standalone folder).');
   }
   const paths = api.resolvePaths(path.join(projectDir, '.ledgr'));
   const ctx = api.loadContext(paths.dir);

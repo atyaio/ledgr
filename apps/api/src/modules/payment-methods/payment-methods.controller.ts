@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
-import { createPaymentMethodSchema, paymentMethodListQuery, reorderSchema, updatePaymentMethodSchema, type CreatePaymentMethodInput, type UpdatePaymentMethodInput } from '@ledgr/shared';
+import { createPaymentMethodSchema, paymentMethodListQuery, reorderSchema, updatePaymentMethodSchema, type CreatePaymentMethodInput, type UpdatePaymentMethodInput } from '@atyaio/ledgr-shared';
 import { z } from 'zod';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { zod } from '../../common/zod.pipe';

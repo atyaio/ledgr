@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { AlertTriangle, Check, Download, ExternalLink, Plug, RefreshCw, Search, Store, Unplug } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { isCashLikePaymentType, type LoyverseIntegration, type PosItem } from '@ledgr/shared';
+import { isCashLikePaymentType, type LoyverseIntegration, type PosItem } from '@atyaio/ledgr-shared';
 import { useCategories, useLoyverse, useLoyverseItems, useLoyverseMutations, usePaymentMethods } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useIsMobile } from '@/lib/media';

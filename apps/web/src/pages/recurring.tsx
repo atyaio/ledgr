@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { MoreHorizontal, Pause, Pencil, Play, Plus, Repeat, Trash2, Zap } from 'lucide-react';
 import { useState } from 'react';
-import type { RecurringRule } from '@ledgr/shared';
+import type { RecurringRule } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { useRecurring, useRecurringMutations } from '@/lib/queries';
 import { RecurringForm } from '@/components/forms/recurring-form';

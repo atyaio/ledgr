@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import type { LoyverseIntegration, LoyverseShiftPreview, PosItemsResponse, PullShiftResponse, Revenue } from '@ledgr/shared';
+import type { LoyverseIntegration, LoyverseShiftPreview, PosItemsResponse, PullShiftResponse, Revenue } from '@atyaio/ledgr-shared';
 import { createApp } from '../src/bootstrap';
 import { defaultConfig, resolvePaths, writeConfig } from '../src/common/config/ledgr-config';
 

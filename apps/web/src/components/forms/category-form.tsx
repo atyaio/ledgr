@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CATEGORICAL_PALETTE, type Category, type CategoryKind, type CreateCategoryInput } from '@ledgr/shared';
+import { CATEGORICAL_PALETTE, type Category, type CategoryKind, type CreateCategoryInput } from '@atyaio/ledgr-shared';
 import { useCategoryMutations } from '@/lib/queries';
 import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';

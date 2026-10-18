@@ -20,7 +20,7 @@ import {
   type ImportOptions,
   type ImportPreviewResponse,
   type Stakeholder,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import Papa from 'papaparse';
 import ExcelJS from 'exceljs';
 import { ZodError, type ZodType } from 'zod';

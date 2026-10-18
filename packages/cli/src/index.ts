@@ -6,12 +6,13 @@ import { doctorCommand } from './commands/doctor.js';
 import { seedCommand } from './commands/seed.js';
 import { upgradeCommand } from './commands/upgrade.js';
 import { backupCommand } from './commands/backup.js';
+import { PACKAGE_NAME, PACKAGE_VERSION } from './package.js';
 
 const program = new Command();
 program
   .name('ledgr')
   .description('Self-contained finance dashboard for any project: expenses, revenue, stakeholders, splits, analytics.')
-  .version('0.1.0');
+  .version(PACKAGE_VERSION, '-v, --version', `print the installed ${PACKAGE_NAME} version`);
 
 program
   .command('init [folder]')
@@ -28,9 +29,9 @@ program
 
 program
   .command('upgrade')
-  .description('Standalone projects: merge the latest ledgr from GitHub into this folder and rebuild')
+  .description(`Update ledgr: shared installs run npm install -g ${PACKAGE_NAME}@latest; standalone projects merge the latest source from GitHub and rebuild`)
   .option('-d, --dir <dir>', 'project folder', process.cwd())
-  .option('--no-build', 'skip pnpm install && pnpm build after merging')
+  .option('--no-build', 'standalone: skip pnpm install && pnpm build after merging')
   .action(upgradeCommand);
 
 program

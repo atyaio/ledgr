@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { CATEGORICAL_PALETTE } from '@ledgr/shared';
+import { CATEGORICAL_PALETTE } from '@atyaio/ledgr-shared';
 import { useI18n } from '@/i18n';
 
 export function ColorPicker({ value, onChange, label }: { value: string; onChange: (c: string) => void; label?: string }) {

@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { AuthConfigResponse, MeResponse } from '@ledgr/shared';
+import type { AuthConfigResponse, MeResponse } from '@atyaio/ledgr-shared';
 import { ApiRequestError, api, configureApi } from './api';
 
 export type AuthStatus = 'loading' | 'signed-out' | 'not-admin' | 'ready' | 'error';

@@ -1,5 +1,5 @@
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { AnalyticsOverview, Granularity } from '@ledgr/shared';
+import type { AnalyticsOverview, Granularity } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';
 import { ChartTooltip, Legend } from './tooltip';

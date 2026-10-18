@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { localLabel, localName, type Lang } from '@ledgr/shared';
+import { localLabel, localName, type Lang } from '@atyaio/ledgr-shared';
 import { ar } from './ar';
 
 export type { Lang };

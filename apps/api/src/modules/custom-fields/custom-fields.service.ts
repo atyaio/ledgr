@@ -7,7 +7,7 @@ import {
   type CustomFieldType,
   type CustomFields,
   type UpdateCustomFieldInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { LedgrContext } from '../../common/config/ledgr-config';

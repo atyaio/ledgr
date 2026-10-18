@@ -8,7 +8,7 @@ import {
   type ListQuery,
   type RangeQuery,
   type UpdateSettlementInput,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { zod } from '../../common/zod.pipe';
 import { BalancesService } from '../stakeholders/balances.service';

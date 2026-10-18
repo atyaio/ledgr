@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Plus, Smartphone, Trash2, Share } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { CUSTOM_FIELD_ENTITIES, type CustomFieldDefinition, type CustomFieldEntity } from '@ledgr/shared';
+import { CUSTOM_FIELD_ENTITIES, type CustomFieldDefinition, type CustomFieldEntity } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { useAudit, useCustomFieldMutations, useCustomFields, useProjectMutations } from '@/lib/queries';
 import { relativeTime } from '@/lib/format';

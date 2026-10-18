@@ -11,7 +11,7 @@ import {
   todayISO,
   type Category,
   type Stakeholder,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { AppModule } from './app.module';
 import type { CurrentUser } from './common/auth/current-user.decorator';
 import { LedgrContext } from './common/config/ledgr-config';

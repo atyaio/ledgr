@@ -190,8 +190,8 @@ via the URL (`?from&to`).
 
 ```
 ledgr/
-  packages/shared   @ledgr/shared  — types, zod schemas, money/split/date utils (tested)
-  apps/api          @ledgr/api     — NestJS 12 + Prisma 7 (better-sqlite3 adapter)
-  apps/web          @ledgr/web     — React 19, Vite, Tailwind 4, TanStack Query/Table, Recharts
+  packages/shared   @atyaio/ledgr-shared  — types, zod schemas, money/split/date utils (tested)
+  apps/api          @atyaio/ledgr-api     — NestJS 12 + Prisma 7 (better-sqlite3 adapter)
+  apps/web          @atyaio/ledgr-web     — React 19, Vite, Tailwind 4, TanStack Query/Table, Recharts
   packages/cli      ledgr          — bin: init / start / doctor
 ```

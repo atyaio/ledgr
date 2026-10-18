@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AuditAction, AuditLogEntry, Paginated } from '@ledgr/shared';
+import type { AuditAction, AuditLogEntry, Paginated } from '@atyaio/ledgr-shared';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CurrentUser } from '../auth/current-user.decorator';
 import { parseJson } from '../json';

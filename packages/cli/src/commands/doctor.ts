@@ -19,7 +19,7 @@ export async function doctorCommand(opts: { dir: string }) {
   let failures = 0;
 
   if (!fs.existsSync(paths.configPath)) {
-    bad(`No config at ${paths.configPath}. Run ${pc.cyan('npx ledgr init')}.`);
+    bad(`No config at ${paths.configPath}. Run ${pc.cyan('ledgr init')}.`);
     process.exit(1);
   }
   let ctx;
@@ -45,7 +45,7 @@ export async function doctorCommand(opts: { dir: string }) {
   const web = resolveWebDist(projectDir);
   if (web) ok(`dashboard build found at ${web}`);
   else {
-    warn('dashboard build missing (@ledgr/web/dist) — `ledgr start` will serve the API only.');
+    warn('dashboard build missing (@atyaio/ledgr-web/dist) — `ledgr start` will serve the API only.');
   }
   console.log(failures ? pc.red(`\n${failures} problem(s).`) : pc.green('\nAll good.'));
   process.exit(failures ? 1 : 0);

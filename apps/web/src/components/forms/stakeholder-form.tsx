@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CATEGORICAL_PALETTE, type CreateStakeholderInput, type CustomFields, type Stakeholder } from '@ledgr/shared';
+import { CATEGORICAL_PALETTE, type CreateStakeholderInput, type CustomFields, type Stakeholder } from '@atyaio/ledgr-shared';
 import { useStakeholderMutations } from '@/lib/queries';
 import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';

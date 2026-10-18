@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { ArrowDownRight, ArrowUpRight, ChevronRight, Minus } from 'lucide-react';
 import { Link } from 'react-router';
-import type { AnalyticsOverview } from '@ledgr/shared';
+import type { AnalyticsOverview } from '@atyaio/ledgr-shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
 import { useOverview } from '@/lib/queries';

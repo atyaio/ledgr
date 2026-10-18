@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LEDGR_VERSION, shareTotal, type ProjectResponse, type UpdateProjectInput } from '@ledgr/shared';
+import { LEDGR_VERSION, shareTotal, type ProjectResponse, type UpdateProjectInput } from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { LedgrContext } from '../../common/config/ledgr-config';

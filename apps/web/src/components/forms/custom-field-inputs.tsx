@@ -1,4 +1,4 @@
-import type { CustomFieldDefinition, CustomFieldEntity, CustomFields, CustomFieldValue } from '@ledgr/shared';
+import type { CustomFieldDefinition, CustomFieldEntity, CustomFields, CustomFieldValue } from '@atyaio/ledgr-shared';
 import { useCustomFields } from '@/lib/queries';
 import { Checkbox, Field, Input, Select } from '@/components/ui/input';
 import { MoneyInput } from './money-input';

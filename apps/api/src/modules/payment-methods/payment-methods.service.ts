@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { pickColor, type CreatePaymentMethodInput, type PaymentMethod, type UpdatePaymentMethodInput } from '@ledgr/shared';
+import { pickColor, type CreatePaymentMethodInput, type PaymentMethod, type UpdatePaymentMethodInput } from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import type { Db } from '../../common/db';

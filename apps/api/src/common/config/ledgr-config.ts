@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { projectConfigSchema, type ProjectConfig } from '@ledgr/shared';
+import { projectConfigSchema, type ProjectConfig } from '@atyaio/ledgr-shared';
 
 export interface LedgrPaths {
   /** The `.ledgr` directory. */

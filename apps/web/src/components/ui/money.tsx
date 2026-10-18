@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import { useProject } from '@/lib/project';
-import type { FormatMoneyOptions } from '@ledgr/shared';
+import type { FormatMoneyOptions } from '@atyaio/ledgr-shared';
 
 export function Money({
   minor,

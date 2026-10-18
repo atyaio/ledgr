@@ -10,7 +10,7 @@ import {
   type CustomFields,
   type ImportEntity,
   type RangeQuery,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { LedgrContext } from '../../common/config/ledgr-config';
 import { dateRangeWhere } from '../../common/db';
 import { PrismaService } from '../../common/prisma/prisma.service';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { todayISO, type CategoryKind, type CreateRecurringInput, type CustomFields, type RecurringFrequency, type RecurringRule, type SplitMode } from '@ledgr/shared';
+import { todayISO, type CategoryKind, type CreateRecurringInput, type CustomFields, type RecurringFrequency, type RecurringRule, type SplitMode } from '@atyaio/ledgr-shared';
 import { useCategories, usePaymentMethods, useRecurringMutations, useStakeholders } from '@/lib/queries';
 import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';

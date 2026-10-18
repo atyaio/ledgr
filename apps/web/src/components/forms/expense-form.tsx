@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { todayISO, type CreateExpenseInput, type CustomFields, type Expense, type PaymentMethod, type SplitMode } from '@ledgr/shared';
+import { todayISO, type CreateExpenseInput, type CustomFields, type Expense, type PaymentMethod, type SplitMode } from '@atyaio/ledgr-shared';
 import { useCategories, useExpenseMutations, usePaymentMethods, useStakeholders } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';

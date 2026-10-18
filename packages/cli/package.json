@@ -1,20 +1,23 @@
 {
-  "name": "ledgr",
+  "name": "@atyaio/ledgr",
   "version": "0.1.0",
   "description": "Self-contained finance dashboard for any project: expenses, revenue, stakeholders, splits, analytics.",
   "type": "module",
   "bin": { "ledgr": "./dist/index.js" },
-  "files": ["dist", "Dockerfile.template"],
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "repository": { "type": "git", "url": "https://github.com/atyaio/ledgr.git", "directory": "packages/cli" },
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@atyaio/ledgr-api": "workspace:*",
+    "@atyaio/ledgr-shared": "workspace:*",
+    "@atyaio/ledgr-web": "workspace:*",
     "@clack/prompts": "^1.8.1",
-    "@ledgr/api": "workspace:*",
-    "@ledgr/shared": "workspace:*",
-    "@ledgr/web": "workspace:*",
     "commander": "^15.0.0",
     "open": "^11.0.4",
     "picocolors": "^1.1.1"

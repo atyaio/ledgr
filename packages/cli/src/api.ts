@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { createRequire } from 'node:module';
 
-// @ledgr/api is a CommonJS build (NestJS). Load it lazily through require so the
+// @atyaio/ledgr-api is a CommonJS build (NestJS). Load it lazily through require so the
 // CLI stays ESM and only pays the Nest startup cost for commands that need it.
 const require = createRequire(import.meta.url);
 
@@ -30,12 +30,12 @@ export interface ProjectConfigLike {
 /**
  * Load the API. A standalone project folder (one that carries its own ledgr source,
  * see `ledgr init --standalone`) uses its own built copy, so customised code runs;
- * otherwise the globally installed @ledgr/api is used.
+ * otherwise the globally installed @atyaio/ledgr-api is used.
  */
 export function loadApi(projectDir?: string): LedgrApi {
   const local = projectDir && localApiEntry(projectDir);
   if (local) return require(local) as LedgrApi;
-  return require('@ledgr/api') as LedgrApi;
+  return require('@atyaio/ledgr-api') as LedgrApi;
 }
 
 export function localApiEntry(projectDir: string): string | undefined {
@@ -48,9 +48,9 @@ export function resolveWebDist(projectDir?: string): string | undefined {
     const local = path.join(projectDir, 'apps', 'web', 'dist');
     if (fs.existsSync(path.join(local, 'index.html'))) return local;
   }
-  // Resolve from the CLI package first (it depends on @ledgr/web); fall back to the API's own lookup.
+  // Resolve from the CLI package first (it depends on @atyaio/ledgr-web); fall back to the API's own lookup.
   try {
-    const pkg = require.resolve('@ledgr/web/package.json');
+    const pkg = require.resolve('@atyaio/ledgr-web/package.json');
     const dist = path.join(path.dirname(pkg), 'dist');
     if (fs.existsSync(path.join(dist, 'index.html'))) return dist;
   } catch {

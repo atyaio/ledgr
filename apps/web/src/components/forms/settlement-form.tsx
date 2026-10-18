@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { POOL_ID, todayISO, type CreateSettlementInput, type Settlement, type SuggestedTransfer } from '@ledgr/shared';
+import { POOL_ID, todayISO, type CreateSettlementInput, type Settlement, type SuggestedTransfer } from '@atyaio/ledgr-shared';
 import { useSettlementMutations, useStakeholders } from '@/lib/queries';
 import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';

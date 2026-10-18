@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { auditQuery } from '@ledgr/shared';
+import { auditQuery } from '@atyaio/ledgr-shared';
 import { zod } from '../zod.pipe';
 import { AuditService } from './audit.service';
 

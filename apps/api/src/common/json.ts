@@ -1,4 +1,4 @@
-import type { CustomFields } from '@ledgr/shared';
+import type { CustomFields } from '@atyaio/ledgr-shared';
 
 export function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   if (!raw) return fallback;

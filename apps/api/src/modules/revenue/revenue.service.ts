@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CreateRevenueInput, ListQuery, Revenue, RevenueListResponse, RevenuePayment, UpdateRevenueInput } from '@ledgr/shared';
+import type { CreateRevenueInput, ListQuery, Revenue, RevenueListResponse, RevenuePayment, UpdateRevenueInput } from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { dateRangeWhere, toIso, type Db } from '../../common/db';

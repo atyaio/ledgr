@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Header, Param, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { importCommitSchema, importEntitySchema, rangeQuery, type ImportCommitInput, type ImportEntity, type RangeQuery } from '@ledgr/shared';
+import { importCommitSchema, importEntitySchema, rangeQuery, type ImportCommitInput, type ImportEntity, type RangeQuery } from '@atyaio/ledgr-shared';
 import type { Response } from 'express';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { badRequest } from '../../common/errors';

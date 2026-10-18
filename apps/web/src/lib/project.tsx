@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { formatMoney, minorToMajor, majorToMinor, minorUnitDigits, type ProjectResponse, type FormatMoneyOptions } from '@ledgr/shared';
+import { formatMoney, minorToMajor, majorToMinor, minorUnitDigits, type ProjectResponse, type FormatMoneyOptions } from '@atyaio/ledgr-shared';
 import { api } from './api';
 import { useI18n } from '@/i18n';
 

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
-import { updateProjectSchema, type UpdateProjectInput } from '@ledgr/shared';
+import { updateProjectSchema, type UpdateProjectInput } from '@atyaio/ledgr-shared';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
 import { zod } from '../../common/zod.pipe';
 import { ProjectService } from './project.service';

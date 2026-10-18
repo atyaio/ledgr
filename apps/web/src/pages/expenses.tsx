@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { MoreHorizontal, Pencil, Plus, RefreshCw, Trash2, CheckSquare, Square } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import type { CustomFieldDefinition, Expense, MethodPayment, PaymentMethod } from '@ledgr/shared';
+import type { CustomFieldDefinition, Expense, MethodPayment, PaymentMethod } from '@atyaio/ledgr-shared';
 import { PaymentAmountPopup, type PaymentTarget } from '@/components/forms/payment-amount-popup';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';

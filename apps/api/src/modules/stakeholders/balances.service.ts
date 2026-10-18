@@ -7,7 +7,7 @@ import {
   type BalancesResponse,
   type DistributionResponse,
   type StakeholderBalance,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { dateRangeWhere } from '../../common/db';
 import { PrismaService } from '../../common/prisma/prisma.service';
 

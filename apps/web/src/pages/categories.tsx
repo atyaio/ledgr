@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import type { Category, CategoryKind } from '@ledgr/shared';
+import type { Category, CategoryKind } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { useBudgets, useCategories, useCategoryMutations } from '@/lib/queries';
 import { useDateRange } from '@/lib/range';

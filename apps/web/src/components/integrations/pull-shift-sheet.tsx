@@ -2,7 +2,7 @@ import { clsx } from 'clsx';
 import { Check, Download, RefreshCw, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import type { LoyverseShiftPreview, PullShiftResponse } from '@ledgr/shared';
+import type { LoyverseShiftPreview, PullShiftResponse } from '@atyaio/ledgr-shared';
 import { useLoyverseMutations, useLoyverseShifts } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';

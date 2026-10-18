@@ -10,7 +10,7 @@ import {
   type InsightsGroup,
   type InsightsQuery,
   type InsightsResponse,
-} from '@ledgr/shared';
+} from '@atyaio/ledgr-shared';
 import { LedgrContext } from '../../common/config/ledgr-config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { deltaPct, pct } from '../../common/query';

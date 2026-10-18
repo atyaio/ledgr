@@ -13,14 +13,14 @@ export interface StartOptions {
   dir: string;
   host?: string;
   port?: number;
-  /** Absolute path to the built dashboard. Auto-resolved from @ledgr/web when omitted. */
+  /** Absolute path to the built dashboard. Auto-resolved from @atyaio/ledgr-web when omitted. */
   webDist?: string | null;
   logger?: boolean;
 }
 
 export function resolveWebDist(): string | undefined {
   try {
-    const pkg = require.resolve('@ledgr/web/package.json');
+    const pkg = require.resolve('@atyaio/ledgr-web/package.json');
     const dist = path.join(path.dirname(pkg), 'dist');
     return fs.existsSync(path.join(dist, 'index.html')) ? dist : undefined;
   } catch {

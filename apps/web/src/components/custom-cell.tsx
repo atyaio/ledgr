@@ -1,4 +1,4 @@
-import type { CustomFieldDefinition, CustomFieldValue } from '@ledgr/shared';
+import type { CustomFieldDefinition, CustomFieldValue } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';
 

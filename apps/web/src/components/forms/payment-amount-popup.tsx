@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Expense, PaymentMethod, Revenue } from '@ledgr/shared';
+import type { Expense, PaymentMethod, Revenue } from '@atyaio/ledgr-shared';
 import { useExpenseMutations, useRevenueMutations } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';

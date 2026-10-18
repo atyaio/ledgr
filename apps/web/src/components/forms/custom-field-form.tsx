@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CUSTOM_FIELD_TYPES, slugifyKey, type CreateCustomFieldInput, type CustomFieldDefinition, type CustomFieldEntity, type CustomFieldType } from '@ledgr/shared';
+import { CUSTOM_FIELD_TYPES, slugifyKey, type CreateCustomFieldInput, type CustomFieldDefinition, type CustomFieldEntity, type CustomFieldType } from '@atyaio/ledgr-shared';
 import { useCustomFieldMutations } from '@/lib/queries';
 import { useI18n } from '@/i18n';
 import { errorMessage, useToast } from '@/components/ui/toast';
