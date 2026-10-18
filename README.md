@@ -3,11 +3,17 @@
 A self-contained finance dashboard you run inside any project folder.
 
 ```bash
+npm install -g @atyaio/ledgr   # or prefix every command below with `npx @atyaio/ledgr`
 cd ~/work/my-startup
-npx ledgr init          # sets up THIS folder: asks name, currency, Supabase auth, partners, categories, custom columns
-npx ledgr init axial    # …or creates ./axial/ as a standalone project folder
-npx ledgr start --open  # API + dashboard on http://127.0.0.1:4848, data in ./.ledgr/data.db
+ledgr init          # sets up THIS folder: asks name, currency, Supabase auth, partners, categories, custom columns
+ledgr init axial    # …or creates ./axial/ with its own .ledgr/
+ledgr start --open  # API + dashboard on http://127.0.0.1:4848, data in ./.ledgr/data.db
+ledgr upgrade       # npm install -g @atyaio/ledgr@latest
 ```
+
+Published on npm as [`@atyaio/ledgr`](https://www.npmjs.com/package/@atyaio/ledgr) (the binary is
+`ledgr`); the API, dashboard and shared packages ship as `@atyaio/ledgr-api`, `@atyaio/ledgr-web`
+and `@atyaio/ledgr-shared` at the same version.
 
 One command per business. Each gets its own SQLite file, its own config and its own
 dashboard; nothing is shared with the host project and no database URL is required.
@@ -38,12 +44,13 @@ dashboard; nothing is shared with the host project and no database URL is requir
 ## Two ways to use it
 
 **Shared install (default).** `ledgr init` only writes `./.ledgr/` into a project folder; the
-code runs from the installed `ledgr` package. Upgrade the package once and every project gets it.
+code runs from the installed `@atyaio/ledgr` package. `ledgr upgrade` reinstalls the latest
+version once and every project on the machine gets it. Nothing to clone.
 
 **Standalone (for projects that will customise ledgr).**
 
 ```bash
-npx ledgr init my-business --standalone   # clones this repo into ./my-business, builds it, then inits
+npx @atyaio/ledgr init my-business --standalone   # clones this repo into ./my-business, builds it, then inits
 cd my-business
 ledgr start --open                        # runs the folder's own code
 ledgr upgrade                             # git fetch + merge from the `ledgr` upstream remote, then rebuild
@@ -61,7 +68,7 @@ merges newer upstream commits into your changes (conflicts are left for you to r
 packages/shared   @atyaio/ledgr-shared  types, zod schemas, money/split/date/csv utilities (vitest)
 apps/api          @atyaio/ledgr-api     NestJS 12 + Prisma 7 (SQLite via better-sqlite3), REST under /api
 apps/web          @atyaio/ledgr-web     React 19 + Vite + Tailwind 4 dashboard (served by the API)
-packages/cli      ledgr          `ledgr init | start | doctor | seed`
+packages/cli      @atyaio/ledgr         bin `ledgr`: init | start | upgrade | doctor | backup | seed
 ```
 
 See [SPEC.md](SPEC.md) for the data model, API and business rules.
@@ -86,6 +93,52 @@ pnpm --filter @atyaio/ledgr-web dev
 ```
 
 ## Hosting a project
+
+### From the npm package (no clone)
+
+On a VPS with Node 20+ (`apt install nodejs` or [nvm](https://github.com/nvm-sh/nvm)):
+
+```bash
+npm install -g @atyaio/ledgr
+mkdir -p /srv/my-business && cd /srv/my-business
+ledgr init                                    # Supabase auth on; copy .ledgr/config.json from your machine instead if it exists
+ledgr start --host 127.0.0.1 --port 4848      # put Caddy/nginx in front for HTTPS; never expose auth.mode "none"
+```
+
+Keep it running with systemd (`/etc/systemd/system/ledgr-my-business.service`):
+
+```ini
+[Unit]
+Description=ledgr dashboard for my-business
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/my-business
+ExecStart=/usr/bin/env ledgr start --host 127.0.0.1 --port 4848
+Restart=always
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Upgrade with `ledgr upgrade && systemctl restart ledgr-my-business`. The same works in Docker without
+this repo: a three-line image installs the package and runs it against a mounted `.ledgr/`:
+
+```dockerfile
+FROM node:22-alpine
+RUN npm install -g @atyaio/ledgr@latest
+WORKDIR /project
+EXPOSE 4848
+CMD ["ledgr", "start", "--host", "0.0.0.0", "--port", "4848"]
+```
+
+```bash
+docker build -t ledgr-npm - < Dockerfile.npm   # or paste the snippet into a file
+docker run -d --restart unless-stopped -p 127.0.0.1:4848:4848 -v "$PWD/.ledgr:/project/.ledgr" ledgr-npm
+```
+
+### From a standalone folder (customised projects)
 
 One small VPS (2 GB RAM is plenty) with Docker, this folder cloned onto it, and a domain whose
 A record points at it. The `hosted` compose profile puts [Caddy](https://caddyserver.com) in front

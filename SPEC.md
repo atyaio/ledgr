@@ -8,10 +8,10 @@ splitting and settlements**, **budgets**, **recurring entries**, **custom column
 
 ## 1. Runtime model
 
-- `npx ledgr init` (interactive) creates `./.ledgr/` in the current folder:
+- `npx @atyaio/ledgr init` (interactive) creates `./.ledgr/` in the current folder:
   - `config.json` — project name, slug, currency, locale, week start, auth, port.
   - `data.db` — SQLite database (Prisma + better-sqlite3 driver adapter).
-- `npx ledgr start [--port 4848] [--host 127.0.0.1] [--open]` applies pending
+- `npx @atyaio/ledgr start [--port 4848] [--host 127.0.0.1] [--open]` applies pending
   migrations, starts the NestJS API, serves the built dashboard from the same port
   and opens the browser. `--host 0.0.0.0` + the shipped `Dockerfile` make the same
   folder hostable on a VPS.
@@ -193,5 +193,9 @@ ledgr/
   packages/shared   @atyaio/ledgr-shared  — types, zod schemas, money/split/date utils (tested)
   apps/api          @atyaio/ledgr-api     — NestJS 12 + Prisma 7 (better-sqlite3 adapter)
   apps/web          @atyaio/ledgr-web     — React 19, Vite, Tailwind 4, TanStack Query/Table, Recharts
-  packages/cli      ledgr          — bin: init / start / doctor
+  packages/cli      @atyaio/ledgr         — bin `ledgr`: init / start / upgrade / doctor / backup / seed
+
+All four are published to npm at one shared version by `pnpm release` (scripts/release.mjs,
+shared → api → web → cli). `npx @atyaio/ledgr` is the shared-install path; `--standalone`
+still clones this repository for projects that customise the source.
 ```
