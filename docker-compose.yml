@@ -1,11 +1,33 @@
 # Run this project's ledgr dashboard in Docker. From the project folder:
-#   docker compose up -d --build
+#   docker compose up -d --build                     # local: http://127.0.0.1:4848
+#   docker compose --profile hosted up -d --build    # server: HTTPS on $LEDGR_DOMAIN through Caddy (see .env.example)
 # Data stays in ./.ledgr (config.json + data.db), mounted into the container.
 services:
   ledgr:
     build: .
     ports:
-      - '4848:4848'
+      # Loopback only by default; Caddy reaches the container directly. LEDGR_BIND=0.0.0.0 exposes :4848 on the LAN.
+      - '${LEDGR_BIND:-127.0.0.1}:${LEDGR_PORT:-4848}:4848'
     volumes:
       - ./.ledgr:/project/.ledgr
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: [hosted]
+    depends_on: [ledgr]
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      LEDGR_DOMAIN: ${LEDGR_DOMAIN:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

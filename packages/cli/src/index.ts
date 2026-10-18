@@ -5,6 +5,7 @@ import { startCommand } from './commands/start.js';
 import { doctorCommand } from './commands/doctor.js';
 import { seedCommand } from './commands/seed.js';
 import { upgradeCommand } from './commands/upgrade.js';
+import { backupCommand } from './commands/backup.js';
 
 const program = new Command();
 program
@@ -47,6 +48,14 @@ program
   .description('Check config, database and dashboard build')
   .option('-d, --dir <dir>', 'project folder containing .ledgr', process.cwd())
   .action(doctorCommand);
+
+program
+  .command('backup')
+  .description('Copy the database to a timestamped file; safe while the app is running')
+  .option('-d, --dir <dir>', 'project folder containing .ledgr', process.cwd())
+  .option('-o, --out <path>', 'target folder, or a file name ending in .db (default: .ledgr/backups/)')
+  .option('--keep <n>', 'keep only the newest n backups in the target folder (0 = keep all)', '14')
+  .action(backupCommand);
 
 program
   .command('seed')

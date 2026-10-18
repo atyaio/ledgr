@@ -15,6 +15,7 @@ export interface LedgrApi {
   defaultConfig(partial?: Partial<ProjectConfigLike>): ProjectConfigLike;
   resolvePaths(dir: string): Paths;
   runMigrations(dbPath: string): { applied: string[] };
+  backupDatabase?(dbPath: string, outPath: string): Promise<{ path: string; bytes: number }>;
   applyInitialSetup(ctx: LedgrContextLike, setup: unknown): Promise<{ stakeholders: number; categories: number; customFields: number }>;
   dbCounts(ctx: LedgrContextLike): Promise<{ stakeholders: number; categories: number; expenses: number; revenue: number }>;
   seedDemo?(ctx: LedgrContextLike, opts?: { months?: number; force?: boolean }): Promise<unknown>;
@@ -22,7 +23,7 @@ export interface LedgrApi {
 export interface Paths { dir: string; configPath: string; dbPath: string }
 export interface LedgrContextLike { paths: Paths; config: ProjectConfigLike }
 export interface ProjectConfigLike {
-  name: string; slug: string; currency: string; locale: string; weekStartsOn: number; fiscalYearStartMonth: number; port: number;
+  name: string; slug: string; currency: string; locale: string; weekStartsOn: number; fiscalYearStartMonth: number; port: number; timezone?: string;
   auth: { mode: 'supabase' | 'none'; supabaseUrl?: string; supabaseAnonKey?: string };
 }
 

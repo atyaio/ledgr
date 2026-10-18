@@ -6,6 +6,8 @@ dist
 .env.*
 !.env.example
 .ledgr/*.db*
+.ledgr/backups/
+.ledgr/backup.log
 apps/api/src/generated
 coverage
 *.tsbuildinfo

@@ -1,0 +1,12 @@
+# Keep host build output and data out of the image; the Dockerfile installs and builds itself.
+.git
+node_modules
+**/node_modules
+**/dist
+apps/api/src/generated
+.ledgr
+.env
+.env.*
+!.env.example
+coverage
+*.log

@@ -6,6 +6,8 @@ export type { StartOptions } from './bootstrap';
 export { loadContext, readConfig, writeConfig, defaultConfig, resolvePaths, LedgrContext } from './common/config/ledgr-config';
 export type { LedgrPaths } from './common/config/ledgr-config';
 export { runMigrations } from './common/prisma/migrator';
+export { backupDatabase } from './common/prisma/backup';
+export type { BackupResult } from './common/prisma/backup';
 export { applyInitialSetup, dbCounts } from './setup';
 export type { InitialSetup } from './setup';
 export { seedDemo } from './demo-seed';

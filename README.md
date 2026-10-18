@@ -47,7 +47,7 @@ npx ledgr init my-business --standalone   # clones this repo into ./my-business,
 cd my-business
 ledgr start --open                        # runs the folder's own code
 ledgr upgrade                             # git fetch + merge from the `ledgr` upstream remote, then rebuild
-docker compose up -d --build              # host it; data stays in ./.ledgr
+docker compose --profile hosted up -d --build   # host it with HTTPS (see Hosting); data stays in ./.ledgr
 ```
 
 The folder is a full git clone with the upstream remote named `ledgr`, so `origin` is free for
@@ -87,13 +87,44 @@ pnpm --filter @ledgr/web dev
 
 ## Hosting a project
 
-`ledgr start --host 0.0.0.0 --port 4848` binds publicly (only do this with Supabase auth on).
-The root `Dockerfile` builds the monorepo; mount the project's `.ledgr` folder:
+One small VPS (2 GB RAM is plenty) with Docker, this folder cloned onto it, and a domain whose
+A record points at it. The `hosted` compose profile puts [Caddy](https://caddyserver.com) in front
+of the app for automatic HTTPS; the app port itself is only published on the host's loopback.
 
 ```bash
-docker build -t ledgr .
-docker run -p 4848:4848 -v "$PWD/.ledgr:/project/.ledgr" ledgr
+cp .env.example .env                              # set LEDGR_DOMAIN
+docker compose --profile hosted up -d --build
+docker compose --profile hosted logs -f caddy     # watch the certificate get issued
 ```
+
+Then add `https://<your domain>` under Supabase → Authentication → URL Configuration → Redirect
+URLs, or sign-in will bounce. Never host with `auth.mode: "none"`; `ledgr start` and `ledgr doctor`
+warn when it is off.
+
+Upgrade a standalone folder with `ledgr upgrade --no-build && docker compose --profile hosted up -d --build`
+(a plain clone: `git pull` then the same compose command).
+
+Without Caddy — your own reverse proxy, or a box on the LAN — publish the port directly:
+`LEDGR_BIND=0.0.0.0 docker compose up -d --build`, or outside Docker `ledgr start --host 0.0.0.0 --port 4848`
+(only with Supabase auth on).
+
+### Backups
+
+`ledgr backup` writes a consistent copy of `data.db` to `.ledgr/backups/<slug>-<timestamp>.db` while
+the app is running (SQLite's online backup, so the write-ahead log is included); `--keep 14` prunes
+older copies, `--out` picks another folder or file. Do not copy `data.db` by hand while the app is up.
+
+On the server, `deploy/backup.sh` runs it through compose and, when `LEDGR_BACKUP_REMOTE` is set in
+`.env`, pushes the folder with [rclone](https://rclone.org) (Cloudflare R2, Backblaze B2, S3, Google Drive…):
+
+```bash
+sudo apt install rclone && rclone config          # once: create the remote, e.g. "r2"
+crontab -e                                        # then add:
+15 3 * * * cd /srv/my-business && ./deploy/backup.sh >> .ledgr/backup.log 2>&1
+```
+
+Restore: stop the app, replace `.ledgr/data.db` with a backup file, delete `data.db-wal` and
+`data.db-shm` if present, start again.
 
 ## `.ledgr/config.json`
 
