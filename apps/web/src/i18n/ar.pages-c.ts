@@ -51,7 +51,7 @@ export const pagesC: Record<string, string> = {
   'ledgr payment method': 'طريقة الدفع في ledgr',
   '→ “{name}” (auto)': '← «{name}» (تلقائي)',
   'No payment types found in Loyverse.': 'لا توجد أنواع دفع في Loyverse.',
-  'Unticked types stay in Loyverse (shown on the shift, not added to the ledger).': 'الأنواع غير المحددة تبقى في Loyverse (تظهر على الوردية ولا تُضاف للدفتر).',
+  'Cash-like types are summed into one Cash amount. Unticked types stay in Loyverse (shown on the shift, not added to the ledger).': 'الأنواع النقدية تُجمع في مبلغ كاش واحد. الأنواع غير المحددة تبقى في Loyverse (تظهر على الوردية ولا تُضاف للدفتر).',
   'Revenue category': 'تصنيف الإيراد',
   'for the shift rows': 'لقيود الورديات',
   'Default category': 'التصنيف الافتراضي',

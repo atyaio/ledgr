@@ -17,9 +17,9 @@ Source: the OpenAPI spec behind https://developer.loyverse.com/docs/ (`API-Refer
 
 ## How ledgr uses it
 
-- **Connect** (`POST /api/integrations/loyverse/connect`): verifies the token, stores it in `data.db` (gitignored; never in `config.json`), caches stores and payment types, and selects the `CASH` payment types by default.
+- **Connect** (`POST /api/integrations/loyverse/connect`): verifies the token, stores it in `data.db` (gitignored; never in `config.json`), caches stores and payment types, and selects the cash-like payment types by default (kind `CASH`, or a name containing cash / كاش / نقد such as "Talabat cash").
 - **Sync items**: upserts `PosCategory` / `PosItem` (price and cost in minor units using the merchant's decimal places); items that disappear upstream are soft-deleted.
-- **Pull shift**: fetches the shift's receipts (same store and POS device, inside the open–close window), sums `SALE − REFUND` per payment type and per item variant, and writes one `Revenue` row with an amount per selected payment type (Loyverse payment type → ledgr payment method via `methodMap`, else matched or created by name). Date is the local day the shift closed (`config.timezone`). Re-pulling updates the same row; deleting the row lets the shift be pulled again.
+- **Pull shift**: fetches the shift's receipts (same store and POS device, inside the open–close window), sums `SALE − REFUND` per payment type and per item variant, and writes one `Revenue` row with an amount per selected payment type (Loyverse payment type → ledgr payment method via `methodMap`; cash-like types all fold into the single Cash method, others are matched or created by name). Date is the local day the shift closed (`config.timezone`). Re-pulling updates the same row; deleting the row lets the shift be pulled again.
 - **Sales by item** are kept per shift (`PosSale`) and shown on the revenue row and, aggregated, as "Best sellers" and "Sales by category" on Insights.
 
 ## Testing

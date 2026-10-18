@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { AlertTriangle, Check, Download, ExternalLink, Plug, RefreshCw, Search, Store, Unplug } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { LoyverseIntegration, PosItem } from '@ledgr/shared';
+import { isCashLikePaymentType, type LoyverseIntegration, type PosItem } from '@ledgr/shared';
 import { useCategories, useLoyverse, useLoyverseItems, useLoyverseMutations, usePaymentMethods } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useIsMobile } from '@/lib/media';
@@ -117,7 +117,7 @@ function LoyverseConnected({ i, onReconnect }: { i: LoyverseIntegration; onRecon
     setMethodMap(i.settings.methodMap);
     setCategoryId(i.settings.categoryId ?? '');
   }, [i.settings]);
-  const effectiveTypes = typeIds.length ? typeIds : i.paymentTypes.filter((p) => p.type === 'CASH').map((p) => p.id);
+  const effectiveTypes = typeIds.length ? typeIds : i.paymentTypes.filter(isCashLikePaymentType).map((p) => p.id);
   const dirty = JSON.stringify({ storeIds, typeIds, methodMap, categoryId }) !== JSON.stringify({ storeIds: i.settings.storeIds, typeIds: i.settings.paymentTypeIds, methodMap: i.settings.methodMap, categoryId: i.settings.categoryId ?? '' });
   const save = async () => {
     try {
@@ -171,10 +171,10 @@ function LoyverseConnected({ i, onReconnect }: { i: LoyverseIntegration; onRecon
               <ul className="space-y-1.5">
                 {i.paymentTypes.map((p) => (
                   <li key={p.id} className="flex items-center gap-2">
-                    <Checkbox label={<span>{p.name} <span className="text-ink-3 text-[12px]">{p.type === 'CASH' ? t('cash') : p.type === 'NONINTEGRATEDCARD' ? t('card') : p.type.toLowerCase()}</span></span>} checked={effectiveTypes.includes(p.id)} onChange={() => setTypeIds(toggle(effectiveTypes, p.id))} />
+                    <Checkbox label={<span dir="auto">{p.name} <span className="text-ink-3 text-[12px]">{isCashLikePaymentType(p) ? t('cash') : p.type === 'NONINTEGRATEDCARD' ? t('card') : p.type.toLowerCase()}</span></span>} checked={effectiveTypes.includes(p.id)} onChange={() => setTypeIds(toggle(effectiveTypes, p.id))} />
                     {effectiveTypes.includes(p.id) && (
                       <Select compact className="ms-auto w-[150px]" value={methodMap[p.id] ?? ''} onChange={(e) => setMethodMap(() => { const next = { ...methodMap }; if (e.target.value) next[p.id] = e.target.value; else delete next[p.id]; return next; })} title={t('ledgr payment method')}>
-                        <option value="">{t('→ “{name}” (auto)', { name: p.name })}</option>
+                        <option value="">{t('→ “{name}” (auto)', { name: isCashLikePaymentType(p) ? t('Cash') : p.name })}</option>
                         {methods.map((m) => <option key={m.id} value={m.id}>→ {name(m)}</option>)}
                       </Select>
                     )}
@@ -182,7 +182,7 @@ function LoyverseConnected({ i, onReconnect }: { i: LoyverseIntegration; onRecon
                 ))}
                 {!i.paymentTypes.length && <li className="text-[13px] text-ink-3">{t('No payment types found in Loyverse.')}</li>}
               </ul>
-              <p className="text-[12px] text-ink-3 mt-1.5">{t('Unticked types stay in Loyverse (shown on the shift, not added to the ledger).')}</p>
+              <p className="text-[12px] text-ink-3 mt-1.5">{t('Cash-like types are summed into one Cash amount. Unticked types stay in Loyverse (shown on the shift, not added to the ledger).')}</p>
             </div>
             {i.stores.length > 1 && (
               <div>

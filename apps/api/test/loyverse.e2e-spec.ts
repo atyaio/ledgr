@@ -26,13 +26,14 @@ function stubLoyverse() {
     net_sales: 36,
     payments: [
       { payment_type_id: 'pt-cash', money_amount: 20.5 },
+      { payment_type_id: 'pt-talabat', money_amount: 4 },
       { payment_type_id: 'pt-visa', money_amount: 20 },
     ],
   };
   const shiftOpen = { id: 'sh-open', store_id: 'st1', pos_device_id: 'dev1', opened_at: '2026-06-02T06:00:00.000Z', closed_at: null };
   const receipts = [
     { receipt_number: '1-1', receipt_type: 'SALE', created_at: '2026-06-01T07:00:00.000Z', store_id: 'st1', pos_device_id: 'dev1', total_money: 12, payments: [{ payment_type_id: 'pt-cash', name: 'Cash', type: 'CASH', money_amount: 12 }], line_items: [{ item_id: 'i1', variant_id: 'v1', item_name: 'Latte', sku: 'L1', quantity: 2, price: 4.5, gross_total_money: 9, total_money: 9, cost: 1.2, cost_total: 2.4 }, { item_id: 'i2', variant_id: 'v2', item_name: 'Bagel', sku: 'B1', quantity: 1, price: 3, gross_total_money: 3, total_money: 3, cost: 1, cost_total: 1 }] },
-    { receipt_number: '1-2', receipt_type: 'SALE', created_at: '2026-06-01T09:00:00.000Z', store_id: 'st1', pos_device_id: 'dev1', total_money: 28.5, payments: [{ payment_type_id: 'pt-cash', name: 'Cash', type: 'CASH', money_amount: 8.5 }, { payment_type_id: 'pt-visa', name: 'Visa', type: 'NONINTEGRATEDCARD', money_amount: 20 }], line_items: [{ item_id: 'i1', variant_id: 'v1', item_name: 'Latte', sku: 'L1', quantity: 3, price: 4.5, gross_total_money: 13.5, total_money: 13.5, cost: 1.2, cost_total: 3.6 }, { item_id: 'i2', variant_id: 'v2', item_name: 'Bagel', sku: 'B1', quantity: 5, price: 3, gross_total_money: 15, total_money: 15, cost: 1, cost_total: 5 }] },
+    { receipt_number: '1-2', receipt_type: 'SALE', created_at: '2026-06-01T09:00:00.000Z', store_id: 'st1', pos_device_id: 'dev1', total_money: 28.5, payments: [{ payment_type_id: 'pt-cash', name: 'Cash', type: 'CASH', money_amount: 4.5 }, { payment_type_id: 'pt-talabat', name: 'Talabat cash', type: 'OTHER', money_amount: 4 }, { payment_type_id: 'pt-visa', name: 'Visa', type: 'NONINTEGRATEDCARD', money_amount: 20 }], line_items: [{ item_id: 'i1', variant_id: 'v1', item_name: 'Latte', sku: 'L1', quantity: 3, price: 4.5, gross_total_money: 13.5, total_money: 13.5, cost: 1.2, cost_total: 3.6 }, { item_id: 'i2', variant_id: 'v2', item_name: 'Bagel', sku: 'B1', quantity: 5, price: 3, gross_total_money: 15, total_money: 15, cost: 1, cost_total: 5 }] },
     { receipt_number: '1-3', receipt_type: 'REFUND', refund_for: '1-1', created_at: '2026-06-01T10:00:00.000Z', store_id: 'st1', pos_device_id: 'dev1', total_money: 4.5, payments: [{ payment_type_id: 'pt-cash', name: 'Cash', type: 'CASH', money_amount: 4.5 }], line_items: [{ item_id: 'i1', variant_id: 'v1', item_name: 'Latte', sku: 'L1', quantity: 1, price: 4.5, gross_total_money: 4.5, total_money: 4.5, cost: 1.2, cost_total: 1.2 }] },
     { receipt_number: '1-4', receipt_type: 'SALE', created_at: '2026-06-01T11:00:00.000Z', cancelled_at: '2026-06-01T11:05:00.000Z', store_id: 'st1', pos_device_id: 'dev1', total_money: 100, payments: [{ payment_type_id: 'pt-cash', name: 'Cash', type: 'CASH', money_amount: 100 }], line_items: [] },
     { receipt_number: '1-5', receipt_type: 'SALE', created_at: '2026-06-01T12:00:00.000Z', store_id: 'st1', pos_device_id: 'dev2', total_money: 50, payments: [{ payment_type_id: 'pt-cash', name: 'Cash', type: 'CASH', money_amount: 50 }], line_items: [] },
@@ -54,7 +55,7 @@ function stubLoyverse() {
       return json(res, 200, { id: 'm1', business_name: 'Stub Café', currency: { code: state.currency, decimal_places: 2 } });
     }
     if (p === '/stores') return json(res, 200, { stores: [{ id: 'st1', name: 'Main' }, { id: 'st2', name: 'Kiosk', deleted_at: '2026-01-01T00:00:00.000Z' }] });
-    if (p === '/payment_types') return json(res, 200, { payment_types: [{ id: 'pt-cash', name: 'Cash', type: 'CASH' }, { id: 'pt-visa', name: 'Visa', type: 'NONINTEGRATEDCARD' }] });
+    if (p === '/payment_types') return json(res, 200, { payment_types: [{ id: 'pt-cash', name: 'Cash', type: 'CASH' }, { id: 'pt-visa', name: 'Visa', type: 'NONINTEGRATEDCARD' }, { id: 'pt-talabat', name: 'Talabat cash', type: 'OTHER' }] });
     if (p === '/categories') return json(res, 200, { categories: [{ id: 'c1', name: 'Drinks', color: 'BLUE' }, { id: 'c2', name: 'Food', color: 'RED' }] });
     if (p === '/items') {
       const items = [{ id: 'i1', item_name: 'Latte', category_id: 'c1', variants: [{ variant_id: 'v1', sku: 'L1', default_price: 4.5, cost: 1.2 }] }, { id: 'i2', item_name: 'Bagel', category_id: 'c2', variants: [{ variant_id: 'v2', sku: 'B1', default_price: 3, cost: 1 }] }];
@@ -117,8 +118,9 @@ describe('Loyverse integration (e2e)', () => {
     expect(i.merchantName).toBe('Stub Café');
     expect(i.currency).toBe('USD');
     expect(i.stores).toEqual([{ id: 'st1', name: 'Main' }]);
-    expect(i.paymentTypes.map((p) => p.name)).toEqual(['Cash', 'Visa']);
-    expect(i.settings.paymentTypeIds).toEqual(['pt-cash']);
+    expect(i.paymentTypes.map((p) => p.name)).toEqual(['Cash', 'Visa', 'Talabat cash']);
+    // cash-like by kind or by name
+    expect(i.settings.paymentTypeIds).toEqual(['pt-cash', 'pt-talabat']);
     const status = await http().get('/api/integrations/loyverse').expect(200);
     expect(status.body).not.toHaveProperty('accessToken');
   });
@@ -130,7 +132,7 @@ describe('Loyverse integration (e2e)', () => {
     await http().put('/api/integrations/loyverse/settings').send({ categoryId: expenseCat.id }).expect(400);
     const pos = (await http().post('/api/categories').send({ name: 'POS sales', kind: 'revenue' }).expect(201)).body;
     const res = await http().put('/api/integrations/loyverse/settings').send({ storeIds: ['st1'], categoryId: pos.id }).expect(200);
-    expect(res.body.settings).toMatchObject({ storeIds: ['st1'], categoryId: pos.id, paymentTypeIds: ['pt-cash'] });
+    expect(res.body.settings).toMatchObject({ storeIds: ['st1'], categoryId: pos.id, paymentTypeIds: ['pt-cash', 'pt-talabat'] });
   });
 
   it('syncs the catalogue with categories, prices and costs in minor units', async () => {
@@ -151,6 +153,7 @@ describe('Loyverse integration (e2e)', () => {
     expect(shifts[0]).toMatchObject({ externalId: 'sh1', storeName: 'Main', cashMinor: 1600, netSalesMinor: 3600, pulled: null });
     expect(shifts[0].payments).toEqual([
       { paymentTypeId: 'pt-cash', name: 'Cash', type: 'CASH', amountMinor: 2050, selected: true },
+      { paymentTypeId: 'pt-talabat', name: 'Talabat cash', type: 'OTHER', amountMinor: 400, selected: true },
       { paymentTypeId: 'pt-visa', name: 'Visa', type: 'NONINTEGRATEDCARD', amountMinor: 2000, selected: false },
     ]);
   });
@@ -158,10 +161,12 @@ describe('Loyverse integration (e2e)', () => {
   let revenueId = '';
 
   it('pulls the last closed shift as one cash revenue row with sales by item', async () => {
+    // The ledger already has a Cash method (with an Arabic name); cash-like types must land on it, not create another.
+    await http().post('/api/payment-methods').send({ name: 'Cash', nameAr: 'نقداً', isDefault: true }).expect(201);
     const res = await http().post('/api/integrations/loyverse/pull-shift').send({}).expect(201);
     const r: PullShiftResponse = res.body;
     expect(r.created).toBe(true);
-    // cash: 12 + 8.5 − 4.5 refund; the cancelled receipt and the other POS device are ignored
+    // cash 12 + 4.5 − 4.5 refund, plus Talabat cash 4 folded in; the cancelled receipt and the other POS device are ignored
     expect(r.revenue.amountMinor).toBe(1600);
     expect(r.revenue.payments).toEqual([expect.objectContaining({ name: 'Cash', amountMinor: 1600 })]);
     expect(r.revenue.date).toBe('2026-06-01');
@@ -174,11 +179,11 @@ describe('Loyverse integration (e2e)', () => {
     const latte = r.sales.lines.find((l) => l.itemName === 'Latte')!;
     expect(latte).toMatchObject({ quantity: 4, netMinor: 1800, costMinor: 480, categoryName: 'Drinks', sku: 'L1' });
     expect(r.sales.lines.find((l) => l.itemName === 'Bagel')).toMatchObject({ quantity: 6, netMinor: 1800, categoryName: 'Food' });
-    expect(r.sales.payments).toEqual(expect.arrayContaining([expect.objectContaining({ paymentTypeId: 'pt-visa', amountMinor: 2000, pulled: false }), expect.objectContaining({ paymentTypeId: 'pt-cash', amountMinor: 1600, pulled: true })]));
+    expect(r.sales.payments).toEqual(expect.arrayContaining([expect.objectContaining({ paymentTypeId: 'pt-visa', amountMinor: 2000, pulled: false }), expect.objectContaining({ paymentTypeId: 'pt-cash', amountMinor: 1200, pulled: true }), expect.objectContaining({ paymentTypeId: 'pt-talabat', amountMinor: 400, pulled: true })]));
     expect(r.sales.byCategory.map((c) => c.name).sort()).toEqual(['Drinks', 'Food']);
     revenueId = r.revenue.id;
 
-    // The payment method was created on the fly and is the default (first one).
+    // Both cash-like types folded into the existing Cash method; nothing else was created.
     const methods = (await http().get('/api/payment-methods').expect(200)).body as { name: string; isDefault: boolean }[];
     expect(methods).toEqual([expect.objectContaining({ name: 'Cash', isDefault: true })]);
 
@@ -211,9 +216,9 @@ describe('Loyverse integration (e2e)', () => {
     const res = await http().post('/api/integrations/loyverse/pull-shift').send({}).expect(201);
     const r: Revenue = res.body.revenue;
     expect(r.id).toBe(revenueId);
-    expect(r.amountMinor).toBe(3600);
-    expect(r.payments.map((p) => [p.name, p.amountMinor])).toEqual([['Cash', 1600], ['Visa', 2000]]);
-    await http().put('/api/integrations/loyverse/settings').send({ paymentTypeIds: ['pt-cash'] }).expect(200);
+    expect(r.amountMinor).toBe(3200);
+    expect(r.payments.map((p) => [p.name, p.amountMinor])).toEqual([['Cash', 1200], ['Visa', 2000]]);
+    await http().put('/api/integrations/loyverse/settings').send({ paymentTypeIds: ['pt-cash', 'pt-talabat'] }).expect(200);
   });
 
   it('deleting the revenue row frees the shift to be pulled again', async () => {

@@ -90,8 +90,10 @@ Rules:
 - **Loyverse shift pull**: amounts come from the shift's receipts (same store and POS
   device, created inside the shift window; cancelled receipts skipped; `REFUND`
   receipts subtract). Only the payment types in `settings.paymentTypeIds` (default: the
-  `CASH` ones) go on the revenue row, each mapped to a ledgr payment method by
-  `methodMap`, else matched or created by name. Row: `date` = local day of `closedAt`
+  cash-like ones — kind `CASH` or a name containing cash/كاش/نقد, e.g. "Talabat cash")
+  go on the revenue row, each mapped to a ledgr payment method by `methodMap`; cash-like
+  types all fold into the ledger's one Cash method (found by either name, else created),
+  other types are matched or created by name. Row: `date` = local day of `closedAt`
   (`config.timezone`, default the machine zone), `description` = `Shift · store ·
   HH:mm–HH:mm`, `source` = `Loyverse`, category = `settings.categoryId` or the default
   revenue category. Re-pulling the same shift updates that row (date, description,

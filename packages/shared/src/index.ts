@@ -23,3 +23,4 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   'Equipment', 'Travel', 'Legal & accounting', 'Fees & taxes', 'Other',
 ];
 export const DEFAULT_REVENUE_CATEGORIES = ['Sales', 'Services', 'Subscriptions', 'Consulting', 'Other'];
+export * from './pos';

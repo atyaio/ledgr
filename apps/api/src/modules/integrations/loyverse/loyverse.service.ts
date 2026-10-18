@@ -1,21 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  ConnectLoyverseInput,
-  IntegrationStatus,
-  ItemsSyncResponse,
-  LoyverseIntegration,
-  LoyversePaymentType,
-  LoyverseSettings,
-  LoyverseShiftPreview,
-  LoyverseStore,
-  PosItemsQuery,
-  PosItemsResponse,
-  PosSalesSummary,
-  PosShiftRef,
-  PullShiftInput,
-  PullShiftResponse,
-  ShiftSalesResponse,
-  UpdateLoyverseSettingsInput,
+import {
+  isCashLikePaymentType,
+  isCashMethodName,
+  type ConnectLoyverseInput,
+  type IntegrationStatus,
+  type ItemsSyncResponse,
+  type LoyverseIntegration,
+  type LoyversePaymentType,
+  type LoyverseSettings,
+  type LoyverseShiftPreview,
+  type LoyverseStore,
+  type PosItemsQuery,
+  type PosItemsResponse,
+  type PosSalesSummary,
+  type PosShiftRef,
+  type PullShiftInput,
+  type PullShiftResponse,
+  type ShiftSalesResponse,
+  type UpdateLoyverseSettingsInput,
 } from '@ledgr/shared';
 import { AuditService } from '../../../common/audit/audit.service';
 import type { CurrentUser } from '../../../common/auth/current-user.decorator';
@@ -160,7 +162,7 @@ export class LoyverseService {
     const settings: LoyverseSettings = {
       ...prev,
       storeIds: prev.storeIds.filter((id) => meta.stores.some((s) => s.id === id)),
-      paymentTypeIds: prev.paymentTypeIds.filter((id) => known.has(id)).length ? prev.paymentTypeIds.filter((id) => known.has(id)) : meta.paymentTypes.filter((p) => p.type === 'CASH').map((p) => p.id),
+      paymentTypeIds: prev.paymentTypeIds.filter((id) => known.has(id)).length ? prev.paymentTypeIds.filter((id) => known.has(id)) : meta.paymentTypes.filter(isCashLikePaymentType).map((p) => p.id),
       methodMap: Object.fromEntries(Object.entries(prev.methodMap).filter(([k]) => known.has(k))),
     };
     const data = {
@@ -318,7 +320,7 @@ export class LoyverseService {
   private pulledTypeIds(r: IntegrationRow): Set<string> {
     const s = this.settingsOf(r);
     const meta = this.metaOf(r);
-    const ids = s.paymentTypeIds.length ? s.paymentTypeIds : meta.paymentTypes.filter((p) => p.type === 'CASH').map((p) => p.id);
+    const ids = s.paymentTypeIds.length ? s.paymentTypeIds : meta.paymentTypes.filter(isCashLikePaymentType).map((p) => p.id);
     return new Set(ids);
   }
 
@@ -392,7 +394,7 @@ export class LoyverseService {
         const amount = agg.payments.get(id) ?? 0;
         if (amount <= 0) continue;
         const pt = typeById.get(id);
-        const methodId = await this.resolveMethod(id, pt?.name ?? id, methodMap, actor);
+        const methodId = await this.resolveMethod(id, pt ?? { id, name: id, type: 'OTHER' }, methodMap, actor);
         const existing = payments.find((p) => p.paymentMethodId === methodId);
         if (existing) existing.amountMinor += amount;
         else payments.push({ paymentMethodId: methodId, amountMinor: amount });
@@ -452,14 +454,25 @@ export class LoyverseService {
     }
   }
 
-  private async resolveMethod(paymentTypeId: string, name: string, methodMap: Record<string, string>, actor: CurrentUser): Promise<string> {
+  /**
+   * Loyverse payment type → ledgr payment method. An explicit `methodMap` entry wins.
+   * Cash-like types (CASH, "Talabat cash", "طلبات كاش"…) all fold into the ledger's one
+   * cash method, found by name in either language or created as "Cash". Other types match
+   * a method by name or get one created with the same name.
+   */
+  private async resolveMethod(paymentTypeId: string, pt: LoyversePaymentType, methodMap: Record<string, string>, actor: CurrentUser): Promise<string> {
     const mapped = methodMap[paymentTypeId];
     if (mapped) {
       const exists = await this.prisma.paymentMethod.findUnique({ where: { id: mapped } });
       if (exists) return exists.id;
     }
-    const byName = await this.paymentMethods.findByName(name);
-    const method = byName ?? (await this.paymentMethods.create({ name, isDefault: (await this.prisma.paymentMethod.count()) === 0 }, actor));
+    let method = await this.paymentMethods.findByName(pt.name);
+    if (!method && isCashLikePaymentType(pt)) {
+      const all = await this.prisma.paymentMethod.findMany({ where: { archived: false }, orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }] });
+      const cash = all.find((m) => isCashMethodName(m.name) || isCashMethodName(m.nameAr));
+      method = cash ? await this.paymentMethods.get(cash.id) : await this.paymentMethods.create({ name: 'Cash', nameAr: 'نقداً', isDefault: all.length === 0 }, actor);
+    }
+    if (!method) method = await this.paymentMethods.create({ name: pt.name, isDefault: (await this.prisma.paymentMethod.count()) === 0 }, actor);
     methodMap[paymentTypeId] = method.id;
     return method.id;
   }
