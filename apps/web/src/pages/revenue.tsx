@@ -81,15 +81,14 @@ export function RevenuePage() {
             <Menu trigger={() => <Button variant="secondary" size="sm" icon={<MoreHorizontal className="size-4" />} className="rounded-full">{t('More')}</Button>} title={t('Revenue')}>
               {(close) => (
                 <>
-                  {posConnected && <MenuItem icon={<Download />} onClick={() => { close(); setPullOpen(true); }}>{t('Pull last shift')}</MenuItem>}
                   <MenuItem icon={selecting ? <CheckSquare /> : <Square />} onClick={() => { close(); setSelecting((s) => !s); setSelected(new Set()); }}>{selecting ? t('Done selecting') : t('Select entries')}</MenuItem>
                   <MenuSeparator />
                   <MenuItem icon={<Trash2 />} danger disabled={!selected.size} onClick={() => { close(); setBulkConfirm(true); }}>{t('Delete {n} selected', { n: selected.size || '' })}</MenuItem>
                 </>
               )}
             </Menu>
-            {posConnected && <Button variant="secondary" size="sm" className="rounded-full max-md:hidden" icon={<Download className="size-4" />} onClick={() => setPullOpen(true)}>{t('Pull last shift')}</Button>}
-            <Button variant="primary" size="sm" className="rounded-full max-md:hidden" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>{t('New revenue')}</Button>
+            {posConnected && <Button variant="primary" size="sm" className="rounded-full" icon={<Download className="size-4" />} onClick={() => setPullOpen(true)}>{t('Pull last shift')}</Button>}
+            <Button variant={posConnected ? 'secondary' : 'primary'} size="sm" className="rounded-full max-md:hidden" icon={<Plus className="size-4" />} onClick={() => setEditing(null)}>{t('New revenue')}</Button>
           </>
         }
       />

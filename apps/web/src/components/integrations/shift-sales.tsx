@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n';
 import { useShiftSales } from '@/lib/queries';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
+import { Breakdown } from '@/components/charts/breakdown';
 
 /** Format a quantity: whole numbers plain, fractions to two decimals. */
 export function qty(n: number, locale: string): string {
@@ -46,15 +47,15 @@ export function ShiftSalesList({ sales, compact }: { sales: ShiftSalesResponse; 
       )}
       {sales.byCategory.length > 1 && (
         <div>
-          <div className="label mb-1.5">{t('By category')}</div>
-          <div className="h-2.5 rounded-full bg-sunken overflow-hidden flex gap-[2px]">
-            {sales.byCategory.map((c, i) => c.netMinor > 0 && <div key={c.name || '_'} className="h-full rounded-full" style={{ width: `${c.pct}%`, background: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length] }} title={`${c.name || t('Uncategorised')} ${money(c.netMinor)}`} />)}
-          </div>
-          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink-2">
-            {sales.byCategory.map((c) => <li key={c.name || '_'}><span className="font-medium text-ink">{c.name || t('Uncategorised')}</span> <span className="num text-ink-3">{Math.round(c.pct)}%</span></li>)}
-          </ul>
+          <div className="label mb-2">{t('By category')}</div>
+          <Breakdown
+            max={6}
+            items={sales.byCategory.map((c, i) => ({ id: c.name || null, name: c.name || t('Uncategorised'), color: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length], amountMinor: c.netMinor, pct: c.pct, count: Math.round(c.quantity) }))}
+            emptyLabel={t('No sales')}
+          />
         </div>
       )}
+      <div className="label">{t('Items')}</div>
       <ul className={clsx('divide-y divide-line rounded-[12px] border border-line overflow-hidden', compact && 'max-h-[320px] overflow-y-auto')}>
         {sales.lines.map((l, i) => (
           <li key={`${l.externalItemId ?? l.itemName}-${l.variantName ?? ''}-${i}`} className="flex items-center gap-3 px-3 py-2">
