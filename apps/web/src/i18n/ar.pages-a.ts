@@ -28,6 +28,8 @@ export const pagesA: Record<string, string> = {
   'Net': 'الصافي',
   'Profit': 'الربح',
   '{n} entries': '{n} قيد',
+  'In': 'وارد',
+  'Out': 'صادر',
   'No partners yet': 'لا يوجد شركاء بعد',
   'Add stakeholders and their ownership share to start splitting expenses.': 'أضف الشركاء وحصص ملكيتهم لبدء تقسيم المصروفات.',
   'Add partners': 'إضافة شركاء',

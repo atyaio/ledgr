@@ -1,10 +1,10 @@
 import { clsx } from 'clsx';
 import { ArrowDownRight, ArrowUpRight, ChevronRight, Minus } from 'lucide-react';
 import { Link } from 'react-router';
-import type { AnalyticsOverview } from '@atyaio/ledgr-shared';
+import type { AnalyticsOverview, PaymentMethod } from '@atyaio/ledgr-shared';
 import { useDateRange } from '@/lib/range';
 import { useProject } from '@/lib/project';
-import { useOverview } from '@/lib/queries';
+import { useOverview, usePaymentMethods } from '@/lib/queries';
 import { pct, signedPct } from '@/lib/format';
 import { useI18n } from '@/i18n';
 import { Loading, Card, Meter, EmptyState } from '@/components/ui/misc';
@@ -82,13 +82,15 @@ function Delta({ value, invert }: { value: number | null; invert?: boolean }) {
 function Hero({ o }: { o: AnalyticsOverview }) {
   const { t } = useI18n();
   const { money } = useProject();
+  const methodsQ = usePaymentMethods();
   const net = o.series.map((s) => s.netMinor);
+  const methods = methodBoxes(o, methodsQ.data?.items ?? []);
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-      <div className="card p-5 md:col-span-1 flex flex-col justify-between gap-4">
+    <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
+      <div className="card p-5 col-span-2 md:col-span-1 flex flex-col justify-between gap-4">
         <div>
           <div className="label">{t('Net result')}</div>
-          <div className={clsx('num text-[34px] md:text-[36px] font-semibold tracking-[-0.02em] leading-none mt-2', o.totals.netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(o.totals.netMinor, { signed: true })}</div>
+          <div className={clsx('num text-[34px] md:text-[32px] font-semibold tracking-[-0.02em] leading-none mt-2', o.totals.netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(o.totals.netMinor, { signed: true })}</div>
           <div className="mt-2"><Delta value={o.delta.netPct} /></div>
         </div>
         <div className="flex items-end justify-between gap-3">
@@ -96,9 +98,60 @@ function Hero({ o }: { o: AnalyticsOverview }) {
           <Sparkline values={net} width={120} height={32} baseline />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 md:gap-4 md:col-span-2">
-        <StatCard label={t('Revenue')} minor={o.totals.revenueMinor} tone="revenue" delta={<Delta value={o.delta.revenuePct} />} count={t('{n} entries', { n: o.totals.revenueCount })} values={o.series.map((s) => s.revenueMinor)} color="var(--s-revenue)" />
-        <StatCard label={t('Expenses')} minor={o.totals.expenseMinor} tone="expense" delta={<Delta value={o.delta.expensePct} invert />} count={t('{n} entries', { n: o.totals.expenseCount })} values={o.series.map((s) => s.expenseMinor)} color="var(--s-expense)" />
+      {methods.map((m) => (
+        <MethodCard key={m.id} m={m} />
+      ))}
+      <StatCard label={t('Revenue')} minor={o.totals.revenueMinor} tone="revenue" delta={<Delta value={o.delta.revenuePct} />} count={t('{n} entries', { n: o.totals.revenueCount })} values={o.series.map((s) => s.revenueMinor)} color="var(--s-revenue)" />
+      <StatCard label={t('Expenses')} minor={o.totals.expenseMinor} tone="expense" delta={<Delta value={o.delta.expensePct} invert />} count={t('{n} entries', { n: o.totals.expenseCount })} values={o.series.map((s) => s.expenseMinor)} color="var(--s-expense)" />
+    </div>
+  );
+}
+
+interface MethodBox {
+  id: string;
+  name: string;
+  nameAr?: string | null;
+  color: string;
+  inMinor: number;
+  outMinor: number;
+  count: number;
+}
+
+/** One box per payment method: every active method (in its configured order), plus any archived one that still has activity in the range. */
+function methodBoxes(o: AnalyticsOverview, all: PaymentMethod[]): MethodBox[] {
+  const byId = new Map<string, MethodBox>();
+  const touch = (id: string | null, name: string, nameAr: string | null | undefined, color: string) => {
+    if (!id) return null;
+    let box = byId.get(id);
+    if (!box) byId.set(id, (box = { id, name, nameAr, color, inMinor: 0, outMinor: 0, count: 0 }));
+    return box;
+  };
+  for (const pm of all) if (!pm.archived) touch(pm.id, pm.name, pm.nameAr, pm.color);
+  for (const r of o.revenueByPaymentMethod ?? []) {
+    const box = touch(r.paymentMethodId, r.name, r.nameAr, r.color);
+    if (box) { box.inMinor += r.amountMinor; box.count += r.count; }
+  }
+  for (const e of o.expensesByPaymentMethod ?? []) {
+    const box = touch(e.paymentMethodId, e.name, e.nameAr, e.color);
+    if (box) { box.outMinor += e.amountMinor; box.count += e.count; }
+  }
+  return [...byId.values()];
+}
+
+function MethodCard({ m }: { m: MethodBox }) {
+  const { t, name } = useI18n();
+  const { money } = useProject();
+  const netMinor = m.inMinor - m.outMinor;
+  return (
+    <div className="card p-4 md:p-5 flex flex-col justify-between gap-3">
+      <div>
+        <div className="flex items-center gap-2 min-w-0"><Swatch color={m.color} size={9} /><span className="label truncate">{name(m)}</span></div>
+        <div className={clsx('num text-[22px] md:text-[26px] font-semibold tracking-[-0.02em] leading-none mt-2', netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(netMinor, { signed: true })}</div>
+      </div>
+      <div className="flex flex-col gap-0.5 text-[12px] text-ink-3">
+        <span className="flex items-baseline justify-between gap-2"><span className="text-good">{t('In')}</span><span className="num text-ink-2 truncate">{money(m.inMinor)}</span></span>
+        <span className="flex items-baseline justify-between gap-2"><span className="text-critical">{t('Out')}</span><span className="num text-ink-2 truncate">{money(m.outMinor)}</span></span>
+        <span className="mt-0.5">{t('{n} entries', { n: m.count })}</span>
       </div>
     </div>
   );
