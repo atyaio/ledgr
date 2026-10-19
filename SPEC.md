@@ -104,20 +104,27 @@ Rules:
 
 ## 4. Balances & settlements
 
+Balances track money partners put in **out of pocket**. An expense paid from the company
+account (`paidByStakeholderId = null`, the default) is a cost of the business shared through
+profit; it creates no debt between anyone. An expense a partner fronted credits that partner
+with the full amount and debits every partner, the payer included, with their split.
+
 For stakeholder *s* over a range:
 
 ```
-owed(s)      = Σ ExpenseSplit.amountMinor where stakeholderId = s
+owed(s)      = Σ ExpenseSplit.amountMinor where stakeholderId = s AND the expense has a payer
 paid(s)      = Σ Expense.amountMinor where paidByStakeholderId = s
 settledOut(s)= Σ Settlement.amountMinor where fromStakeholderId = s
 settledIn(s) = Σ Settlement.amountMinor where toStakeholderId = s
 net(s)       = paid(s) − owed(s) + settledOut(s) − settledIn(s)
 ```
 
-`net > 0` → the pool/others owe *s*; `net < 0` → *s* owes. The API also returns a
-greedy debt-simplification list of suggested transfers (`who pays whom how much`)
-that zeroes all balances with the fewest payments. The company pool is a virtual
-party with id `"pool"`.
+`net > 0` → the others owe *s*; `net < 0` → *s* owes. The company pool is a virtual party
+with id `"pool"` that takes part only through settlements (money a partner puts into or takes
+out of the company account), so Σ net over partners + pool is always 0. `poolPaidMinor`
+reports what the company account paid, for information. The API also returns a greedy
+debt-simplification list of suggested transfers (`who pays whom how much`) that zeroes all
+balances with the fewest payments.
 
 ## 5. REST API (`/api`, JSON, zod-validated)
 

@@ -20,9 +20,11 @@ export interface RangeArg {
 }
 
 /**
- * Per-party ledger figures for a range. The pool is a party like any other:
- * paid = pool-paid expenses, owed = 0 (pool has no splits), settledIn = settlements to pool.
- * With that, Σ net over stakeholders + pool is always 0 (see SPEC §4).
+ * Per-party ledger figures for a range. Only expenses a partner paid out of pocket create
+ * debts: the payer is credited the full amount and every partner (payer included) is debited
+ * their split. Expenses paid from the company account are shared through profit and create no
+ * debt. The pool is a party only for settlements (capital put in / taken out), so Σ net over
+ * stakeholders + pool is still 0 (see SPEC §4). `poolPaidMinor` is informational.
  */
 export interface LedgerFigures {
   owed: Map<string, number>;
@@ -41,7 +43,7 @@ export class BalancesService {
     const date = dateRangeWhere(range.from, range.to);
     const where = date ? { date } : {};
     const [owedRows, paidRows, outRows, inRows, totals] = await Promise.all([
-      this.prisma.expenseSplit.groupBy({ by: ['stakeholderId'], where: { expense: where }, _sum: { amountMinor: true } }),
+      this.prisma.expenseSplit.groupBy({ by: ['stakeholderId'], where: { expense: { ...where, paidByStakeholderId: { not: null } } }, _sum: { amountMinor: true } }),
       this.prisma.expense.groupBy({ by: ['paidByStakeholderId'], where, _sum: { amountMinor: true } }),
       this.prisma.settlement.groupBy({ by: ['fromStakeholderId'], where, _sum: { amountMinor: true } }),
       this.prisma.settlement.groupBy({ by: ['toStakeholderId'], where, _sum: { amountMinor: true } }),
@@ -52,7 +54,11 @@ export class BalancesService {
     const settledOut = new Map<string, number>();
     const settledIn = new Map<string, number>();
     for (const r of owedRows) owed.set(r.stakeholderId, r._sum.amountMinor ?? 0);
-    for (const r of paidRows) paid.set(r.paidByStakeholderId ?? POOL_ID, r._sum.amountMinor ?? 0);
+    let poolPaidMinor = 0;
+    for (const r of paidRows) {
+      if (r.paidByStakeholderId) paid.set(r.paidByStakeholderId, r._sum.amountMinor ?? 0);
+      else poolPaidMinor = r._sum.amountMinor ?? 0;
+    }
     for (const r of outRows) settledOut.set(r.fromStakeholderId, r._sum.amountMinor ?? 0);
     for (const r of inRows) settledIn.set(r.toStakeholderId ?? POOL_ID, r._sum.amountMinor ?? 0);
     return {
@@ -61,7 +67,7 @@ export class BalancesService {
       settledOut,
       settledIn,
       totalExpenseMinor: totals._sum.amountMinor ?? 0,
-      poolPaidMinor: paid.get(POOL_ID) ?? 0,
+      poolPaidMinor,
     };
   }
 

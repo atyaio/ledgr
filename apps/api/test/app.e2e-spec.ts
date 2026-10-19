@@ -227,10 +227,12 @@ describe('ledgr API (e2e)', () => {
     expect(b.balances.reduce((s, x) => s + x.netMinor, 0)).toBe(0);
     const ada = b.balances.find((x) => x.stakeholderId === ids.a)!;
     expect(ada.paidMinor).toBe(10_001);
-    expect(ada.owedMinor).toBe(5001 + 1667 + 3000); // 50% of 10001, half of 3333 (largest remainder), 50% of 6000
+    // Only the expense Ada fronted counts: her own 50% split of it. Company-paid expenses create no debt.
+    expect(ada.owedMinor).toBe(5001);
+    expect(ada.netMinor).toBe(5000);
     expect(ada.netMinor).toBe(ada.paidMinor - ada.owedMinor);
     const pool = b.balances.find((x) => x.stakeholderId === POOL_ID)!;
-    expect(pool.netMinor).toBe(9333);
+    expect(pool.netMinor).toBe(0); // the company account is not owed anything for what it paid
     // suggestions settle everything
     const suggested = b.suggestions.reduce((s, t) => s + t.amountMinor, 0);
     const debts = b.balances.filter((x) => x.netMinor < 0).reduce((s, x) => s - x.netMinor, 0);
@@ -249,7 +251,7 @@ describe('ledgr API (e2e)', () => {
     expect(adaAfter.settledInMinor).toBe(1000);
     const poolAfter = after.balances.find((x) => x.stakeholderId === POOL_ID)!;
     expect(poolAfter.settledInMinor).toBe(500);
-    expect(poolAfter.netMinor).toBe(9333 - 500);
+    expect(poolAfter.netMinor).toBe(-500); // Cy put 500 into the company: the pool owes it back
     expect(after.balances.reduce((s, x) => s + x.netMinor, 0)).toBe(0);
 
     const suggest = await http().get('/api/settlements/suggest?from=2026-03-01&to=2026-03-31').expect(200);

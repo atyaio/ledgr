@@ -125,4 +125,7 @@ export const pagesC: Record<string, string> = {
   'Sales by category': 'المبيعات حسب التصنيف',
   'gross margin {pct} after item costs': 'هامش إجمالي {pct} بعد تكلفة الأصناف',
   'No sales': 'لا توجد مبيعات',
+
+  // ── Balances
+  'Only expenses a partner paid out of pocket count here': 'تُحتسب هنا فقط المصروفات التي دفعها شريك من جيبه',
 };

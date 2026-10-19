@@ -153,7 +153,7 @@ function BalancesTab({ onSettle }: { onSettle: (t: SuggestedTransfer) => void })
   const maxAbs = Math.max(1, ...b.balances.map((x) => Math.abs(x.netMinor)));
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-      <Card className="xl:col-span-2" title={t('Who owes whom')} subtitle={t('Expenses {total} in this period · company paid {pool}', { total: money(b.totalExpenseMinor, { compact: true }), pool: money(b.poolPaidMinor, { compact: true }) })} flush>
+      <Card className="xl:col-span-2" title={t('Who owes whom')} subtitle={t('Expenses {total} in this period · company paid {pool}', { total: money(b.totalExpenseMinor, { compact: true }), pool: money(b.poolPaidMinor, { compact: true }) }) + ' · ' + t('Only expenses a partner paid out of pocket count here')} flush>
         <ul className="divide-y divide-line">
           {b.balances.map((x) => (
             <li key={x.stakeholderId} className="px-4 md:px-5 py-3">
