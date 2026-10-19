@@ -86,17 +86,17 @@ function Hero({ o }: { o: AnalyticsOverview }) {
   const net = o.series.map((s) => s.netMinor);
   const methods = methodBoxes(o, methodsQ.data?.items ?? []);
   return (
-    <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
+    <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
       <div className="card p-5 col-span-2 md:col-span-1 flex flex-col justify-between gap-4">
         <div>
-          <div className="label">{t('Net result')}</div>
-          <div className={clsx('num text-[34px] md:text-[32px] font-semibold tracking-[-0.02em] leading-none mt-2', o.totals.netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(o.totals.netMinor, { signed: true })}</div>
-          <div className="mt-2"><Delta value={o.delta.netPct} /></div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="label">{t('Net result')}</span>
+            <Sparkline values={net} width={100} height={26} baseline />
+          </div>
+          <div className={clsx('num text-[32px] md:text-[28px] font-semibold tracking-[-0.02em] leading-none mt-2 whitespace-nowrap', o.totals.netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(o.totals.netMinor, { signed: true })}</div>
+          <div className="mt-2 whitespace-nowrap"><Delta value={o.delta.netPct} /></div>
         </div>
-        <div className="flex items-end justify-between gap-3">
-          <div className="text-[12.5px] text-ink-3">{t('Margin')} <span className="num text-ink font-medium">{o.totals.marginPct === null ? '—' : pct(o.totals.marginPct, 1)}</span></div>
-          <Sparkline values={net} width={120} height={32} baseline />
-        </div>
+        <div className="text-[12.5px] text-ink-3 whitespace-nowrap">{t('Margin')} <span className="num text-ink font-medium">{o.totals.marginPct === null ? '—' : pct(o.totals.marginPct, 1)}</span></div>
       </div>
       {methods.map((m) => (
         <MethodCard key={m.id} m={m} />
@@ -146,7 +146,7 @@ function MethodCard({ m }: { m: MethodBox }) {
     <div className="card p-4 md:p-5 flex flex-col justify-between gap-3">
       <div>
         <div className="flex items-center gap-2 min-w-0"><Swatch color={m.color} size={9} /><span className="label truncate">{name(m)}</span></div>
-        <div className={clsx('num text-[22px] md:text-[26px] font-semibold tracking-[-0.02em] leading-none mt-2', netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(netMinor, { signed: true })}</div>
+        <div className={clsx('num text-[22px] md:text-[24px] font-semibold tracking-[-0.02em] leading-none mt-2 whitespace-nowrap', netMinor < 0 ? 'text-critical' : 'text-ink')}>{money(netMinor, { signed: true })}</div>
       </div>
       <div className="flex flex-col gap-0.5 text-[12px] text-ink-3">
         <span className="flex items-baseline justify-between gap-2"><span className="text-good">{t('In')}</span><span className="num text-ink-2 truncate">{money(m.inMinor)}</span></span>
@@ -162,15 +162,15 @@ function StatCard({ label, minor, delta, count, values, color, tone }: { label: 
   return (
     <div className="card p-4 md:p-5 flex flex-col justify-between gap-3">
       <div>
-        <div className="flex items-center gap-2"><Swatch color={color} size={9} /><span className="label">{label}</span></div>
-        <div className={clsx('num text-[22px] md:text-[26px] font-semibold tracking-[-0.02em] leading-none mt-2', tone === 'revenue' ? 'text-ink' : 'text-ink')}>{money(minor)}</div>
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          {delta}
-          <span className="text-[12px] text-ink-3">{count}</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 min-w-0"><Swatch color={color} size={9} /><span className="label truncate">{label}</span></span>
+          <span className="hidden sm:block shrink-0"><Sparkline values={values} color={color} width={80} height={26} /></span>
         </div>
-        <span className="hidden sm:block"><Sparkline values={values} color={color} width={80} height={26} /></span>
+        <div className={clsx('num text-[22px] md:text-[24px] font-semibold tracking-[-0.02em] leading-none mt-2 whitespace-nowrap', tone === 'revenue' ? 'text-ink' : 'text-ink')}>{money(minor)}</div>
+      </div>
+      <div className="flex flex-col gap-0.5 min-w-0 whitespace-nowrap">
+        {delta}
+        <span className="text-[12px] text-ink-3">{count}</span>
       </div>
     </div>
   );
