@@ -130,6 +130,15 @@ export function RevenuePage() {
                       </span>
                       <Money minor={r.amountMinor} tone="revenue" className="text-[15px] font-semibold shrink-0" />
                     </button>
+                    {!selecting && methods.some((m) => !r.payments.some((p) => p.paymentMethodId === m.id && p.amountMinor > 0)) && (
+                      <div className="flex gap-1.5 overflow-x-auto px-4 pb-2.5 -mt-1 [scrollbar-width:none]">
+                        {methods.filter((m) => !r.payments.some((p) => p.paymentMethodId === m.id && p.amountMinor > 0)).map((m) => (
+                          <button key={m.id} type="button" onClick={() => setPayTarget({ kind: 'revenue', entry: r, method: m })} className="pressable inline-flex items-center gap-1 h-7 px-2.5 rounded-full border border-line text-[12.5px] font-medium text-ink-2 whitespace-nowrap hover:border-accent hover:text-accent">
+                            <Plus className="size-3" /> {name(m)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

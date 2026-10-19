@@ -3,6 +3,7 @@ import { todayISO, type CreateExpenseInput, type CustomFields, type Expense, typ
 import { useCategories, useExpenseMutations, usePaymentMethods, useStakeholders } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';
+import { useIsMobile } from '@/lib/media';
 import { Swatch } from '@/components/ui/badge';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
@@ -15,6 +16,7 @@ import { ApiRequestError } from '@/lib/api';
 
 export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSaved }: { open: boolean; onClose: () => void; expense?: Expense | null; defaults?: Partial<CreateExpenseInput>; switcher?: ReactNode; onSaved?: () => void }) {
   const { t, name } = useI18n();
+  const mobile = useIsMobile(); // no autofocus on phones: the keyboard would scroll the field away while the sheet slides in
   const toast = useToast();
   const { money } = useProject();
   const { create, update } = useExpenseMutations();
@@ -136,7 +138,7 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
         {hasMethods && primary ? (
           <>
             <Field label={<span className="inline-flex items-center gap-1.5"><Swatch color={primary.color} />{t('{method} amount', { method: name(primary) })}</span>} required hint={primary.isDefault ? t('default method') : undefined}>
-              <MoneyInput large value={amounts[primary.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [primary.id]: v }))} autoFocus={!expense} />
+              <MoneyInput large value={amounts[primary.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [primary.id]: v }))} autoFocus={!expense && !mobile} />
             </Field>
             {others.length > 0 && !showOthers && (
               <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setShowOthers(true)}>
@@ -159,7 +161,7 @@ export function ExpenseForm({ open, onClose, expense, defaults, switcher, onSave
             )}
           </>
         ) : (
-          <Field label={t('Amount')} required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!expense} /></Field>
+          <Field label={t('Amount')} required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!expense && !mobile} /></Field>
         )}
         <Field label={t('What for')} required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('e.g. Hosting, payroll, flight tickets')} /></Field>
         <div className="grid grid-cols-2 gap-3">

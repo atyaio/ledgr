@@ -3,6 +3,7 @@ import { todayISO, type CreateRevenueInput, type CustomFields, type PaymentMetho
 import { useCategories, usePaymentMethods, useRevenueMutations, useStakeholders } from '@/lib/queries';
 import { useProject } from '@/lib/project';
 import { useI18n } from '@/i18n';
+import { useIsMobile } from '@/lib/media';
 import { errorMessage, useToast } from '@/components/ui/toast';
 import { Sheet } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { ApiRequestError } from '@/lib/api';
  */
 export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { open: boolean; onClose: () => void; revenue?: Revenue | null; switcher?: ReactNode; onSaved?: () => void }) {
   const { t, name } = useI18n();
+  const mobile = useIsMobile(); // no autofocus on phones: the keyboard would scroll the field away while the sheet slides in
   const toast = useToast();
   const { money } = useProject();
   const { create, update } = useRevenueMutations();
@@ -118,7 +120,7 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
         {hasMethods && primary ? (
           <>
             <Field label={<span className="inline-flex items-center gap-1.5"><Swatch color={primary.color} />{t('{method} amount', { method: name(primary) })}</span>} required hint={primary.isDefault ? t('default method') : undefined}>
-              <MoneyInput large value={amounts[primary.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [primary.id]: v }))} autoFocus={!revenue} />
+              <MoneyInput large value={amounts[primary.id] ?? null} onChange={(v) => setAmounts((a) => ({ ...a, [primary.id]: v }))} autoFocus={!revenue && !mobile} />
             </Field>
             {others.length > 0 && !showOthers && (
               <button type="button" className="text-[13.5px] font-medium text-accent" onClick={() => setShowOthers(true)}>
@@ -141,7 +143,7 @@ export function RevenueForm({ open, onClose, revenue, switcher, onSaved }: { ope
             )}
           </>
         ) : (
-          <Field label={t('Amount')} required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!revenue} /></Field>
+          <Field label={t('Amount')} required><MoneyInput large value={amount} onChange={setAmount} autoFocus={!revenue && !mobile} /></Field>
         )}
         <Field label={t('Description')} required><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("Invoice, sale, day's takings…")} /></Field>
         <div className="grid grid-cols-2 gap-3">
