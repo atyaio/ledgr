@@ -52,6 +52,16 @@ export type RangeQuery = z.infer<typeof rangeQuery>;
 
 // ─── Project ───────────────────────────────────────────────────────────────────
 const arName = z.string().trim().max(80).nullable().optional();
+/** Inline image for the custom logo: raster or SVG, base64, at most ~300 KB. */
+export const logoDataUrl = z
+  .string()
+  .max(400_000, 'Logo must be under 300 KB')
+  .regex(/^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/]+=*$/, 'Expected a base64 image data URL');
+export const brandingSchema = z.object({
+  logo: logoDataUrl.optional(),
+  primaryColor: hexColor.optional(),
+  showProjectName: z.boolean().optional(),
+});
 export const projectConfigSchema = z.object({
   name: z.string().trim().min(1).max(80),
   nameAr: z.string().trim().max(80).optional(),
@@ -62,6 +72,7 @@ export const projectConfigSchema = z.object({
   fiscalYearStartMonth: z.number().int().min(1).max(12),
   timezone: z.string().trim().min(1).max(64).optional(),
   port: z.number().int().min(1).max(65535),
+  branding: brandingSchema.optional(),
   auth: z.object({
     mode: z.enum(['supabase', 'none']),
     supabaseUrl: z.string().url().optional(),
@@ -69,7 +80,7 @@ export const projectConfigSchema = z.object({
   }),
 });
 export const updateProjectSchema = projectConfigSchema
-  .pick({ name: true, nameAr: true, currency: true, locale: true, weekStartsOn: true, fiscalYearStartMonth: true, timezone: true })
+  .pick({ name: true, nameAr: true, currency: true, locale: true, weekStartsOn: true, fiscalYearStartMonth: true, timezone: true, branding: true })
   .partial();
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 

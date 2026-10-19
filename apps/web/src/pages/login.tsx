@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
 import { Logo } from '@/components/layout/shell';
 import { useI18n } from '@/i18n';
+import { useBranding } from '@/lib/branding';
 
 export function LoginPage() {
   const { signIn, sendMagicLink, status, error: authError, signOut } = useAuth();
   const { t } = useI18n();
+  const { appName } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function LoginPage() {
         <div className="flex items-center gap-3 mb-8">
           <Logo size={40} />
           <div>
-            <div className="text-[20px] font-semibold tracking-tight leading-none">ledgr</div>
+            <div className="text-[20px] font-semibold tracking-tight leading-none">{appName}</div>
             <div className="text-[13px] text-ink-3 mt-1">{t('Sign in to continue')}</div>
           </div>
         </div>

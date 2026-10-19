@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { updateProjectSchema, type UpdateProjectInput } from '@atyaio/ledgr-shared';
 import { type CurrentUser, User } from '../../common/auth/current-user.decorator';
+import { Public } from '../../common/auth/public.decorator';
 import { zod } from '../../common/zod.pipe';
 import { ProjectService } from './project.service';
 
@@ -11,6 +12,13 @@ export class ProjectController {
   @Get()
   get() {
     return this.service.get();
+  }
+
+  /** Logo, colour and display name for the login screen, before anyone is signed in. Nothing secret. */
+  @Public()
+  @Get('branding')
+  branding() {
+    return this.service.branding();
   }
 
   @Patch()

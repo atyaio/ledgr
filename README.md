@@ -186,8 +186,11 @@ Restore: stop the app, replace `.ledgr/data.db` with a backup file, delete `data
   "name": "Axial", "slug": "axial",
   "currency": "EGP", "locale": "en-EG",
   "weekStartsOn": 6, "fiscalYearStartMonth": 1, "timezone": "Africa/Cairo", "port": 4848,
+  "branding": { "logo": "data:image/png;base64,…", "primaryColor": "#1baf7a", "showProjectName": true },
   "auth": { "mode": "supabase", "supabaseUrl": "https://xxx.supabase.co", "supabaseAnonKey": "…" }
 }
 ```
+
+`branding` is optional and edited from **Settings → Branding**: a custom logo (stored inline, ≤ 300 KB, raster images are shrunk to 256 px), the brand's primary colour (buttons, links, focus rings, default logo) and whether the project name replaces the "ledgr" wordmark in the sidebar, browser tab and sign-in screen. It is public (served before sign-in) and included in backups.
 
 `auth.mode: "none"` disables sign-in (local use only). Money is stored in integer minor units. `timezone` (IANA name, written by `ledgr init` from the machine) decides which ledger day a POS shift lands on; the Loyverse token itself lives in `data.db`, never in this file.

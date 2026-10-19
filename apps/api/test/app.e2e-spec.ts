@@ -58,6 +58,18 @@ describe('ledgr API (e2e)', () => {
     await http().patch('/api/project').send({ weekStartsOn: 1 }).expect(200);
   });
 
+  it('branding: public endpoint, persisted on PATCH, validated', async () => {
+    const logo = 'data:image/png;base64,iVBORw0KGgo=';
+    const res = await http().patch('/api/project').send({ branding: { logo, primaryColor: '#2F5BEA', showProjectName: true } }).expect(200);
+    expect(res.body.config.branding).toEqual({ logo, primaryColor: '#2F5BEA', showProjectName: true });
+    const pub = await http().get('/api/project/branding').expect(200);
+    expect(pub.body).toEqual({ name: res.body.config.name, branding: { logo, primaryColor: '#2F5BEA', showProjectName: true } });
+    await http().patch('/api/project').send({ branding: { logo: 'https://example.com/x.png' } }).expect(400);
+    await http().patch('/api/project').send({ branding: { primaryColor: 'blue' } }).expect(400);
+    await http().patch('/api/project').send({ branding: {} }).expect(200);
+    expect((await http().get('/api/project/branding').expect(200)).body.branding).toEqual({});
+  });
+
   // ─── Stakeholders ───────────────────────────────────────────────────────────
 
   it('stakeholder CRUD and shareTotal', async () => {

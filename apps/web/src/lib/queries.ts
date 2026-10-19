@@ -74,6 +74,7 @@ function useInvalidateAll() {
       qc.invalidateQueries({ queryKey: ['recurring'] }),
       qc.invalidateQueries({ queryKey: ['audit'] }),
       qc.invalidateQueries({ queryKey: ['project'] }),
+      qc.invalidateQueries({ queryKey: ['branding'] }),
     ]);
 }
 

@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { LangProvider } from '@/i18n';
 import { ProjectProvider, useProjectQuery } from '@/lib/project';
+import { BrandingProvider, useBranding } from '@/lib/branding';
 import { ToastProvider } from '@/components/ui/toast';
 import { Loading } from '@/components/ui/misc';
 import { Shell } from '@/components/layout/shell';
@@ -27,10 +28,11 @@ const queryClient = new QueryClient({
 });
 
 function Splash({ children }: { children?: ReactNode }) {
+  const { appName } = useBranding();
   return (
     <div className="h-full flex items-center justify-center bg-bg">
       <div className="text-center fade-up">
-        <div className="text-[22px] font-semibold tracking-tight">ledgr</div>
+        <div className="text-[22px] font-semibold tracking-tight">{appName}</div>
         <div className="mt-2 text-ink-3 text-[13px]">{children ?? 'Loading…'}</div>
       </div>
     </div>
@@ -89,9 +91,11 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <LangProvider>
         <ToastProvider>
-          <AuthProvider>
-            <RouterProvider router={router} />
-          </AuthProvider>
+          <BrandingProvider>
+            <AuthProvider>
+              <RouterProvider router={router} />
+            </AuthProvider>
+          </BrandingProvider>
         </ToastProvider>
       </LangProvider>
     </QueryClientProvider>

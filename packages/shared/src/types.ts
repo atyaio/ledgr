@@ -33,6 +33,16 @@ export type CustomFields = Record<string, CustomFieldValue>;
 // ─── Config ────────────────────────────────────────────────────────────────────
 export type AuthMode = 'supabase' | 'none';
 
+/** White-label settings: a custom logo, the brand's primary colour, and the project name in place of the ledgr wordmark. */
+export interface Branding {
+  /** `data:image/...;base64,...` URL. Kept small (≤ 300 KB) because it lives in config.json. */
+  logo?: string;
+  /** `#rrggbb`. Drives buttons, links, focus rings and the default logo background. */
+  primaryColor?: string;
+  /** Show the project name where the app would otherwise say "ledgr". */
+  showProjectName?: boolean;
+}
+
 export interface ProjectConfig {
   name: string;
   /** Arabic display name; falls back to `name`. */
@@ -45,11 +55,19 @@ export interface ProjectConfig {
   /** IANA zone used to turn POS timestamps into ledger days. Defaults to the machine's zone. */
   timezone?: string;
   port: number;
+  branding?: Branding;
   auth: {
     mode: AuthMode;
     supabaseUrl?: string;
     supabaseAnonKey?: string;
   };
+}
+
+/** Public (unauthenticated) subset of the project config used to brand the login screen. */
+export interface BrandingResponse {
+  name: string;
+  nameAr?: string;
+  branding: Branding;
 }
 
 export interface AuthConfigResponse {

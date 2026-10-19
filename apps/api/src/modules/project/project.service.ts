@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LEDGR_VERSION, shareTotal, type ProjectResponse, type UpdateProjectInput } from '@atyaio/ledgr-shared';
+import { LEDGR_VERSION, shareTotal, type BrandingResponse, type ProjectResponse, type UpdateProjectInput } from '@atyaio/ledgr-shared';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
 import { LedgrContext } from '../../common/config/ledgr-config';
@@ -16,6 +16,11 @@ export class ProjectService {
   publicConfig(): ProjectResponse['config'] {
     const { auth, ...rest } = this.ctx.config;
     return { ...rest, auth: { mode: auth.mode } };
+  }
+
+  branding(): BrandingResponse {
+    const { name, nameAr, branding } = this.ctx.config;
+    return { name, nameAr, branding: branding ?? {} };
   }
 
   async get(): Promise<ProjectResponse> {
@@ -45,10 +50,16 @@ export class ProjectService {
   }
 
   async update(patch: UpdateProjectInput, actor: CurrentUser): Promise<ProjectResponse> {
-    const before = this.publicConfig();
+    const before = forAudit(this.publicConfig());
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) as UpdateProjectInput;
     this.ctx.update(clean);
-    await this.audit.log({ actor, action: 'update', entity: 'project', entityId: this.ctx.config.slug, before, after: this.publicConfig() });
+    await this.audit.log({ actor, action: 'update', entity: 'project', entityId: this.ctx.config.slug, before, after: forAudit(this.publicConfig()) });
     return this.get();
   }
+}
+
+/** The logo is a base64 image; keep the audit log readable by recording only that it changed. */
+function forAudit(config: ProjectResponse['config']): ProjectResponse['config'] {
+  if (!config.branding?.logo) return config;
+  return { ...config, branding: { ...config.branding, logo: `[image ${Math.round(config.branding.logo.length / 1024)} KB]` } };
 }

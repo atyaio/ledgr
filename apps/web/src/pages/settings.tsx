@@ -1,24 +1,25 @@
 import { clsx } from 'clsx';
-import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Plus, Smartphone, Trash2, Share } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { CUSTOM_FIELD_ENTITIES, type CustomFieldDefinition, type CustomFieldEntity } from '@atyaio/ledgr-shared';
+import { ArrowDown, ArrowUp, ImagePlus, MoreHorizontal, Pencil, Plus, RotateCcw, Smartphone, Trash2, Share, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { brandTokens, CUSTOM_FIELD_ENTITIES, type Branding, type CustomFieldDefinition, type CustomFieldEntity } from '@atyaio/ledgr-shared';
 import { useProject } from '@/lib/project';
+import { fileToLogoDataUrl } from '@/lib/branding';
 import { useAudit, useCustomFieldMutations, useCustomFields, useProjectMutations } from '@/lib/queries';
 import { relativeTime } from '@/lib/format';
 import { useInstallPrompt } from '@/lib/install';
 import { CustomFieldForm } from '@/components/forms/custom-field-form';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Field, Input, Select, Toggle } from '@/components/ui/input';
 import { Loading, PageHeader, Card, Tabs, ListRow, EmptyState } from '@/components/ui/misc';
 import { Pagination } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { Menu, MenuItem, MenuSeparator } from '@/components/ui/menu';
 import { errorMessage, useToast } from '@/components/ui/toast';
-import { LanguageSwitch, ThemeSwitch } from '@/components/layout/shell';
+import { LanguageSwitch, Logo, ThemeSwitch } from '@/components/layout/shell';
 import { useI18n, type I18n } from '@/i18n';
 
-type Tab = 'project' | 'phone' | 'fields' | 'audit';
+type Tab = 'project' | 'branding' | 'phone' | 'fields' | 'audit';
 
 export function SettingsPage() {
   const [tab, setTab] = useState<Tab>('project');
@@ -26,8 +27,9 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title={t('Settings')} />
-      <Tabs className="mb-4" value={tab} onChange={setTab} items={[{ id: 'project', label: t('Project') }, { id: 'phone', label: t('Phone') }, { id: 'fields', label: t('Custom fields') }, { id: 'audit', label: t('Audit log') }]} />
+      <Tabs className="mb-4" value={tab} onChange={setTab} items={[{ id: 'project', label: t('Project') }, { id: 'branding', label: t('Branding') }, { id: 'phone', label: t('Phone') }, { id: 'fields', label: t('Custom fields') }, { id: 'audit', label: t('Audit log') }]} />
       {tab === 'project' && <ProjectTab />}
+      {tab === 'branding' && <BrandingTab />}
       {tab === 'phone' && <PhoneTab />}
       {tab === 'fields' && <FieldsTab />}
       {tab === 'audit' && <AuditTab />}
@@ -87,6 +89,132 @@ function ProjectTab() {
       </div>
     </div>
   );
+}
+
+const BRAND_PRESETS = ['#15181e', '#2f5bea', '#1baf7a', '#6250d6', '#eb6834', '#d03b3b', '#0f766e', '#b45309'];
+
+function BrandingTab() {
+  const { project } = useProject();
+  const { update } = useProjectMutations();
+  const toast = useToast();
+  const { t, name } = useI18n();
+  const saved: Branding = project.config.branding ?? {};
+  const [draft, setDraft] = useState<Branding>(saved);
+  const [reading, setReading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  useEffect(() => setDraft(project.config.branding ?? {}), [project.config.branding]);
+  const dirty = JSON.stringify(normalize(draft)) !== JSON.stringify(normalize(saved));
+  const projectName = name({ name: project.config.name, nameAr: project.config.nameAr });
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setReading(true);
+    try {
+      setDraft((d) => ({ ...d, logo: undefined }));
+      const logo = await fileToLogoDataUrl(file);
+      setDraft((d) => ({ ...d, logo }));
+    } catch (e) {
+      toast.error(t('Could not use that image'), errorMessage(e));
+    } finally {
+      setReading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+  const save = async () => {
+    try {
+      await update.mutateAsync({ branding: normalize(draft) });
+      toast.success(t('Branding updated'));
+    } catch (e) {
+      toast.error(t('Could not save'), errorMessage(e));
+    }
+  };
+  const color = draft.primaryColor ?? '';
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <Card className="xl:col-span-2" title={t('Branding')} subtitle={t('Make the dashboard look like yours: logo, name and colour. Everyone who opens this project sees it.')}>
+        <form className="space-y-6 max-w-lg" onSubmit={(e) => { e.preventDefault(); save(); }}>
+          <div>
+            <div className="label mb-2">{t('Logo')}</div>
+            <div className="flex items-center gap-4">
+              <span className="size-16 rounded-[14px] bg-sunken border border-line inline-flex items-center justify-center overflow-hidden shrink-0">
+                {draft.logo ? <img src={draft.logo} alt="" className="size-full object-contain" /> : <Logo size={40} />}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
+                <Button type="button" variant="soft" size="sm" icon={<ImagePlus className="size-4" />} loading={reading} onClick={() => fileRef.current?.click()}>{t(draft.logo ? 'Replace logo' : 'Upload logo')}</Button>
+                {draft.logo && <Button type="button" variant="ghost" size="sm" icon={<X className="size-4" />} onClick={() => setDraft((d) => ({ ...d, logo: undefined }))}>{t('Remove')}</Button>}
+              </div>
+            </div>
+            <p className="text-[12.5px] text-ink-3 mt-2">{t('Square works best. PNG, JPEG, WebP, GIF or SVG; raster images are scaled down to 256 px.')}</p>
+          </div>
+
+          <div>
+            <div className="label mb-2">{t('Primary colour')}</div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {BRAND_PRESETS.map((c) => (
+                <button key={c} type="button" aria-label={c} onClick={() => setDraft((d) => ({ ...d, primaryColor: c }))} className={clsx('size-8 rounded-full border-2 transition-transform hover:scale-110', color.toLowerCase() === c ? 'border-ink scale-110' : 'border-transparent')} style={{ background: c }} />
+              ))}
+              <label className="relative size-8 rounded-full border border-line-strong overflow-hidden cursor-pointer shrink-0" title={t('Custom colour')}>
+                <input type="color" value={color || '#2f5bea'} onChange={(e) => setDraft((d) => ({ ...d, primaryColor: e.target.value }))} className="absolute inset-0 opacity-0 cursor-pointer" />
+                <span className="absolute inset-0" style={{ background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)' }} />
+              </label>
+              <Input mono compact className="w-28" placeholder="#2f5bea" maxLength={7} value={color} onChange={(e) => { const v = e.target.value.trim(); setDraft((d) => ({ ...d, primaryColor: v ? (v.startsWith('#') ? v : `#${v}`) : undefined })); }} />
+              {color && <Button type="button" variant="ghost" size="sm" icon={<RotateCcw className="size-4" />} onClick={() => setDraft((d) => ({ ...d, primaryColor: undefined }))}>{t('Default')}</Button>}
+            </div>
+            <p className="text-[12.5px] text-ink-3 mt-2">{t('Used for buttons, links, focus rings and the default logo. Leave empty for ledgr\'s neutral look.')}</p>
+            {color && !/^#[0-9a-fA-F]{6}$/.test(color) && <p className="text-[12.5px] text-critical mt-1">{t('Enter a 6-digit hex colour like #2f5bea.')}</p>}
+          </div>
+
+          <Toggle checked={!!draft.showProjectName} onChange={(v) => setDraft((d) => ({ ...d, showProjectName: v }))} label={t('Show the project name instead of “ledgr”')} description={t('In the sidebar, the browser tab and on the sign-in screen.')} />
+
+          <Button type="submit" variant="primary" size="md" disabled={!dirty || reading || (!!color && !/^#[0-9a-fA-F]{6}$/.test(color))} loading={update.isPending}>{t('Save changes')}</Button>
+        </form>
+      </Card>
+      <Card title={t('Preview')}>
+        <BrandPreview branding={draft} projectName={projectName} />
+        <p className="text-[12.5px] text-ink-3 mt-3 leading-relaxed">{t('The whole app switches to these colours once you save. Branding is stored in')} <code className="mono">.ledgr/config.json</code> {t('and included in backups.')}</p>
+      </Card>
+    </div>
+  );
+}
+
+function normalize(b: Branding): Branding {
+  const out: Branding = {};
+  if (b.logo) out.logo = b.logo;
+  if (b.primaryColor) out.primaryColor = b.primaryColor.toLowerCase();
+  if (b.showProjectName) out.showProjectName = true;
+  return out;
+}
+
+/** A tiny mock of the sidebar header so the colour and logo can be judged before saving. */
+function BrandPreview({ branding, projectName }: { branding: Branding; projectName: string }) {
+  const { t } = useI18n();
+  const valid = branding.primaryColor && /^#[0-9a-fA-F]{6}$/.test(branding.primaryColor);
+  const style = valid ? (brandStyle(branding.primaryColor!) as CSSProperties) : undefined;
+  const title = branding.showProjectName ? projectName : 'ledgr';
+  return (
+    <div className="rounded-[16px] border border-line bg-bg p-4 space-y-3" style={style}>
+      <div className="flex items-center gap-2.5">
+        {branding.logo ? <img src={branding.logo} alt="" className="size-[30px] rounded-[9px] object-contain" /> : <Logo />}
+        <div className="min-w-0 leading-tight">
+          <div className="text-[15px] font-semibold truncate">{title}</div>
+          {!branding.showProjectName && <div className="text-[11.5px] text-ink-3 truncate">{projectName}</div>}
+        </div>
+      </div>
+      <div className="h-9 rounded-[10px] bg-primary text-primary-ink text-[13px] font-semibold inline-flex items-center justify-center px-4 w-full">{t('Add expense')}</div>
+      <div className="flex items-center justify-between text-[13px]">
+        <span className="text-accent font-medium">{t('Overview')}</span>
+        <span className="h-6 px-2 rounded-full bg-accent-soft text-accent text-[12px] font-medium inline-flex items-center">{t('required')}</span>
+      </div>
+    </div>
+  );
+}
+
+/** The preview is not `:root`, so map the brand tokens onto the component tokens directly. */
+function brandStyle(hex: string): Record<string, string> {
+  const b = brandTokens(hex);
+  return { '--primary': b['--brand']!, '--primary-ink': b['--brand-ink']!, '--accent': b['--brand-accent']!, '--accent-soft': b['--brand-soft']! };
 }
 
 function PhoneTab() {

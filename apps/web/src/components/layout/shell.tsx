@@ -5,6 +5,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/project';
+import { useBranding } from '@/lib/branding';
 import { useTheme, type Theme } from '@/lib/theme';
 import { useI18n, type Lang } from '@/i18n';
 import { RangePicker } from './range-picker';
@@ -30,6 +31,7 @@ const NAV = [
 export function Shell() {
   const { project } = useProject();
   const { t, name } = useI18n();
+  const { showProjectName } = useBranding();
   const projectName = name({ name: project.config.name, nameAr: project.config.nameAr });
   const loc = useLocation();
   const current = NAV.find((n) => (n.end ? loc.pathname === n.to : loc.pathname.startsWith(n.to)));
@@ -42,14 +44,23 @@ export function Shell() {
     <div className="h-full flex bg-bg">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-[232px] shrink-0 flex-col border-e border-line bg-card/60">
-        <div className="h-16 px-5 flex items-center gap-2.5">
-          <Logo />
-          <span className="text-[17px] font-semibold tracking-tight">ledgr</span>
-        </div>
-        <div className="px-5 pb-4">
-          <div className="label">{t('Project')}</div>
-          <div className="text-[15px] font-semibold truncate">{projectName}</div>
-        </div>
+        {showProjectName ? (
+          <div className="min-h-16 px-5 py-4 flex items-center gap-3">
+            <Logo size={34} />
+            <span className="text-[16px] font-semibold tracking-tight leading-snug line-clamp-2">{projectName}</span>
+          </div>
+        ) : (
+          <>
+            <div className="h-16 px-5 flex items-center gap-2.5">
+              <Logo />
+              <span className="text-[17px] font-semibold tracking-tight">ledgr</span>
+            </div>
+            <div className="px-5 pb-4">
+              <div className="label">{t('Project')}</div>
+              <div className="text-[15px] font-semibold truncate">{projectName}</div>
+            </div>
+          </>
+        )}
         <nav className="flex-1 px-3 space-y-0.5">
           {NAV.map((n) => (
             <NavLink
@@ -88,7 +99,7 @@ export function Shell() {
             <div className="flex items-center gap-2 min-w-0">
               <Logo size={26} />
               <div className="min-w-0 leading-tight">
-                <div className="text-[15px] font-semibold truncate">{current ? t(current.label) : 'ledgr'}</div>
+                <div className="text-[15px] font-semibold truncate">{current ? t(current.label) : showProjectName ? projectName : 'ledgr'}</div>
                 <div className="text-[11.5px] text-ink-3 truncate">{projectName}</div>
               </div>
             </div>
@@ -203,7 +214,12 @@ export function KindSwitch({ value, onChange }: { value: 'expense' | 'revenue'; 
   );
 }
 
+/** The app mark: the custom logo from Settings → Branding when set, otherwise ledgr's. */
 export function Logo({ size = 30 }: { size?: number }) {
+  const { logo, appName } = useBranding();
+  if (logo) {
+    return <img src={logo} alt={appName} className="shrink-0 object-contain rounded-[9px]" style={{ width: size, height: size }} draggable={false} />;
+  }
   return (
     <span aria-hidden className="inline-flex items-center justify-center rounded-[9px] bg-primary shrink-0" style={{ width: size, height: size }}>
       <svg viewBox="0 0 64 64" width={size * 0.62} height={size * 0.62}>

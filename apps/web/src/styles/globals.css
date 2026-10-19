@@ -110,6 +110,27 @@
   color-scheme: dark;
 }
 
+/* ─── Brand colour (Settings → Branding). Tokens are set inline on <html> by lib/branding.tsx. ── */
+:root[data-branded] {
+  --primary: var(--brand);
+  --primary-ink: var(--brand-ink);
+  --accent: var(--brand-accent);
+  --accent-soft: var(--brand-soft);
+  --focus: var(--brand-focus);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-branded]:not([data-theme='light']) {
+    --accent: var(--brand-accent-dark);
+    --accent-soft: var(--brand-soft-dark);
+    --focus: var(--brand-focus-dark);
+  }
+}
+:root[data-branded][data-theme='dark'] {
+  --accent: var(--brand-accent-dark);
+  --accent-soft: var(--brand-soft-dark);
+  --focus: var(--brand-focus-dark);
+}
+
 @theme inline {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

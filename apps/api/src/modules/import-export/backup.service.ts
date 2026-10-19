@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { BackupFile, Expense, ProjectConfig } from '@atyaio/ledgr-shared';
+import { brandingSchema, type BackupFile, type Expense, type ProjectConfig } from '@atyaio/ledgr-shared';
 import { z } from 'zod';
 import { AuditService } from '../../common/audit/audit.service';
 import type { CurrentUser } from '../../common/auth/current-user.decorator';
@@ -289,6 +289,7 @@ export class BackupService {
       ...(cfg.locale ? { locale: cfg.locale } : {}),
       ...(cfg.weekStartsOn !== undefined ? { weekStartsOn: cfg.weekStartsOn } : {}),
       ...(cfg.fiscalYearStartMonth !== undefined ? { fiscalYearStartMonth: cfg.fiscalYearStartMonth } : {}),
+      ...(brandingSchema.safeParse(cfg.branding).success ? { branding: cfg.branding } : {}),
     });
 
     const result: RestoreResult = {
