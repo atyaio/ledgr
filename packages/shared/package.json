@@ -1,6 +1,6 @@
 {
   "name": "@atyaio/ledgr-shared",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ledgr shared types, zod schemas and money/split/date/csv utilities.",
   "type": "module",
   "main": "./dist/index.cjs",
