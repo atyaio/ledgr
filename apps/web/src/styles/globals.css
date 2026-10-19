@@ -301,6 +301,37 @@ textarea {
     transform: none;
   }
 }
+.brand-spinner {
+  animation: spinnerRotate 1.1s linear infinite;
+}
+.brand-spinner-arc {
+  stroke-dasharray: 100.5; /* 2πr for r=16 */
+  animation: spinnerSweep 1.6s cubic-bezier(0.45, 0, 0.35, 1) infinite;
+}
+@keyframes spinnerRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spinnerSweep {
+  0% {
+    stroke-dashoffset: 92;
+    transform: rotate(0deg);
+  }
+  50% {
+    stroke-dashoffset: 30;
+    transform: rotate(120deg);
+  }
+  100% {
+    stroke-dashoffset: 92;
+    transform: rotate(360deg);
+  }
+}
+.brand-spinner,
+.brand-spinner-arc {
+  transform-origin: center;
+  transform-box: fill-box;
+}
 .chart-tooltip {
   background: var(--card);
   border: 1px solid var(--line);

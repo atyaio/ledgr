@@ -7,6 +7,7 @@ import { ProjectProvider, useProjectQuery } from '@/lib/project';
 import { BrandingProvider, useBranding } from '@/lib/branding';
 import { ToastProvider } from '@/components/ui/toast';
 import { Loading } from '@/components/ui/misc';
+import { BrandSpinner } from '@/components/ui/spinner';
 import { Shell } from '@/components/layout/shell';
 import { LoginPage } from '@/pages/login';
 import { QuickAddPage } from '@/pages/quick-add';
@@ -31,9 +32,9 @@ function Splash({ children }: { children?: ReactNode }) {
   const { appName } = useBranding();
   return (
     <div className="h-full flex items-center justify-center bg-bg">
-      <div className="text-center fade-up">
+      <div className="text-center fade-up flex flex-col items-center">
         <div className="text-[22px] font-semibold tracking-tight">{appName}</div>
-        <div className="mt-2 text-ink-3 text-[13px]">{children ?? 'Loading…'}</div>
+        {children ? <div className="mt-2 text-ink-3 text-[13px]">{children}</div> : <div className="mt-5" role="status" aria-label="Loading"><BrandSpinner /></div>}
       </div>
     </div>
   );

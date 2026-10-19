@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
-import { Spinner } from './spinner';
+import { BrandSpinner } from './spinner';
 import { useI18n } from '@/i18n';
 
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
@@ -88,11 +88,13 @@ export function EmptyState({ title, description, action, icon }: { title: ReactN
   );
 }
 
+/** Full-width loading block for page and section data, with the brand-coloured spinner. */
 export function Loading({ label }: { label?: string }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center justify-center gap-2 h-40 text-ink-3 text-[14px]">
-      <Spinner className="size-4" /> {label ?? t('Loading')}…
+    <div role="status" aria-live="polite" className="flex flex-col items-center justify-center gap-3 min-h-40 py-10 fade-up">
+      <BrandSpinner />
+      <span className="text-ink-3 text-[13.5px]">{label ?? t('Loading')}…</span>
     </div>
   );
 }
