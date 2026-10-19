@@ -121,6 +121,8 @@ export const core: Record<string, string> = {
   'Colour': 'اللون',
   'Email': 'البريد الإلكتروني',
   'Password': 'كلمة المرور',
+  'Show password': 'إظهار كلمة المرور',
+  'Hide password': 'إخفاء كلمة المرور',
   'Sign in': 'تسجيل الدخول',
   'Sign in to continue': 'سجّل الدخول للمتابعة',
   'Email me a magic link instead': 'أرسل لي رابط دخول بالبريد بدلًا من ذلك',

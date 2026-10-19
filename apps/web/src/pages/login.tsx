@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ export function LoginPage() {
   const { appName } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -62,7 +64,18 @@ export function LoginPage() {
             <Input type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
           </Field>
           <Field label={t('Password')}>
-            <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <div className="relative">
+              <Input type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pe-11" />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? t('Hide password') : t('Show password')}
+                title={showPassword ? t('Hide password') : t('Show password')}
+                className="absolute end-1 top-1/2 -translate-y-1/2 size-9 inline-flex items-center justify-center rounded-[9px] text-ink-3 hover:text-ink hover:bg-bg-sunken focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/15 transition-colors"
+              >
+                {showPassword ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+              </button>
+            </div>
           </Field>
           <Button type="submit" variant="primary" size="lg" full loading={busy} disabled={!email || !password}>
             {t('Sign in')}
